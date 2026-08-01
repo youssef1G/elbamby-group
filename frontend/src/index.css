@@ -1,0 +1,287 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * All color tokens live as CSS custom properties.
+ * Dark mode is a variable swap (.dark class on <html>) — never a duplicate Tailwind class set.
+ * Components reference these via the mapped Tailwind config (e.g. `bg-bg-primary-500`)
+ * or arbitrary value syntax — never raw hex in component files.
+ */
+
+@layer base {
+  :root {
+    /* Brand scale — derived from the logo's magenta/pink */
+    --bg-primary-50: #FDE9F3;
+    --bg-primary-100: #FBD2E6;
+    --bg-primary-200: #F7A5CD;
+    --bg-primary-300: #F177B4;
+    --bg-primary-400: #EC4A9B;
+    --bg-primary-500: #E6007E;
+    --bg-primary-600: #C40069;
+    --bg-primary-700: #9E0055;
+    --bg-primary-800: #780041;
+    --bg-primary-900: #52002D;
+
+    /* Neutrals — slightly warm, 50–950 */
+    --bg-neutral-50: #FAFAF9;
+    --bg-neutral-100: #F5F4F3;
+    --bg-neutral-200: #E7E5E4;
+    --bg-neutral-300: #D6D3D1;
+    --bg-neutral-400: #A3A0A0;
+    --bg-neutral-500: #787574;
+    --bg-neutral-600: #6B6866;
+    --bg-neutral-700: #444141;
+    --bg-neutral-800: #2A272B;
+    --bg-neutral-900: #1C1A1B;
+    --bg-neutral-950: #0C0A0B;
+
+    /* Semantic (light) */
+    --bg-success: #16A34A;
+    --bg-warning: #D97706;
+    --bg-error: #DC2626;
+    --bg-info: #2563EB;
+
+    /* Spec callout tokens — ink-on-paper feel for technical data */
+    --bg-spec-bg: #F7F7F5;
+    --bg-spec-border: #E5E4E2;
+    --bg-spec-text: #64605C;
+    --bg-spec-highlight: #E6007E;
+
+    /* Surfaces (light) — v2 warm off-white */
+    --bg-surface: #FBFBF9;
+    --bg-surface-raised: #FFFFFF;
+    --bg-surface-sunken: #F4F3F0;
+    --bg-border: #E5E3DF;
+    --bg-text-primary: #1A1816;
+    --bg-text-secondary: #6B6763;
+
+    /* Ink band — always-dark band (hero, trust strip, image badges), fixed in BOTH themes.
+       Unlike --bg-text-primary/--bg-surface, these do NOT swap in .dark. */
+    --bg-ink: #1C1A1B;
+    --bg-ink-text: #F4F3F0;
+
+    /* Radii */
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 20px;
+    --radius-full: 9999px;
+
+    /* Shadow — soft, low-opacity. Dark mode uses border instead (see .dark). */
+    --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.04), 0 8px 24px rgba(0, 0, 0, 0.06);
+  }
+
+  .dark {
+    /* Semantic (dark) */
+    --bg-success: #22C55E;
+    --bg-warning: #F59E0B;
+    --bg-error: #EF4444;
+    --bg-info: #3B82F6;
+
+    /* Light neutral steps used as background fills (bands, badges, hovers) invert in dark */
+    --bg-neutral-50: #1C1A1B;
+    --bg-neutral-100: #2A272B;
+    --bg-neutral-200: #3A363B;
+
+    /* Spec callout tokens (dark) */
+    --bg-spec-bg: #191715;
+    --bg-spec-border: #2B2724;
+    --bg-spec-text: #A09C98;
+    --bg-spec-highlight: #E6007E;
+
+    /* Surfaces (dark) — v2 warm near-black */
+    --bg-surface: #100E0C;
+    --bg-surface-raised: #191715;
+    --bg-surface-sunken: #0A0807;
+    --bg-border: #292624;
+    --bg-text-primary: #F4F3F0;
+    --bg-text-secondary: #A3A09C;
+
+    /* Dark mode relies on a lighter border, not a shadow (per spec). */
+    --shadow-card: none;
+  }
+
+  /* Font families switch on lang attribute (see docs/08-i18n-rtl.md). */
+  html[lang='ar'] {
+    font-family: 'Cairo', sans-serif;
+  }
+  html[lang='en'] {
+    font-family: 'Inter', sans-serif;
+  }
+  html[lang='en'] h1,
+  html[lang='en'] h2,
+  html[lang='en'] h3,
+  html[lang='en'] h4 {
+    font-family: 'Space Grotesk', sans-serif;
+  }
+
+  body {
+    background-color: var(--bg-surface);
+    color: var(--bg-text-primary);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  ::selection {
+    background-color: var(--bg-primary-500);
+    color: #ffffff;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* Respect reduced-motion everywhere (mirrors lib/animations.js fallbacks). */
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    *, *::before, *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+    }
+  }
+}
+
+@layer components {
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    color: white;
+    background: var(--bg-primary-500);
+    border-radius: 9999px;
+    transition: background-color 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
+    cursor: pointer;
+  }
+  .btn-primary:hover {
+    background: var(--bg-primary-600);
+    box-shadow: 0 2px 8px rgba(230, 0, 126, 0.25);
+  }
+  .btn-primary:active {
+    transform: scale(0.98);
+  }
+
+  .btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    color: var(--bg-text-primary);
+    background: var(--bg-surface);
+    border: 1px solid var(--bg-border);
+    border-radius: 9999px;
+    transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.15s ease;
+    cursor: pointer;
+  }
+  .btn-secondary:hover {
+    border-color: var(--bg-primary-500);
+    color: var(--bg-primary-500);
+  }
+  .btn-secondary:active {
+    transform: scale(0.98);
+  }
+
+  .btn-ghost {
+    color: var(--bg-text-primary);
+    border-radius: var(--radius-sm);
+    min-height: 44px;
+    padding-inline: 1rem;
+  }
+
+  .btn-danger {
+    background-color: var(--bg-error);
+    color: #ffffff;
+    border-radius: var(--radius-sm);
+    min-height: 44px;
+    padding-inline: 1.5rem;
+  }
+
+  .card {
+    background-color: var(--bg-surface);
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow-card);
+  }
+  .dark .card {
+    border: 1px solid var(--bg-border);
+  }
+
+  .surface-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--bg-border);
+    border-radius: 1rem;
+    transition: box-shadow 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
+  }
+  .surface-card:hover {
+    box-shadow: 0 2px 6px rgba(10, 13, 18, 0.06), 0 8px 24px rgba(10, 13, 18, 0.06);
+    border-color: rgba(230, 0, 126, 0.15);
+  }
+
+  .input-base {
+    background-color: var(--bg-surface);
+    color: var(--bg-text-primary);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--bg-border);
+    min-height: 44px;
+    padding-inline: 0.75rem;
+  }
+  .input-base:focus {
+    outline: none;
+    border-color: var(--bg-primary-500);
+    box-shadow: 0 0 0 3px rgba(230, 0, 126, 0.4);
+  }
+  .input-base.input-error {
+    border-color: var(--bg-error);
+  }
+}
+
+@layer utilities {
+  .text-gradient {
+    background: linear-gradient(135deg, var(--bg-primary-500), var(--bg-primary-700));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .ltr-nums {
+    direction: ltr;
+    unicode-bidi: isolate;
+    display: inline-block;
+  }
+}
+
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: var(--bg-surface); }
+::-webkit-scrollbar-thumb { background: var(--bg-border); border-radius: 8px; }
+::-webkit-scrollbar-thumb:hover { background: var(--bg-text-secondary); }
+
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--bg-primary-500);
+  outline-offset: 2px;
+}
+
+[dir='rtl'] .font-heading { font-family: 'Cairo', 'Space Grotesk', sans-serif; }
+[dir='rtl'] body { font-family: 'Cairo', 'Inter', sans-serif; }
+[dir='rtl'] .tracking-\[-0\.025em\],
+[dir='rtl'] .tracking-\[-0\.03em\],
+[dir='rtl'] .tracking-\[-0\.015em\] { letter-spacing: 0; }
+[dir='rtl'] .tracking-\[0\.08em\],
+[dir='rtl'] .tracking-\[0\.12em\],
+[dir='rtl'] .tracking-\[0\.15em\],
+[dir='rtl'] .tracking-\[0\.18em\],
+[dir='rtl'] .tracking-\[0\.1em\] { letter-spacing: 0; }
+[dir='rtl'] .tracking-tight { letter-spacing: 0; }
+[dir='rtl'] .uppercase { text-transform: none; }
+[dir='rtl'] svg[class*='rotate'] { transform: none; }
