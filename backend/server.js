@@ -1310,6 +1310,12 @@ async function adminUpdateSettings(req, res, next) {
       data = rest;
     }
 
+    if (Object.keys(data).length === 0) {
+      return res.status(400).json({
+        error: { message: 'No settings provided to update', code: 'VALIDATION_ERROR' },
+      });
+    }
+
     const { data: settings, error } = await upsertSettings(data);
 
     if (error) return next(error);

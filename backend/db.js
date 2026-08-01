@@ -226,13 +226,16 @@ export async function updateProduct(id, data) {
 }
 
 export async function softDeleteProduct(id) {
-  return _from(TABLE.PRODUCTS).update({ is_active: false }).eq('id', id);
+  return _from(TABLE.PRODUCTS).update({ is_active: false }).eq('id', id).select('*').single();
 }
 
 export async function incrementViewCount(id) {
-  return _from(TABLE.PRODUCTS)
-    .update({ view_count: supabase.raw('view_count + 1') })
-    .eq('id', id);
+  const { data, error } = await _from(TABLE.PRODUCTS)
+    .select('view_count')
+    .eq('id', id)
+    .single();
+  if (error) return { data: null, error };
+  return _from(TABLE.PRODUCTS).update({ view_count: (data?.view_count ?? 0) + 1 }).eq('id', id);
 }
 
 // ──────────────────────────────────────────────
