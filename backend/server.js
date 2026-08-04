@@ -87,7 +87,7 @@ import {
   reverseOrderEarnedPoints,
 } from './db.js';
 import { signToken, verifyToken, requireAdmin, requireSuperAdmin } from './auth.js';
-import { sendOrderConfirmation } from './email.js';
+import { sendOrderEmail } from './email.js';
 import {
   requireCustomer,
   optionalCustomer,
@@ -1144,10 +1144,11 @@ async function submitOrder(req, res, next) {
     if (!order) return;
 
     if (order.email) {
-      sendOrderConfirmation({
+      sendOrderEmail({
         email: order.email,
-        orderNumber: order.order_number,
-        customerName: order.customer_name,
+        order,
+        items: order.items || [],
+        status: order.status || 'pending',
       }).catch(() => {});
     }
 
@@ -1381,10 +1382,12 @@ async function adminUpdateOrderStatus(req, res, next) {
     });
 
     if (CANCEL_EMAIL_STATUSES.includes(status) && updated.email) {
-      sendOrderConfirmation({
+      const { data: orderItems } = await getOrderById(id);
+      sendOrderEmail({
         email: updated.email,
-        orderNumber: updated.order_number,
-        customerName: updated.customer_name,
+        order: updated,
+        items: orderItems?.order_items || [],
+        status,
       }).catch(() => {});
     }
 
