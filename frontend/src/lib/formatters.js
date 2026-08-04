@@ -1,0 +1,35 @@
+export function formatPrice(amount, currency = 'EGP', locale) {
+  const lang = locale || (typeof document !== 'undefined' ? document.documentElement.lang : 'ar');
+  return new Intl.NumberFormat(lang === 'ar' ? 'ar-EG' : 'en-EG', {
+    style: 'currency',
+    currency,
+    minimumFractionDigits: 2,
+  }).format(amount);
+}
+
+export function formatDate(dateStr, locale) {
+  if (!dateStr) return '—';
+  const lang = locale || (typeof document !== 'undefined' ? document.documentElement.lang : 'ar');
+  try {
+    return new Intl.DateTimeFormat(lang === 'ar' ? 'ar-EG' : 'en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    }).format(new Date(dateStr));
+  } catch {
+    return '—';
+  }
+}
+
+export function normalizePhone(phone) {
+  if (!phone) return phone;
+  const cleaned = String(phone).replace(/[\s\-()]/g, '');
+  if (cleaned.startsWith('+20')) return `0${cleaned.slice(3)}`;
+  return cleaned;
+}
+
+export function formatPhone(phone) {
+  if (!phone) return '';
+  const cleaned = phone.replace(/\D/g, '');
+  return cleaned.replace(/(\d{3})(\d{3})(\d{4})/, '$1 $2 $3');
+}
