@@ -14,7 +14,7 @@ const STATUS_META = {
   pending: { label: 'Order Received', color: '#B45309' },
   confirmed: { label: 'Order Confirmed', color: '#15803D' },
   processing: { label: 'Order Processing', color: '#15803D' },
-  shipped: { label: 'Order Shipped', color: '#0369A1' },
+  shipped: { label: 'Order Shipped', color: '#0369A1', subject: 'Your order is on its way' },
   delivered: { label: 'Order Delivered', color: '#15803D' },
   cancelled: { label: 'Order Cancelled', color: '#B91C1C' },
   returned: { label: 'Order Returned', color: '#B91C1C' },
@@ -67,6 +67,29 @@ function invoiceHtml({ order, items = [], status = 'pending' }) {
         </tr>`;
     })
     .join('');
+
+  const trackHref = process.env.FRONTEND_URL
+    ? `${process.env.FRONTEND_URL.replace(/\/$/, '')}/my-orders?order=${encodeURIComponent(order.order_number || '')}&phone=${encodeURIComponent(order.phone || '')}`
+    : null;
+
+  const shippedCallout = `
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:22px;background-color:#F0F9FF;border:1px solid #BAE6FD;border-radius:10px;padding:16px 18px;">
+      <tr>
+        <td style="font-family:Arial,Helvetica,sans-serif;">
+          <div style="font-size:16px;font-weight:800;color:#0369A1;">Your order is on its way!</div>
+          <div style="font-size:13px;color:#1A1816;margin-top:6px;">
+            ${order.estimated_delivery ? `Estimated delivery: <strong>${esc(order.estimated_delivery)}</strong>` : 'It has been handed to the courier and will reach you shortly.'}
+          </div>
+          ${
+            trackHref
+              ? `<a href="${esc(trackHref)}" style="display:inline-block;margin-top:12px;padding:9px 18px;border-radius:8px;background-color:#E6007E;color:#FFFFFF;font-size:13px;font-weight:700;text-decoration:none;">Track your order</a>`
+              : `<div style="font-size:12px;color:#5C5751;margin-top:10px;">Track it on our website with order number ${esc(order.order_number)} and your phone number ${esc(order.phone)}.</div>`
+          }
+        </td>
+      </tr>
+    </table>`;
+
+  const callout = status === 'shipped' ? shippedCallout : '';
 
   const totals = `
     <tr><td style="padding:6px 12px;text-align:right;font-size:14px;color:#5C5751;">Subtotal</td><td style="padding:6px 12px;text-align:right;font-size:14px;color:#1A1816;white-space:nowrap;">${egp(subtotal)}</td></tr>
@@ -128,6 +151,8 @@ function invoiceHtml({ order, items = [], status = 'pending' }) {
                 </tr>
               </table>
 
+              ${callout}
+
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:22px;">
                 ${customerLines}
               </table>
@@ -183,7 +208,7 @@ export async function sendOrderEmail({ email, order, items = [], status = 'pendi
     await resend.emails.send({
       from: process.env.RESEND_FROM_EMAIL || 'orders@bg-store.com',
       to: email,
-      subject: `${meta.label} — ${order.order_number}`,
+      subject: `${meta.subject || meta.label} — ${order.order_number}`,
       html: invoiceHtml({ order, items, status }),
     });
   } catch (err) {
