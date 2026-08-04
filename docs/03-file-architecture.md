@@ -109,7 +109,6 @@ bg-store/
             ├── Cart.jsx
             ├── Checkout.jsx
             ├── CheckoutSuccess.jsx
-            ├── OrderTracking.jsx          # public, lookup by order number + phone
             ├── MyOrders.jsx               # lookup by phone (no customer accounts)
             ├── About.jsx
             ├── Contact.jsx

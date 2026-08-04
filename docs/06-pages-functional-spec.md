@@ -69,16 +69,11 @@ For every page: purpose, data needed, states to handle (loading/empty/error), an
 
 ## CheckoutSuccess (`CheckoutSuccess.jsx`)
 
-- Shows order number prominently, estimated delivery note, "Track your order" link (pre-filled to `OrderTracking`), "Continue Shopping" CTA. Not reachable directly without an order number in route state — direct navigation redirects to Home.
-
-## Order Tracking (`OrderTracking.jsx`)
-
-- Public form: order number + phone → `GET /api/orders/track`.
-- Result: status timeline (visual stepper using `order_status_history`), item list, delivery address (masked/partial for privacy is not required since it's the same phone verifying), cancel button if status is `pending`.
+- Shows order number prominently, estimated delivery note, "Track your order" link (pre-filled to `MyOrders`), "Continue Shopping" CTA. Not reachable directly without an order number in route state — direct navigation redirects to Home.
 
 ## My Orders (`MyOrders.jsx`)
 
-- Public form: phone only → `GET /api/orders/lookup` → list of past orders (order number, date, status, total), each linking to `OrderTracking` detail for that order.
+- Public form: phone only → `GET /api/orders/lookup` → list of past orders (order number, date, status, total), each expandable to full tracking detail for that order (status timeline stepper via `order_status_history`, item list, delivery address), cancel button if status is `pending`, return-request form once `delivered`.
 
 ## About (`About.jsx`)
 

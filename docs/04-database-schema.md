@@ -188,7 +188,7 @@ These weren't in the original SRS but are recommended for a real COD operation. 
 | note | text, nullable | |
 | created_at | timestamptz | |
 
-Written automatically every time `orders.status` changes (trigger or controller logic) — powers the audit trail shown on `OrderDetail` and the public `OrderTracking` timeline.
+Written automatically every time `orders.status` changes (trigger or controller logic) — powers the audit trail shown on `OrderDetail` and the tracking timeline in `MyOrders`.
 
 ### `complaints`
 
@@ -217,7 +217,7 @@ Fed by the `Contact` page form.
 | admin_note | text, nullable | |
 | created_at / updated_at | timestamptz | |
 
-Requested via `OrderTracking`/`MyOrders` once an order is `delivered`.
+Requested via `MyOrders` once an order is `delivered`.
 
 ---
 
