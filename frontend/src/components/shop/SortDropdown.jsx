@@ -59,9 +59,6 @@ export default function SortDropdown({ value, onChange }) {
     const items = listboxRef.current.querySelectorAll('[role="option"]');
     items[focusedIndex]?.focus();
   }, [open, focusedIndex]);
-
-  const selectedIndex = SORT_OPTIONS.indexOf(value);
-
   return (
     <div ref={ref} className="relative">
       <button

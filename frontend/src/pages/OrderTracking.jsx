@@ -64,7 +64,6 @@ export default function OrderTracking() {
 
   const currentIdx = STATUS_IDX[order.status] ?? 0;
   const cancelled = order.status === 'cancelled';
-  const computedSubtotal = (order.items || []).reduce((sum, i) => sum + Number(i.price) * i.quantity, 0);
 
   return (
     <div className="max-w-2xl mx-auto px-5 sm:px-8 py-10 sm:py-14 space-y-8">

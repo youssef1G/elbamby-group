@@ -5,7 +5,7 @@ export default function Skeleton({ className = '', shape = 'rect', width, height
   return (
     <div
       className={[
-        'animate-pulse bg-bg-neutral-200/60',
+        'animate-pulse bg-bg-neutral-200',
         shape === 'circle' ? 'rounded-full' : 'rounded-md',
         className,
       ].join(' ')}

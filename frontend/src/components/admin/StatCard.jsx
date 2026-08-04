@@ -1,32 +1,40 @@
 import Skeleton from '@/components/ui/Skeleton.jsx';
 
-export default function StatCard({ label, value, icon: Icon, color = 'primary', loading = false }) {
-  const iconColors = {
-    primary: 'text-bg-primary-500 bg-bg-primary-50',
-    success: 'text-bg-success bg-bg-success/10',
-    warning: 'text-bg-warning bg-bg-warning/10',
-    error: 'text-bg-error bg-bg-error/10',
-    info: 'text-bg-info bg-bg-info/10',
-  };
-
+export default function StatCard({
+  label,
+  value,
+  icon: Icon,
+  accent = '',
+  valueClass = 'text-xl',
+  loading = false,
+}) {
   return (
-    <div className="bg-bg-surface border border-bg-border rounded-md p-4 sm:p-5">
+    <div className="surface-card p-5 flex items-center gap-4">
       {loading ? (
-        <div className="space-y-3">
-          <Skeleton className="h-4 w-24" />
-          <Skeleton className="h-8 w-16" />
+        <div className="flex items-center gap-4">
+          <Skeleton className="w-10 h-10 rounded-xl shrink-0" />
+          <div className="space-y-2">
+            <Skeleton className="h-3 w-24" />
+            <Skeleton className="h-7 w-16" />
+          </div>
         </div>
       ) : (
         <>
-          <div className="flex items-center justify-between mb-3">
-            <p className="text-caption text-bg-text-secondary">{label}</p>
-            {Icon && (
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${iconColors[color] || iconColors.primary}`}>
-                <Icon size={16} strokeWidth={1.5} />
-              </div>
-            )}
+          {Icon && (
+            <div className="w-10 h-10 rounded-xl bg-bg-primary-500/10 text-bg-primary-500 flex items-center justify-center shrink-0">
+              <Icon size={20} strokeWidth={1.5} aria-hidden="true" focusable="false" />
+            </div>
+          )}
+          <div className="min-w-0">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-bg-text-secondary truncate">
+              {label}
+            </p>
+            <p
+              className={`font-heading font-bold text-bg-text-primary ltr-nums mt-0.5 ${valueClass} ${accent}`}
+            >
+              {value ?? 0}
+            </p>
           </div>
-          <p className="text-h2 font-bold text-bg-text-primary ltr-nums">{value ?? 0}</p>
         </>
       )}
     </div>

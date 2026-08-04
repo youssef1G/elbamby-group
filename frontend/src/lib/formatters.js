@@ -21,6 +21,13 @@ export function formatDate(dateStr, locale) {
   }
 }
 
+export function normalizePhone(phone) {
+  if (!phone) return phone;
+  const cleaned = String(phone).replace(/[\s\-()]/g, '');
+  if (cleaned.startsWith('+20')) return `0${cleaned.slice(3)}`;
+  return cleaned;
+}
+
 export function formatPhone(phone) {
   if (!phone) return '';
   const cleaned = phone.replace(/\D/g, '');

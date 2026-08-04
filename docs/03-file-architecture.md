@@ -119,7 +119,7 @@ bg-store/
                 ├── AdminLayout.jsx
                 ├── AdminDashboard.jsx     # pulls analytics overview + sales chart
                 ├── AdminProducts.jsx
-                ├── AdminProductForm.jsx   # create/edit (was ProductForm.jsx)
+                ├── ProductForm.jsx        # create/edit (was AdminProductForm.jsx)
                 ├── AdminCategories.jsx
                 ├── AdminOrders.jsx
                 ├── AdminOrderDetail.jsx   # was OrderDetail.jsx; status update + note

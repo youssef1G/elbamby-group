@@ -62,7 +62,7 @@ For every page: purpose, data needed, states to handle (loading/empty/error), an
 
 ## Checkout (`Checkout.jsx`)
 
-- **Form (RHF + Zod, `schemas/checkout.schema.js`):** customer_name, phone (required, validated format), alt_phone (optional), email (optional, validated format if provided), address_line, city, governorate (select, Egypt governorates list), notes (optional).
+- **Form (RHF + Zod, `schemas/checkout.schema.js`):** customer_name, phone (required, validated format), email (optional, validated format if provided), address_line, city, governorate (select, Egypt governorates list), notes (optional).
 - **Order summary sidebar:** cart items (read-only here), shipping fee, total — sticky on desktop, collapsible on mobile.
 - **Submit:** `POST /api/orders`. On success → clear cart, redirect to `CheckoutSuccess` with order number. On stock-conflict error (item went out of stock between cart and submit) → show inline error per affected item, do not lose form data, let user adjust quantity/remove and resubmit.
 - Payment method shown as fixed, non-editable "Cash on Delivery" notice — no payment fields anywhere on this page.

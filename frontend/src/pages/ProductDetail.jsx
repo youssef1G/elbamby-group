@@ -1,36 +1,48 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { motion } from 'motion/react';
+import { MessageCircle } from 'lucide-react';
 import { useLocale } from '@/context/LocaleContext.jsx';
 import { useCart } from '@/context/CartContext.jsx';
 import ProductCard from '@/components/shop/ProductCard.jsx';
 import ProductGallery from '@/components/shop/ProductGallery.jsx';
-import { fetchProduct, fetchProducts } from '@/api.js';
+import Badge from '@/components/ui/Badge.jsx';
+import NotFound from '@/pages/NotFound.jsx';
+import SEO from '@/components/common/SEO.jsx';
+import { fetchProduct, fetchProducts, getSettings } from '@/api.js';
 import { formatPrice } from '@/lib/formatters.js';
 import { fadeUp, staggerContainer, staggerItem } from '@/lib/animations.js';
+
+function getDiscountPct(price, compareAt) {
+  if (!compareAt || compareAt <= price) return null;
+  return Math.round(((compareAt - price) / compareAt) * 100);
+}
 
 export default function ProductDetail() {
   const { slug } = useParams();
   const { t, isAr } = useLocale();
-  const navigate = useNavigate();
-  const { addItem, setIsCartOpen: openCartDrawer } = useCart();
+  // addItem now opens the cart drawer itself (CartContext.jsx) — no need to
+  // call anything cart-drawer-related here directly.
+  const { addItem } = useCart();
 
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
 
   const [productData, setProductData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
+  const [notFound, setNotFound] = useState(false);
 
   const [allProducts, setAllProducts] = useState([]);
+  const [whatsappNumber, setWhatsappNumber] = useState('');
 
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
-    setError(false);
+    setNotFound(false);
+    setAdded(false);
     fetchProduct(slug)
-      .then((res) => { if (!cancelled) setProductData(res); })
-      .catch(() => { if (!cancelled) setError(true); })
+      .then((res) => { if (!cancelled) { if (!res || res.error) setNotFound(true); else setProductData(res); } })
+      .catch(() => { if (!cancelled) setNotFound(true); })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
   }, [slug]);
@@ -47,28 +59,23 @@ export default function ProductDetail() {
     return () => { cancelled = true; };
   }, []);
 
-  const product = productData?.data || productData || null;
-
-  const related = (Array.isArray(allProducts) && product?.category)
-    ? allProducts.filter((x) => x.category === product.category && x.slug !== slug).slice(0, 4)
-    : [];
-
-  const status = loading ? 'loading' : error ? 'error' : 'ready';
+  useEffect(() => {
+    let cancelled = false;
+    getSettings()
+      .then((data) => {
+        if (cancelled) return;
+        const s = data?.data || data || {};
+        setWhatsappNumber(s.whatsappNumber || s.whatsapp_number || '');
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
 
   useEffect(() => { setQuantity(1); }, [slug]);
 
-  if (status === 'error' || (!product && status === 'ready')) {
+  if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center py-32 gap-4">
-        <p className="text-sm text-bg-text-secondary">{t('tracking.notFound', { ns: 'common' })}</p>
-        <Link to="/shop" className="btn-primary text-sm">{t('nav.shop', { ns: 'common' })}</Link>
-      </div>
-    );
-  }
-
-  if (status === 'loading') {
-    return (
-      <div className="flex justify-center py-32" role="status" aria-live="polite" aria-busy="true">
+      <div className="flex justify-center py-32" role="status" aria-live="polite">
         <div className="flex items-center gap-3">
           <div className="w-5 h-5 border-2 border-bg-primary-500 border-t-transparent rounded-full animate-spin" />
           <span className="text-sm text-bg-text-secondary">{t('common:common.loading')}</span>
@@ -77,7 +84,10 @@ export default function ProductDetail() {
     );
   }
 
-  if (!product) return null;
+  if (notFound || !productData) return <NotFound />;
+
+  const product = productData?.data || productData;
+  if (!product || !product.id) return <NotFound />;
 
   const name = isAr ? product.nameAr || product.nameEn : product.nameEn;
   const stock = product.stockQuantity ?? 0;
@@ -85,6 +95,7 @@ export default function ProductDetail() {
   const lowStock = stock > 0 && stock <= 5;
   const maxQty = stock;
   const images = product.productImages || [];
+  const discountPct = getDiscountPct(product.price, product.compareAtPrice);
 
   const specs = [];
   if (product.capacityGb) specs.push(`${product.capacityGb}GB`);
@@ -94,20 +105,41 @@ export default function ProductDetail() {
 
   const handleAdd = () => {
     if (outOfStock) return;
-    addItem(product, quantity);
+    addItem(product, quantity); // opens the drawer itself now
     setAdded(true);
     setTimeout(() => setAdded(false), 1500);
   };
 
+  const related = (Array.isArray(allProducts) && product.category?.id)
+    ? allProducts.filter((x) => x.categoryId === product.category.id && x.slug !== slug).slice(0, 4)
+    : [];
+
+  const whatsappLink = whatsappNumber
+    ? `https://wa.me/${whatsappNumber.replace(/\D/g, '')}?text=${encodeURIComponent(`السلام عليكم، عندي سؤال عن: ${name}`)}`
+    : null;
+
   return (
     <div className="max-w-7xl mx-auto px-5 sm:px-8 py-10 sm:py-14">
+      <SEO
+        title={name}
+        description={product.descriptionAr || product.descriptionEn || ''}
+      />
+
       <motion.nav
         className="flex items-center gap-2 text-xs text-bg-text-secondary mb-8 flex-wrap"
         initial={{ opacity: 0, y: -8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, ease: 'easeOut' }}
       >
-        <Link to="/shop" className="hover:text-bg-primary-500">{t('nav.shop', { ns: 'common' })}</Link>
+        <Link to="/shop" className="hover:text-bg-primary-500">{t('nav.shop')}</Link>
+        {product.category && (
+          <>
+            <span>/</span>
+            <Link to={`/shop?category=${product.category.slug}`} className="hover:text-bg-primary-500">
+              {isAr ? product.category.nameAr : product.category.nameEn}
+            </Link>
+          </>
+        )}
         <span>/</span>
         <span className="text-bg-text-primary">{name}</span>
       </motion.nav>
@@ -120,16 +152,6 @@ export default function ProductDetail() {
           transition={{ duration: 0.6, ease: [0.25, 0.1, 0.25, 1], delay: 0.1 }}
         >
           <ProductGallery images={images} name={name} />
-          {outOfStock && (
-            <div className="absolute top-4 start-4 bg-bg-ink/80 text-bg-ink-text text-xs font-semibold uppercase tracking-[0.08em] px-4 py-1.5 rounded-full backdrop-blur-sm">
-              {t('shop:product.outOfStock')}
-            </div>
-          )}
-          {!outOfStock && (product.isFeatured || product.isNewArrival) && (
-            <span className="absolute top-4 start-4 bg-bg-primary-500 text-white text-xs font-semibold uppercase tracking-[0.08em] px-3 py-1 rounded-lg">
-              {product.isNewArrival ? t('shop:newArrivals') : t('shop:featured')}
-            </span>
-          )}
         </motion.div>
 
         <motion.div
@@ -138,25 +160,23 @@ export default function ProductDetail() {
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.6, ease: [0.25, 0.1, 0.25, 1], delay: 0.2 }}
         >
+          <div className="flex items-center gap-2 flex-wrap mb-2">
+            {outOfStock && <Badge variant="out-of-stock">{t('shop:product.outOfStock')}</Badge>}
+            {!outOfStock && lowStock && <Badge variant="low-stock">{t('shop:product.lowStock', { count: stock })}</Badge>}
+            {!outOfStock && product.isNewArrival && <Badge variant="new">{t('shop:newArrivals')}</Badge>}
+            {!outOfStock && product.isFeatured && !product.isNewArrival && <Badge variant="featured">{t('shop:featured')}</Badge>}
+            {discountPct && <Badge variant="success">-{discountPct}%</Badge>}
+          </div>
+
           <h1 className="text-display text-bg-text-primary break-words">{name}</h1>
-          <p className="text-2xl font-bold text-bg-text-primary mt-3 ltr-nums">
-            {formatPrice(product.price)}
-          </p>
-
-          {product.compareAtPrice && product.compareAtPrice > product.price && (
-            <p className="text-sm text-bg-error ltr-nums line-through mt-1">
-              {formatPrice(product.compareAtPrice)}
-            </p>
-          )}
-
-          {lowStock && !outOfStock && (
-            <p className="mt-2 text-xs font-medium text-amber-600">
-              {t('shop:product.lowStock', { count: stock })}
-            </p>
-          )}
-          {outOfStock && (
-            <p className="mt-2 text-xs font-medium text-bg-text-secondary">{t('shop:product.outOfStock')}</p>
-          )}
+          <div className="flex items-baseline gap-2 mt-3">
+            <span className="text-2xl font-bold text-bg-text-primary ltr-nums">{formatPrice(product.price)}</span>
+            {product.compareAtPrice && product.compareAtPrice > product.price && (
+              <span className="text-sm text-bg-error line-through ltr-nums">
+                {formatPrice(product.compareAtPrice)}
+              </span>
+            )}
+          </div>
 
           {specs.length > 0 && (
             <div className="mt-4 flex flex-wrap gap-2">
@@ -185,7 +205,6 @@ export default function ProductDetail() {
                 onClick={() => setQuantity((q) => Math.max(1, q - 1))}
                 disabled={outOfStock}
                 className="h-11 w-11 flex items-center justify-center text-bg-text-primary hover:bg-bg-neutral-100 rounded-s-full transition-colors disabled:cursor-not-allowed"
-                aria-label={t('common:common.decrease')}
               >
                 −
               </button>
@@ -194,7 +213,6 @@ export default function ProductDetail() {
                 onClick={() => setQuantity((q) => Math.min(q + 1, maxQty))}
                 disabled={outOfStock || quantity >= maxQty}
                 className="h-11 w-11 flex items-center justify-center text-bg-text-primary hover:bg-bg-neutral-100 rounded-e-full transition-colors disabled:cursor-not-allowed disabled:opacity-40"
-                aria-label={t('common:common.increase')}
               >
                 +
               </button>
@@ -216,16 +234,16 @@ export default function ProductDetail() {
             </button>
           </div>
 
-          {!outOfStock && (
-            <button
-              onClick={() => {
-                handleAdd();
-                openCartDrawer();
-              }}
-              className="mt-3 w-full rounded-full border border-bg-primary-500 text-bg-primary-500 font-semibold py-3 text-sm hover:bg-bg-primary-50 transition-colors"
+          {whatsappLink && (
+            <a
+              href={whatsappLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-3 inline-flex items-center justify-center gap-2 w-full rounded-full border border-bg-border text-bg-text-primary font-medium py-2.5 text-sm hover:bg-bg-neutral-100 transition-colors"
             >
-              {t('nav.cart', { ns: 'common' })}
-            </button>
+              <MessageCircle size={18} className="text-green-600" />
+              {t('shop:product.askAbout')}
+            </a>
           )}
         </motion.div>
       </div>

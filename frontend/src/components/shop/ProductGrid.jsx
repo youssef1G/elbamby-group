@@ -3,7 +3,7 @@ import ProductCard from '@/components/shop/ProductCard.jsx';
 import { SkeletonGrid } from '@/components/ui/Skeleton.jsx';
 import EmptyState from '@/components/ui/EmptyState.jsx';
 
-export default function ProductGrid({ products, isLoading, isError, error, onRetry, emptyMessage, onQuickView }) {
+export default function ProductGrid({ products, isLoading, isError, error, onRetry, emptyMessage }) {
   if (isLoading) return <SkeletonGrid count={4} cols={4} />;
 
   if (isError) {
@@ -29,7 +29,7 @@ export default function ProductGrid({ products, isLoading, isError, error, onRet
           viewport={{ once: true, margin: '-40px' }}
           transition={{ duration: 0.4, delay: i * 0.05 }}
         >
-          <ProductCard product={product} onQuickView={onQuickView} />
+          <ProductCard product={product} />
         </motion.div>
       ))}
     </div>

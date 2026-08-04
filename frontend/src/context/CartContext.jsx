@@ -24,7 +24,6 @@ export function CartProvider({ children }) {
   const [items, setItems] = useState(loadCart);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
-  const [quickViewProductId, setQuickViewProductId] = useState(null);
 
   useEffect(() => { saveCart(items); }, [items]);
 
@@ -43,6 +42,8 @@ export function CartProvider({ children }) {
       }
       return [...prev, { productId: product.id, nameEn: product.nameEn || '', nameAr: product.nameAr || '', image, price: product.price, quantity: qty, stock }];
     });
+    // Every add opens the drawer — single source of truth, all callers
+    // (ProductCard quick-add, ProductDetail) get this for free.
     setIsCartOpen(true);
   }, []);
 
@@ -51,18 +52,32 @@ export function CartProvider({ children }) {
   }, []);
 
   const updateQuantity = useCallback((productId, quantity) => {
-    setItems((prev) =>
-      prev.map((i) =>
-        i.productId === productId ? { ...i, quantity: Math.max(1, quantity) } : i,
-      ),
-    );
+    setItems((prev) => {
+      const item = prev.find((i) => i.productId === productId);
+      if (!item) return prev;
+      if (quantity <= 0) return prev.filter((i) => i.productId !== productId);
+      const cap = item.stock ?? Infinity;
+      return prev.map((i) =>
+        i.productId === productId ? { ...i, quantity: Math.min(quantity, cap) } : i,
+      );
+    });
   }, []);
 
   const clearCart = useCallback(() => setItems([]), []);
 
+  // Explicit boolean-only setter for consumers that need to open/close the
+  // drawer directly (e.g. CartDrawer's close button/backdrop). Prevents the
+  // "raw setState passed straight to onClick" bug — React passes the click's
+  // SyntheticEvent as the first arg to any bare event handler, so exposing
+  // setIsCartOpen itself as onClick={setIsCartOpen} sets state to that event
+  // object (truthy) instead of a boolean. Consumers should use this instead
+  // of destructuring setIsCartOpen directly for click handlers.
+  const closeCart = useCallback(() => setIsCartOpen(false), []);
+  const openCartDrawer = useCallback(() => setIsCartOpen(true), []);
+
   const value = {
-    items, isCartOpen, setIsCartOpen, isMobileNavOpen, setIsMobileNavOpen,
-    quickViewProductId, setQuickViewProductId,
+    items, isCartOpen, setIsCartOpen, closeCart, openCartDrawer,
+    isMobileNavOpen, setIsMobileNavOpen,
     addItem, removeItem, updateQuantity, clearCart,
   };
 

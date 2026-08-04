@@ -1,129 +1,255 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { motion } from 'motion/react';
+import { X } from 'lucide-react';
 import { useLocale } from '@/context/LocaleContext.jsx';
 import ProductCard from '@/components/shop/ProductCard.jsx';
+import FiltersSidebar from '@/components/shop/FiltersSidebar.jsx';
+import SortDropdown from '@/components/shop/SortDropdown.jsx';
+import FilterChips from '@/components/shop/FilterChips.jsx';
+import { SkeletonGrid } from '@/components/ui/Skeleton.jsx';
+import EmptyState from '@/components/ui/EmptyState.jsx';
+import SEO from '@/components/common/SEO.jsx';
 import { fetchProducts, fetchCategories } from '@/api.js';
-import { fadeUp } from '@/lib/animations.js';
+
+const PAGE_SIZE = 12;
+
+function useDebounce(value, delay = 400) {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const timer = setTimeout(() => setDebounced(value), delay);
+    return () => clearTimeout(timer);
+  }, [value, delay]);
+  return debounced;
+}
 
 export default function Shop() {
   const { t, isAr } = useLocale();
   const [searchParams, setSearchParams] = useSearchParams();
-  const activeCategory = searchParams.get('category') || 'all';
-  const searchQuery = searchParams.get('search') || '';
 
-  const [productsData, setProductsData] = useState(null);
-  const [categoriesData, setCategoriesData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
-  const [reload, setReload] = useState(0);
+  const category = searchParams.get('category') || '';
+  const sort = searchParams.get('sort') || 'newest';
+  const rawSearch = searchParams.get('search') || '';
+
+  const [searchInput, setSearchInput] = useState(rawSearch);
+  const debouncedSearch = useDebounce(searchInput, 400);
 
   useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    setError(false);
-    fetchProducts()
-      .then((res) => { if (!cancelled) setProductsData(res); })
-      .catch(() => { if (!cancelled) setError(true); })
-      .finally(() => { if (!cancelled) setLoading(false); });
-    return () => { cancelled = true; };
-  }, [reload]);
+    setSearchInput(rawSearch);
+  }, [rawSearch]);
+
+  const [categories, setCategories] = useState([]);
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [error, setError] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const [total, setTotal] = useState(0);
+
+  const pageRef = useRef(1);
+  const sentinelRef = useRef(null);
+  const filterKeyRef = useRef('');
+  const seenIdsRef = useRef(new Set());
+
+  const currentKey = `${category}__${sort}__${debouncedSearch}`;
 
   useEffect(() => {
     let cancelled = false;
     fetchCategories()
-      .then((res) => { if (!cancelled) setCategoriesData(res); })
+      .then((res) => { if (!cancelled) setCategories(res?.data || res || []); })
       .catch(() => {});
     return () => { cancelled = true; };
   }, []);
 
-  const products = productsData?.data || productsData || [];
-  const categories = categoriesData?.data || categoriesData || [];
+  const loadPage = useCallback(async (page, isLoadMore = false) => {
+    if (isLoadMore && !hasMore) return;
+    if (isLoadMore) setLoadingMore(true);
+    else setLoading(true);
 
-  const status = loading ? 'loading' : error ? 'error' : 'ready';
+    try {
+      const params = { page: String(page), limit: String(PAGE_SIZE), sort };
+      if (category) params.category = category;
+      if (debouncedSearch) params.search = debouncedSearch;
 
-  const catNames = categories.length
-    ? ['all', ...categories.map((c) => c.slug || c.nameEn).filter(Boolean)]
-    : [];
+      const res = await fetchProducts(params);
+      const rows = res?.data || res || [];
+      const meta = res?.meta || {};
 
-  const getCatLabel = (slug) => {
-    if (slug === 'all') return t('shop:filters.allCategories');
-    const cat = categories.find((c) => (c.slug || c.nameEn) === slug);
-    return isAr ? (cat?.nameAr || slug) : (cat?.nameEn || slug);
+      if (page === 1) {
+        setProducts(rows);
+        seenIdsRef.current = new Set(rows.map((p) => p.id));
+        setTotal(meta.total || rows.length);
+        setHasMore(rows.length >= PAGE_SIZE);
+      } else {
+        const novel = rows.filter((p) => !seenIdsRef.current.has(p.id));
+        novel.forEach((p) => seenIdsRef.current.add(p.id));
+        setProducts((prev) => [...prev, ...novel]);
+        setHasMore(rows.length === PAGE_SIZE);
+      }
+      setError(false);
+    } catch {
+      if (page === 1) setError(true);
+    } finally {
+      setLoading(false);
+      setLoadingMore(false);
+    }
+  }, [category, sort, debouncedSearch, hasMore]);
+
+  useEffect(() => {
+    if (currentKey !== filterKeyRef.current) {
+      filterKeyRef.current = currentKey;
+      pageRef.current = 1;
+      loadPage(1, false);
+    }
+  }, [currentKey]);
+
+  useEffect(() => {
+    if (loading || loadingMore) return;
+    const obs = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore) {
+          pageRef.current += 1;
+          loadPage(pageRef.current, true);
+        }
+      },
+      { rootMargin: '200px' },
+    );
+    const el = sentinelRef.current;
+    if (el) obs.observe(el);
+    return () => { if (el) obs.unobserve(el); };
+  }, [loading, loadingMore, hasMore, loadPage]);
+
+  const updateParam = (key, value) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      if (value) next.set(key, value);
+      else next.delete(key);
+      return next;
+    });
   };
 
-  const filtered = (Array.isArray(products) ? products : []).filter((p) => {
-    const matchCat = activeCategory === 'all' || p.category === activeCategory;
-    let matchSearch = true;
-    if (searchQuery) {
-      const q = searchQuery.toLowerCase();
-      matchSearch =
-        (p.nameEn || '').toLowerCase().includes(q) ||
-        (p.nameAr || '').toLowerCase().includes(q);
+  const activeFilters = [];
+  if (category) {
+    const cat = categories.find((c) => c.slug === category);
+    activeFilters.push({ key: 'category', label: isAr ? cat?.nameAr || category : cat?.nameEn || category });
+  }
+  if (debouncedSearch) {
+    activeFilters.push({ key: 'search', label: debouncedSearch });
+  }
+
+  const handleFilterRemove = (key) => {
+    if (key === 'category') updateParam('category', '');
+    if (key === 'search') {
+      setSearchInput('');
+      updateParam('search', '');
     }
-    return matchCat && matchSearch;
-  });
+  };
+
+  const handleClearAll = () => {
+    setSearchInput('');
+    setSearchParams({});
+  };
 
   return (
     <div className="max-w-7xl mx-auto px-5 sm:px-8 py-10 sm:py-14">
-      <motion.div className="mb-8" {...fadeUp}>
-        <h1 className="text-display text-bg-text-primary mb-2">
-          {t('nav.shop', { ns: 'common' })}
-        </h1>
-        <p className="text-sm text-bg-text-secondary">{t('brand.tagline', { ns: 'common' })}</p>
+      <SEO titleKey="nav.shop" />
+
+      <motion.div className="mb-8" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
+        <h1 className="text-display text-bg-text-primary mb-2">{t('nav.shop')}</h1>
       </motion.div>
 
-      {catNames.length > 0 && (
-        <div className="flex flex-wrap gap-2 mb-10">
-          {catNames.map((cat) => (
-            <button
-              key={cat}
-              onClick={() => setSearchParams(cat === 'all' ? {} : { category: cat })}
-              className={`rounded-full px-4 py-2 text-[13px] font-medium transition-all duration-200 ${
-                activeCategory === cat
-                  ? 'bg-bg-primary-500 text-white shadow-sm'
-                  : 'border border-bg-border text-bg-text-secondary hover:border-bg-primary-500 hover:text-bg-primary-500 bg-bg-surface'
-              }`}
-            >
-{getCatLabel(cat)}
-              </button>
-          ))}
-        </div>
-      )}
+      <div className="flex gap-8">
+        <aside className="hidden lg:block w-56 shrink-0">
+          <FiltersSidebar
+            categories={categories}
+            selected={category}
+            onSelect={(slug) => updateParam('category', slug === category ? '' : slug)}
+          />
+        </aside>
 
-      {status === 'loading' && (
-        <div className="flex justify-center py-32" role="status" aria-live="polite" aria-busy="true">
-          <div className="flex items-center gap-3">
-            <div className="w-5 h-5 border-2 border-bg-primary-500 border-t-transparent rounded-full animate-spin" />
-            <span className="text-sm text-bg-text-secondary">{t('common:common.loading')}</span>
+        <main className="flex-1 min-w-0">
+          <div className="flex flex-wrap items-center gap-3 mb-5">
+            <div className="relative flex-1 min-w-[200px]">
+              <input
+                type="search"
+                value={searchInput}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setSearchInput(val);
+                  updateParam('search', val);
+                }}
+                placeholder={t('shop:searchPlaceholder')}
+                className="w-full rounded-lg border border-bg-border bg-bg-surface px-3 py-2 pe-8 text-sm text-bg-text-primary placeholder:text-bg-text-secondary focus:outline-none focus:ring-2 focus:ring-bg-primary-500 focus:border-bg-primary-500 transition"
+              />
+              {searchInput && (
+                <button
+                  onClick={() => { setSearchInput(''); updateParam('search', ''); }}
+                  className="absolute end-2 top-1/2 -translate-y-1/2 text-bg-text-secondary hover:text-bg-text-primary"
+                  aria-label={t('shop:searchClear')}
+                >
+                  <X size={16} />
+                </button>
+              )}
+            </div>
+            <SortDropdown value={sort} onChange={(v) => updateParam('sort', v)} />
           </div>
-        </div>
-      )}
 
-      {status === 'error' && (
-        <div className="flex flex-col items-center justify-center py-32 gap-4">
-          <p className="text-sm text-bg-text-secondary">{t('common:common.error')}</p>
-          <button onClick={() => setReload((v) => v + 1)} className="btn-primary text-sm">
-            {t('common:common.retry')}
-          </button>
-        </div>
-      )}
+          <FilterChips
+            filters={activeFilters}
+            onRemove={handleFilterRemove}
+            onClearAll={handleClearAll}
+          />
 
-      {status === 'ready' && (
-        <>
-          {filtered.length === 0 ? (
-            <div className="text-center py-24">
-              <p className="text-bg-text-secondary">{t('shop:filters.noResults')}</p>
-            </div>
+          {loading ? (
+            <SkeletonGrid count={PAGE_SIZE} cols={4} />
+          ) : error ? (
+            <EmptyState
+              message={t('common:common.error')}
+              action={{ label: t('common:common.retry'), onClick: () => loadPage(1) }}
+            />
+          ) : products.length > 0 ? (
+            <>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
+                {products.map((p) => (
+                  <ProductCard key={p.id} product={p} />
+                ))}
+              </div>
+
+              {loadingMore && (
+                <div className="mt-8">
+                  <SkeletonGrid count={4} cols={4} />
+                </div>
+              )}
+
+              <div ref={sentinelRef} className="h-1" />
+
+              {!hasMore && total > PAGE_SIZE && (
+                <p className="text-center text-xs text-bg-text-secondary mt-8">
+                  {t('shop:allLoaded', { count: total })}
+                </p>
+              )}
+
+              {hasMore && !loadingMore && (
+                <div className="flex justify-center mt-8">
+                  <button
+                    onClick={() => { pageRef.current += 1; loadPage(pageRef.current, true); }}
+                    className="btn-primary text-sm"
+                  >
+                    {t('shop:loadMore')}
+                  </button>
+                </div>
+              )}
+            </>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5 sm:gap-6">
-              {filtered.map((p) => (
-                <ProductCard key={p.id || p.slug} product={p} />
-              ))}
-            </div>
+            <EmptyState
+              icon="package"
+              message={t('shop:filters.noResults')}
+              action={{ label: t('shop:filters.clearAll'), onClick: handleClearAll }}
+            />
           )}
-        </>
-      )}
+
+        </main>
+      </div>
     </div>
   );
 }

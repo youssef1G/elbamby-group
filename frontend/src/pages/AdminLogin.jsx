@@ -59,22 +59,23 @@ export default function AdminLogin() {
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-bg-primary-500/10 mb-2">
             <Cpu size={28} strokeWidth={1.5} className="text-bg-primary-500" />
           </div>
-          <h1 className="text-h1 font-bold text-bg-text-primary">
-            {t('brand.fullName', { ns: 'common' })}
+          <h1 className="font-heading text-h2 font-bold tracking-tight text-bg-text-primary">
+            {t('common:brand.fullName')}
           </h1>
-          <p className="text-body-lg font-heading text-bg-primary-500 font-medium tracking-wider" style={/* keep mono for decoration */ undefined}>
-            {t('admin:login.subtitle')}
-          </p>
+          <p className="text-caption text-bg-text-secondary mt-1">{t('admin:login.subtitle')}</p>
         </div>
 
-        <div className="bg-bg-surface border border-bg-border rounded-md p-6 sm:p-8 shadow-card">
+        <div className="bg-bg-surface border border-bg-border rounded-lg p-6 sm:p-8 shadow-card">
           <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
             <div>
               <label className="block text-caption font-semibold text-bg-text-secondary mb-1.5 uppercase tracking-[0.08em]">
                 {t('admin:login.username')}
               </label>
               <div className="relative">
-                <User size={14} className="absolute start-3 top-1/2 -translate-y-1/2 text-bg-text-secondary pointer-events-none" />
+                <User
+                  size={14}
+                  className="absolute start-3 top-1/2 -translate-y-1/2 text-bg-text-secondary pointer-events-none"
+                />
                 <input
                   type="text"
                   {...register('username')}
@@ -93,7 +94,10 @@ export default function AdminLogin() {
                 {t('admin:login.password')}
               </label>
               <div className="relative">
-                <Lock size={14} className="absolute start-3 top-1/2 -translate-y-1/2 text-bg-text-secondary pointer-events-none" />
+                <Lock
+                  size={14}
+                  className="absolute start-3 top-1/2 -translate-y-1/2 text-bg-text-secondary pointer-events-none"
+                />
                 <input
                   type="password"
                   {...register('password')}
@@ -118,7 +122,13 @@ export default function AdminLogin() {
               </motion.p>
             )}
 
-            <Button type="submit" variant="primary" className="w-full h-11" loading={submitting} disabled={submitting}>
+            <Button
+              type="submit"
+              variant="primary"
+              className="w-full h-11"
+              loading={submitting}
+              disabled={submitting}
+            >
               {t('admin:login.submit')}
             </Button>
           </form>

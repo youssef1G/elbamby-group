@@ -1,160 +1,269 @@
 import { useState, useEffect } from 'react';
+import { motion } from 'motion/react';
+import { TrendingUp, ShoppingCart, Receipt, Target, Clock, Package } from 'lucide-react';
 import { useLocale } from '@/context/LocaleContext.jsx';
-import { fetchAnalyticsOverview, fetchAnalyticsSales, fetchAnalyticsTopProducts } from '@/api.js';
+import { fetchAnalytics } from '@/api.js';
 import StatCard from '@/components/admin/StatCard.jsx';
-import DataTable from '@/components/admin/DataTable.jsx';
 import Select from '@/components/ui/Select.jsx';
-import { ShoppingBag, Clock, TrendingUp, AlertTriangle, PackageX } from 'lucide-react';
 import { formatPrice } from '@/lib/formatters.js';
+import { ORDER_STATUSES } from '@/lib/constants.js';
 
-export default function AdminAnalytics() {
-  const { t } = useLocale();
-  const [period, setPeriod] = useState('7d');
+const STATUS_META = {
+  pending: { color: 'var(--bg-warning)' },
+  confirmed: { color: 'var(--bg-info)' },
+  shipped: { color: 'var(--bg-primary-500)' },
+  delivered: { color: 'var(--bg-success)' },
+  cancelled: { color: 'var(--bg-text-secondary)' },
+};
 
-  const [overview, setOverview] = useState(null);
-  const [overviewLoading, setOverviewLoading] = useState(true);
-  const [salesData, setSalesData] = useState(null);
-  const [salesLoading, setSalesLoading] = useState(true);
-  const [salesError, setSalesError] = useState(false);
-  const [topProductsData, setTopProductsData] = useState(null);
-  const [topLoading, setTopLoading] = useState(true);
+const STAT_CONFIG = [
+  {
+    key: 'orders',
+    icon: ShoppingCart,
+    color: 'primary',
+    labelKey: 'admin.analytics.totalOrders',
+    valueKey: 'totalOrders',
+    format: 'count',
+  },
+  {
+    key: 'revenue',
+    icon: TrendingUp,
+    color: 'primary',
+    labelKey: 'admin.analytics.revenue',
+    valueKey: 'totalRevenue',
+    format: 'price',
+  },
+  {
+    key: 'average',
+    icon: Receipt,
+    color: 'info',
+    labelKey: 'admin.analytics.avgOrder',
+    valueKey: 'avgOrderValue',
+    format: 'price',
+  },
+  {
+    key: 'completion',
+    icon: Target,
+    color: 'success',
+    labelKey: 'admin.analytics.completionRate',
+    valueKey: 'completionRate',
+    format: 'percent',
+  },
+];
+
+function formatStatValue(format, value) {
+  if (format === 'price') return value != null ? formatPrice(value) : '—';
+  if (format === 'percent') return value != null ? `${value}%` : '—';
+  return value || 0;
+}
+
+function AnimatedBar({ label, value, max, color, display }) {
+  const [fill, setFill] = useState(false);
+  const pct = max > 0 ? (Number(value) / max) * 100 : 0;
 
   useEffect(() => {
-    let cancelled = false;
-    fetchAnalyticsOverview()
-      .then((res) => { if (!cancelled) setOverview(res); })
-      .catch(() => {})
-      .finally(() => { if (!cancelled) setOverviewLoading(false); });
-    return () => { cancelled = true; };
+    const id = requestAnimationFrame(() => setFill(true));
+    return () => cancelAnimationFrame(id);
   }, []);
 
-  useEffect(() => {
-    let cancelled = false;
-    setSalesLoading(true);
-    setSalesError(false);
-    fetchAnalyticsSales(period)
-      .then((res) => { if (!cancelled) setSalesData(res); })
-      .catch(() => { if (!cancelled) setSalesError(true); })
-      .finally(() => { if (!cancelled) setSalesLoading(false); });
-    return () => { cancelled = true; };
-  }, [period]);
-
-  useEffect(() => {
-    let cancelled = false;
-    setTopLoading(true);
-    fetchAnalyticsTopProducts(period)
-      .then((res) => { if (!cancelled) setTopProductsData(res); })
-      .catch(() => { if (!cancelled) setTopProductsData(null); })
-      .finally(() => { if (!cancelled) setTopLoading(false); });
-    return () => { cancelled = true; };
-  }, [period]);
-
-  const ov = overview?.data || {};
-  const sales = salesData?.data || [];
-  const topProducts = topProductsData?.data || [];
-
-  const productColumns = [
-    { key: 'name', label: t('admin:products.nameEn'), render: (r) => <span className="text-bg-text-primary">{r.name_en || r.name}</span> },
-    { key: 'quantity', label: 'Sold', render: (r) => <span className="ltr-nums" dir="ltr">{r.quantity_sold ?? r.quantity ?? 0}</span> },
-    { key: 'revenue', label: 'Revenue', render: (r) => <span className="ltr-nums" dir="ltr">{formatPrice(r.revenue ?? 0)}</span> },
-  ];
-
   return (
-    <div className="space-y-8">
-      <h1 className="text-h2 font-semibold text-bg-text-primary">{t('admin:analytics.title')}</h1>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard
-          label={t('admin:dashboard.totalOrders')}
-          value={ov.total_orders ?? '—'}
-          icon={ShoppingBag}
-          color="primary"
-          loading={overviewLoading}
-        />
-        <StatCard
-          label={t('admin:dashboard.pendingOrders')}
-          value={ov.pending_orders ?? '—'}
-          icon={Clock}
-          color="warning"
-          loading={overviewLoading}
-        />
-        <StatCard
-          label={t('admin:dashboard.revenue')}
-          value={ov.revenue != null ? `${formatPrice(ov.revenue)}` : '—'}
-          icon={TrendingUp}
-          color="success"
-          loading={overviewLoading}
-        />
-        <StatCard
-          label={t('admin:dashboard.lowStock')}
-          value={ov.low_stock_count ?? '—'}
-          icon={AlertTriangle}
-          color="warning"
-          loading={overviewLoading}
-        />
-        <StatCard
-          label={t('admin:dashboard.outOfStock')}
-          value={ov.out_of_stock_count ?? '—'}
-          icon={PackageX}
-          color="error"
-          loading={overviewLoading}
-        />
-      </div>
-
-      <div className="bg-bg-surface border border-bg-border rounded-md p-6 space-y-4">
-        <div className="flex items-center justify-between gap-4">
-          <h2 className="text-body font-semibold text-bg-text-primary">{t('admin:analytics.salesOverTime')}</h2>
-          <Select
-            value={period}
-            onChange={setPeriod}
-            options={[
-              { value: '7d', label: `7 ${t('admin:analytics.days')}` },
-              { value: '30d', label: `30 ${t('admin:analytics.days')}` },
-              { value: '90d', label: `90 ${t('admin:analytics.days')}` },
-            ]}
-            className="min-w-[120px]"
+    <div className="flex items-center gap-3 py-0.5">
+      <span className="text-caption text-bg-text-secondary w-24 shrink-0 truncate font-medium">{label}</span>
+      <div className="flex-1 relative">
+        <div className="h-8 rounded-md bg-bg-neutral-200/60 overflow-hidden dark:bg-bg-neutral-800/60">
+          <div
+            className="h-full rounded-md transition-all duration-700 ease-out"
+            style={{
+              width: fill ? `${Math.max(pct, 2)}%` : '0%',
+              background: `linear-gradient(135deg, ${color}, color-mix(in srgb, ${color} 80%, transparent))`,
+            }}
           />
         </div>
+      </div>
+      <div className="flex items-center gap-2 min-w-[5rem] justify-end">
+        <span className="text-body-sm font-semibold text-bg-text-primary tabular-nums ltr-nums" dir="ltr">{display ?? value}</span>
+        <span className="text-caption text-bg-text-secondary font-medium tabular-nums w-8 text-end ltr-nums" dir="ltr">{Math.round(pct)}%</span>
+      </div>
+    </div>
+  );
+}
 
-        {salesError ? (
-          <p className="text-body-sm text-bg-text-secondary py-8 text-center">
-            {t('common:common.error')}
-          </p>
-        ) : salesLoading ? (
-          <div className="h-48 bg-bg-neutral-200/60 animate-pulse rounded-md" />
-        ) : sales.length === 0 ? (
-          <p className="text-body-sm text-bg-text-secondary py-8 text-center">{t('common:common.nothing')}</p>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-body-sm">
-              <thead>
-                <tr className="border-b border-bg-border">
-                  <th className="text-start py-2 text-bg-text-secondary font-medium">{t('admin:analytics.date')}</th>
-                  <th className="text-end py-2 text-bg-text-secondary font-medium">{t('admin:analytics.sales')}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {sales.map((row, i) => (
-                  <tr key={i} className="border-b border-bg-border/50">
-                    <td className="py-2 text-bg-text-primary ltr-nums" dir="ltr">{row.date}</td>
-                    <td className="py-2 text-end text-bg-text-primary ltr-nums" dir="ltr">{formatPrice(row.total)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+export default function AdminAnalytics() {
+  const { t, isAr } = useLocale();
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [days, setDays] = useState('30d');
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    fetchAnalytics(days)
+      .then((res) => { if (!cancelled) setData(res); })
+      .catch(() => {})
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [days]);
+
+  const summary = data?.data || {};
+  const maxStatus = Math.max(1, ...(summary.ordersByStatus || []).map((s) => s.count));
+  const maxCat = Math.max(1, ...(summary.ordersByCategory || []).map((c) => c.count));
+
+  const dayOptions = [
+    { value: '7d', label: t('admin:analytics.last7') },
+    { value: '30d', label: t('admin:analytics.last30') },
+    { value: '90d', label: t('admin:analytics.last90') },
+  ];
+
+  const pageHeader = (
+    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      <div>
+        <h2 className="font-heading text-xl font-bold text-bg-text-primary">{t('admin:analytics.title')}</h2>
+        <p className="text-xs text-bg-text-secondary mt-1">{t('admin:analytics.subtitle')}</p>
+      </div>
+      <div className="w-full sm:w-[180px]">
+        <Select value={days} onChange={setDays} options={dayOptions} />
+      </div>
+    </div>
+  );
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div>
+            <div className="h-6 w-40 bg-bg-neutral-200/60 animate-pulse rounded-md mb-2" />
+            <div className="h-3 w-56 bg-bg-neutral-200/60 animate-pulse rounded-md" />
           </div>
-        )}
+          <div className="w-full sm:w-[180px] h-11 rounded-lg bg-bg-neutral-200/60 animate-pulse" />
+        </div>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="surface-card p-5 animate-pulse">
+              <div className="w-9 h-9 rounded-full bg-bg-neutral-200/60 mb-3" />
+              <div className="h-3 w-20 bg-bg-neutral-200/60 rounded-md mb-2" />
+              <div className="h-7 w-24 bg-bg-neutral-200/60 rounded-md" />
+            </div>
+          ))}
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {Array.from({ length: 2 }).map((_, i) => (
+            <div key={i} className="surface-card p-5">
+              <div className="h-4 w-36 bg-bg-neutral-200/60 rounded-md animate-pulse mb-5" />
+              <div className="space-y-3">
+                {Array.from({ length: 4 }).map((_, j) => (
+                  <div key={j} className="flex items-center gap-3 animate-pulse">
+                    <div className="h-3 w-20 bg-bg-neutral-200/60 rounded-md" />
+                    <div className="flex-1 h-8 rounded-md bg-bg-neutral-200/60" />
+                    <div className="h-3 w-20 bg-bg-neutral-200/60 rounded-md" />
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (!data) {
+    return (
+      <div className="space-y-6">
+        {pageHeader}
+        <div className="surface-card p-12 text-center">
+          <div className="w-14 h-14 rounded-full bg-bg-primary-500/10 flex items-center justify-center mx-auto mb-4">
+            <TrendingUp size={22} className="text-bg-primary-500" strokeWidth={1.5} />
+          </div>
+          <p className="text-body-sm font-medium text-bg-text-primary">{t('admin:analytics.noData')}</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {pageHeader}
+
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {STAT_CONFIG.map((cfg, i) => {
+          const Icon = cfg.icon;
+          return (
+            <motion.div
+              key={cfg.key}
+              initial={{ opacity: 0, y: 16 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.4, delay: i * 0.08 }}
+            >
+              <StatCard
+                label={t(cfg.labelKey)}
+                value={formatStatValue(cfg.format, summary[cfg.valueKey])}
+                icon={Icon}
+                valueClass="text-2xl tracking-tight"
+              />
+            </motion.div>
+          );
+        })}
       </div>
 
-      <div className="bg-bg-surface border border-bg-border rounded-md p-6 space-y-4">
-        <h2 className="text-body font-semibold text-bg-text-primary">{t('admin:analytics.topProducts')}</h2>
-        <DataTable
-          columns={productColumns}
-          data={topProducts}
-          isLoading={topLoading}
-          emptyMessage={t('common:common.nothing')}
-        />
-      </div>
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.4, delay: 0.35 }}
+        className="grid grid-cols-1 lg:grid-cols-2 gap-6"
+      >
+        <div className="surface-card p-5">
+          <h3 className="font-heading text-body-sm font-bold text-bg-text-primary mb-5">
+            {t('admin:analytics.ordersByStatus')}
+          </h3>
+          {summary.ordersByStatus?.length > 0 ? (
+            <div className="space-y-1">
+              {summary.ordersByStatus.map((s) => {
+                const meta = STATUS_META[s.status] || { color: 'var(--bg-primary-500)' };
+                const sl = ORDER_STATUSES[s.status];
+                return (
+                  <AnimatedBar
+                    key={s.status}
+                    label={sl ? (isAr ? sl.ar : sl.en) : s.status}
+                    value={s.count}
+                    max={maxStatus}
+                    color={meta.color}
+                  />
+                );
+              })}
+            </div>
+          ) : (
+            <div className="flex flex-col items-center py-10 text-center gap-2">
+              <Clock size={20} className="text-bg-text-secondary/40" strokeWidth={1.5} />
+              <p className="text-body-sm text-bg-text-secondary">{t('admin:analytics.noOrders')}</p>
+            </div>
+          )}
+        </div>
+
+        <div className="surface-card p-5">
+          <h3 className="font-heading text-body-sm font-bold text-bg-text-primary mb-5">
+            {t('admin:analytics.ordersByCategory')}
+          </h3>
+          {summary.ordersByCategory?.length > 0 ? (
+            <div className="space-y-1">
+              {summary.ordersByCategory.map((c) => (
+                <AnimatedBar
+                  key={c.category}
+                  label={t(`cat.${c.category}`, { defaultValue: c.category })}
+                  value={c.count}
+                  max={maxCat}
+                  color="var(--bg-accent)"
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="flex flex-col items-center py-10 text-center gap-2">
+              <Package size={20} className="text-bg-text-secondary/40" strokeWidth={1.5} />
+              <p className="text-body-sm text-bg-text-secondary">{t('admin:analytics.noCatData')}</p>
+            </div>
+          )}
+        </div>
+      </motion.div>
     </div>
   );
 }

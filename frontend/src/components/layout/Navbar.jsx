@@ -2,15 +2,17 @@ import { useState, useRef } from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import { useLocale } from '@/context/LocaleContext.jsx';
 import { motion, AnimatePresence } from 'motion/react';
-import { Sun, Moon, ShoppingBag, Menu, X } from 'lucide-react';
+import { Sun, Moon, ShoppingBag, Menu, X, User } from 'lucide-react';
 import { useTheme } from '@/context/ThemeContext.jsx';
 import { useCart } from '@/context/CartContext.jsx';
+import { useCustomerAuth } from '@/context/CustomerAuthContext.jsx';
 import useFocusTrap from '@/hooks/useFocusTrap.js';
 
 export default function Navbar() {
   const { t, lang, setLang } = useLocale();
   const { mode, toggle: toggleTheme } = useTheme();
   const { items, setIsCartOpen } = useCart();
+  const { customer, isLoading: customerAuthLoading } = useCustomerAuth();
   const itemCount = items.reduce((sum, i) => sum + i.quantity, 0);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
@@ -22,8 +24,10 @@ export default function Navbar() {
     { to: '/', label: t('nav.home', { ns: 'common' }), end: true },
     { to: '/shop', label: t('nav.shop', { ns: 'common' }) },
     { to: '/about', label: t('nav.about', { ns: 'common' }) },
-    { to: '/contact', label: t('nav.contact', { ns: 'common' }) },
-    { to: '/my-orders', label: t('nav.myOrders', { ns: 'common' }) },
+    // Logged-in customers see their account's orders; guests get the phone lookup.
+    customer && !customerAuthLoading
+      ? { to: '/account?tab=orders', label: t('nav.myOrders', { ns: 'common' }) }
+      : { to: '/my-orders', label: t('nav.myOrders', { ns: 'common' }) },
   ];
 
   const linkClass = ({ isActive }) =>
@@ -51,7 +55,7 @@ export default function Navbar() {
             className="h-9 w-9 rounded-lg object-cover"
           />
           <div className="flex flex-col leading-tight">
-            <span className="font-heading font-semibold text-[15px] tracking-tight text-bg-text-primary">
+            <span className="font-heading font-semibold text-base tracking-tight text-bg-text-primary">
               {t('brand.name', { ns: 'common' })}
             </span>
             <span className="font-heading font-medium text-[10px] uppercase tracking-[0.15em] text-bg-text-secondary">
@@ -113,6 +117,29 @@ export default function Navbar() {
             )}
           </button>
 
+          {!customerAuthLoading && (
+            customer ? (
+              <Link
+                to="/account"
+                className="flex items-center gap-2 h-10 px-1.5 sm:px-2.5 rounded-full text-bg-text-secondary hover:text-bg-text-primary hover:bg-bg-border/40 transition-colors"
+                aria-label={t('nav.account', { ns: 'common' })}
+              >
+                <User className="w-5 h-5 shrink-0" aria-hidden="true" focusable="false" />
+                <span className="hidden sm:block max-w-[160px] truncate text-[13px] font-medium">
+                  {t('nav.hi', { ns: 'common', name: customer.name })}
+                </span>
+              </Link>
+            ) : (
+              <Link
+                to="/login"
+                className="h-10 w-10 rounded-full flex items-center justify-center text-bg-text-secondary hover:text-bg-text-primary hover:bg-bg-border/40 transition-colors"
+                aria-label={t('nav.login', { ns: 'common' })}
+              >
+                <User className="w-5 h-5" aria-hidden="true" focusable="false" />
+              </Link>
+            )
+          )}
+
           <button
             className="md:hidden h-10 w-10 rounded-full flex items-center justify-center text-bg-text-secondary hover:text-bg-text-primary hover:bg-bg-border/40 transition-colors"
             onClick={() => setMenuOpen((v) => !v)}
@@ -156,6 +183,15 @@ export default function Navbar() {
                   {link.label}
                 </NavLink>
               ))}
+              {!customerAuthLoading && (
+                <Link
+                  to={customer ? '/account' : '/login'}
+                  onClick={() => setMenuOpen(false)}
+                  className="px-4 py-3 rounded-xl text-[15px] font-medium text-bg-text-primary hover:bg-bg-neutral-100 transition-colors"
+                >
+                  {customer ? t('nav.account', { ns: 'common' }) : t('nav.login', { ns: 'common' })}
+                </Link>
+              )}
               <button
                 onClick={() => {
                   toggleLang();

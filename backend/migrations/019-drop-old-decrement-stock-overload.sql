@@ -1,0 +1,22 @@
+-- 019: drop the original single-arg decrement_stock overload
+--
+-- Migration 017 "create or replace"-ed decrement_stock with a NEW signature
+-- (order_items jsonb, p_customer_id uuid, p_points_to_redeem integer). In
+-- Postgres, same function name + different signature = a new OVERLOAD, not a
+-- replacement — so the live DB now has two functions:
+--
+--   1. public.decrement_stock(order_items jsonb)                       [013]
+--   2. public.decrement_stock(order_items jsonb, p_customer_id, ...)   [017]
+--
+-- Any call that passes only order_items (every guest order) is therefore
+-- ambiguous and PostgREST fails with PGRST203 ("could not choose the best
+-- candidate function") — which the app surfaces as HTTP 409 STOCK_CONFLICT
+-- on every order attempt.
+--
+-- This drops the obsolete overload; the extended 017 function (with defaults)
+-- then answers every call shape, guest or redeeming.
+--
+-- Verify after applying:  SELECT proname, oidvectortypes(proargtypes)
+--                          FROM pg_proc WHERE proname = 'decrement_stock';
+
+drop function if exists public.decrement_stock(jsonb);

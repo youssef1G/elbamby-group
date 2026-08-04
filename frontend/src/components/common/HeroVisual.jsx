@@ -52,10 +52,10 @@ function FloatingCard({ Icon, label, rotate, delay, duration, className }) {
         y: { duration, repeat: Infinity, ease: 'easeInOut', delay: delay + 0.5 },
       }}
       style={{ rotate }}
-      className={`absolute flex flex-col items-center gap-1.5 rounded-2xl border border-white/10 bg-white/[0.06] px-4 py-3 shadow-lg backdrop-blur-md ${className}`}
+      className={`absolute flex flex-col items-center gap-1.5 rounded-2xl border border-bg-border bg-bg-surface-raised px-4 py-3 shadow-card ${className}`}
     >
       <Icon size={20} strokeWidth={1.5} className="text-bg-primary-400" />
-      <span className="font-mono text-[10px] tracking-wide text-bg-ink-text/70">{label}</span>
+      <span className="font-mono text-[10px] tracking-wide text-bg-text-secondary">{label}</span>
     </motion.div>
   );
 }
@@ -83,27 +83,27 @@ export default function HeroVisual() {
         initial={{ opacity: 0, y: 20 }}
         animate={inView ? { opacity: 1, y: 0 } : {}}
         transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-        className="relative aspect-[4/3] rounded-3xl border border-white/10 bg-gradient-to-br from-white/[0.08] to-transparent p-6 backdrop-blur-sm"
+        className="relative aspect-[4/3] rounded-3xl border border-bg-border bg-bg-surface-raised p-6 shadow-card"
       >
         <div className="flex h-full flex-col justify-between">
           <div className="flex items-start justify-between">
             <div className="h-8 w-11 rounded-md bg-bg-primary-500/90" />
-            <span className="font-mono text-caption text-bg-ink-text/50">BG · microSD</span>
+            <span className="font-mono text-caption text-bg-text-secondary">BG · microSD</span>
           </div>
 
           <div>
-            <p className="font-mono text-h1 font-bold text-bg-ink-text tabular-nums">
+            <p className="font-mono text-h1 font-bold text-bg-text-primary tabular-nums">
               {capacity}
               <span className="text-bg-primary-400">GB</span>
             </p>
 
             {/* Transfer-speed bar — fills once, a real spec being demonstrated, not decoration */}
             <div className="mt-3">
-              <div className="mb-1 flex items-center justify-between font-mono text-[10px] text-bg-ink-text/50">
+              <div className="mb-1 flex items-center justify-between font-mono text-[10px] text-bg-text-secondary">
                 <span>WRITE</span>
                 <span className="tabular-nums">{speedPct}MB/s</span>
               </div>
-              <div className="h-1 w-full overflow-hidden rounded-full bg-white/10">
+              <div className="h-1 w-full overflow-hidden rounded-full bg-bg-border">
                 <motion.div
                   className="h-full rounded-full bg-bg-primary-400"
                   initial={{ width: '0%' }}

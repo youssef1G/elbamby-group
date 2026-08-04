@@ -14,7 +14,7 @@ export default function ContactButton() {
         }`}
       >
         <a
-          href="https://www.instagram.com/"
+          href="https://www.instagram.com/hassanelbamby"
           target="_blank"
           rel="noopener noreferrer"
           className="w-12 h-12 rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform"

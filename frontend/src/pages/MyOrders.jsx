@@ -1,11 +1,13 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { useLocale } from '@/context/LocaleContext.jsx';
 import { lookupOrders, cancelOrder, submitReturn } from '@/api.js';
 import { formatPrice } from '@/lib/formatters.js';
+import { AUTO_REFRESH_MS } from '@/lib/constants.js';
 import { fadeUp, staggerContainer, staggerItem } from '@/lib/animations.js';
 import { useToast } from '@/components/ui/Toast.jsx';
+import Select from '@/components/ui/Select.jsx';
 
 const STATUS_STYLE = {
   pending: 'bg-bg-warning/10 text-bg-warning border-bg-warning/30',
@@ -14,6 +16,14 @@ const STATUS_STYLE = {
   delivered: 'bg-bg-success/10 text-bg-success border-bg-success/30',
   cancelled: 'bg-bg-neutral-100 dark:bg-bg-neutral-800 text-bg-text-secondary border-bg-border',
 };
+
+const STEPS = [
+  { key: 'pending' },
+  { key: 'confirmed' },
+  { key: 'shipped' },
+  { key: 'delivered' },
+];
+const STATUS_IDX = { pending: 0, confirmed: 1, shipped: 2, delivered: 3 };
 
 function ReturnForm({ orderId, onClose }) {
   const { t } = useLocale();
@@ -56,10 +66,7 @@ function ReturnForm({ orderId, onClose }) {
     <div className="mt-4 surface-card p-5 space-y-4">
       <p className="text-sm font-heading font-semibold text-bg-text-primary">{t('support:return.requestReturn')}</p>
       <form onSubmit={handleSubmit} className="space-y-3">
-        <select value={reason} onChange={e => setReason(e.target.value)} className="w-full rounded-xl border border-bg-border px-4 py-3 text-sm bg-bg-surface text-bg-text-primary focus:outline-none focus:ring-2 focus:ring-bg-primary-500">
-          <option value="">{t('support:return.selectReason')}</option>
-          {reasons.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
-        </select>
+        <Select value={reason} onChange={setReason} options={reasons} placeholder={t('support:return.selectReason')} />
         <textarea value={details} onChange={e => setDetails(e.target.value)} rows={3} placeholder={t('support:return.details')} className="w-full rounded-xl border border-bg-border px-4 py-3 text-sm bg-bg-surface text-bg-text-primary focus:outline-none focus:ring-2 focus:ring-bg-primary-500 resize-none" />
         {error && <p className="text-xs text-bg-error">{error}</p>}
         <div className="flex gap-2">
@@ -71,9 +78,10 @@ function ReturnForm({ orderId, onClose }) {
   );
 }
 
-function OrderCard({ order }) {
+export function OrderCard({ order, onRefresh, autoOpen }) {
   const { t, isAr } = useLocale();
   const { toast } = useToast();
+  const [trackingOpen, setTrackingOpen] = useState(Boolean(autoOpen));
   const [returning, setReturning] = useState(false);
   const [cancelling, setCancelling] = useState(false);
 
@@ -81,7 +89,9 @@ function OrderCard({ order }) {
     if (!window.confirm(t('tracking.cancelConfirm', { ns: 'common' }))) return;
     setCancelling(true);
     try {
-      await cancelOrder(order.id, order.customer?.phone || '');
+      await cancelOrder(order.id, order.phone || '');
+      setTrackingOpen(false);
+      if (onRefresh) onRefresh();
     } catch (err) {
       toast(err.message, 'error');
     } finally {
@@ -94,6 +104,11 @@ function OrderCard({ order }) {
     try { return new Date(str).toLocaleDateString(isAr ? 'ar-EG' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric' }); } catch { return '—'; }
   }
 
+  function formatLongDate(str) {
+    if (!str) return '—';
+    try { return new Date(str).toLocaleDateString(isAr ? 'ar-EG' : 'en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }); } catch { return '—'; }
+  }
+
   const eStatus = (s) => {
     if (s === 'pending') return t('tracking.status_pending', { ns: 'common' });
     if (s === 'confirmed') return t('tracking.status_confirmed', { ns: 'common' });
@@ -103,12 +118,17 @@ function OrderCard({ order }) {
     return order.status;
   };
 
+  const currentIdx = STATUS_IDX[order.status] ?? 0;
+  const cancelled = order.status === 'cancelled';
+  const itemName = (item) => isAr ? (item.nameAr || item.nameEn || item.productNameSnapshot || '—') : (item.nameEn || item.nameAr || item.productNameSnapshot || '—');
+  const itemTotal = (item) => item.lineTotal ?? item.price * item.quantity;
+
   return (
     <div className="surface-card p-5 space-y-4">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="font-mono text-xs text-bg-text-secondary mb-1">{order.order_number || order.id}</p>
-          <p className="text-xs text-bg-text-secondary">{formatDate(order.created_at)}</p>
+          <p className="font-mono text-xs text-bg-text-secondary mb-1">{order.orderNumber || order.order_number || order.id}</p>
+          <p className="text-xs text-bg-text-secondary">{formatDate(order.createdAt || order.created_at)}</p>
         </div>
         <div className="flex flex-col items-end gap-2 shrink-0">
           <span className={`text-xs font-semibold border rounded-full px-2.5 py-0.5 ${STATUS_STYLE[order.status] || STATUS_STYLE.pending}`}>
@@ -119,21 +139,31 @@ function OrderCard({ order }) {
       </div>
 
       <ul className="text-xs text-bg-text-secondary space-y-1 border-t border-bg-border pt-3">
-        {(order.items || []).slice(0, 3).map((item, i) => (
-          <li key={i} className="flex justify-between">
-            <span>{item.quantity} × {isAr ? (item.nameAr || item.nameEn || '—') : (item.nameEn || item.nameAr || '—')}</span>
-            <span>{formatPrice(item.price * item.quantity)}</span>
+        {(order.orderItems || order.items || []).slice(0, 3).map((item, i) => (
+          <li key={i} className="flex justify-between gap-3">
+            <span className="min-w-0">{item.quantity} × {itemName(item)}</span>
+            <span className="ltr-nums shrink-0">{formatPrice(itemTotal(item))}</span>
           </li>
         ))}
+        {(order.orderItems || order.items || []).length > 3 && (
+          <li className="text-bg-text-secondary/60">+{(order.orderItems || order.items || []).length - 3} more</li>
+        )}
       </ul>
 
       <div className="flex flex-wrap gap-2 pt-1">
-        <Link to={`/track-order?order=${order.order_number || order.id}&phone=${order.customer?.phone || ''}`} className="text-xs font-semibold text-bg-primary-500 border border-bg-primary-500/30 rounded-full px-4 py-1.5 hover:bg-bg-primary-50 transition-colors">
+        <button
+          onClick={() => setTrackingOpen((v) => !v)}
+          className={`text-xs font-semibold border rounded-full px-4 py-1.5 transition-colors ${
+            trackingOpen
+              ? 'border-bg-primary-500 text-bg-primary-500 bg-bg-primary-50'
+              : 'border-bg-primary-500/30 text-bg-primary-500 hover:bg-bg-primary-50'
+          }`}
+        >
           {t('myOrders.track', { ns: 'common' })}
-        </Link>
+        </button>
         {order.status === 'pending' && (
           <button onClick={handleCancel} disabled={cancelling} className="text-xs font-medium text-bg-error border border-bg-error/20 rounded-full px-4 py-1.5 hover:bg-bg-neutral-100 transition-colors disabled:opacity-50">
-            {t('tracking.cancelTitle', { ns: 'common' })}
+            {cancelling ? '...' : t('tracking.cancelTitle', { ns: 'common' })}
           </button>
         )}
         {order.status === 'delivered' && (
@@ -144,20 +174,124 @@ function OrderCard({ order }) {
       </div>
 
       {returning && <ReturnForm orderId={order.id} onClose={() => setReturning(false)} />}
+
+      {trackingOpen && (
+        <div className="border-t border-bg-border pt-4 space-y-5">
+          {!cancelled ? (
+            <div className="relative">
+              <div className="absolute top-5 start-5 end-5 h-0.5 bg-bg-border" />
+              <div className="absolute top-5 start-5 h-0.5 bg-bg-primary-500 transition-all duration-700" style={{ width: `${(currentIdx / (STEPS.length - 1)) * 100}%` }} />
+              <div className="relative flex justify-between">
+                {STEPS.map((step, i) => {
+                  const done = i <= currentIdx;
+                  const active = i === currentIdx;
+                  return (
+                    <div key={step.key} className="flex flex-col items-center gap-2 w-16">
+                      <div className={`w-11 h-11 rounded-full flex items-center justify-center text-lg border-2 transition-all ${
+                        done ? 'bg-bg-primary-500 border-bg-primary-500 text-white' : 'bg-bg-surface border-bg-border text-bg-text-secondary'
+                      }`}>
+                        {i + 1}
+                      </div>
+                      <p className={`text-[11px] text-center leading-tight ${
+                        active ? 'text-bg-primary-500 font-semibold' : done ? 'text-bg-text-primary' : 'text-bg-text-secondary'
+                      }`}>{t(`tracking.status_${step.key}`, { ns: 'common' })}</p>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ) : (
+            <div className="text-center">
+              <p className="font-semibold text-bg-text-primary">{t('tracking.status_cancelled', { ns: 'common' })}</p>
+            </div>
+          )}
+
+          <div className="grid sm:grid-cols-2 gap-2 text-xs">
+            <div>
+              <p className="text-bg-text-secondary mb-0.5">{t('tracking.details.placed', { ns: 'common' })}</p>
+              <p className="text-bg-text-primary">{formatLongDate(order.createdAt || order.created_at)}</p>
+            </div>
+            <div>
+              <p className="text-bg-text-secondary mb-0.5">{t('tracking.details.payment', { ns: 'common' })}</p>
+              <p className="text-bg-text-primary">{t('tracking.details.cod', { ns: 'common' })}</p>
+            </div>
+            {(order.address_line || order.city) && (
+              <div className="sm:col-span-2">
+                <p className="text-bg-text-secondary mb-0.5">{t('tracking.details.address', { ns: 'common' })}</p>
+                <p className="text-bg-text-primary">{[order.address_line, order.city].filter(Boolean).join(', ')}</p>
+              </div>
+            )}
+          </div>
+
+          <div className="border-t border-bg-border pt-3 space-y-2">
+            {(order.orderItems || order.items || []).map((item, i) => (
+              <div key={i} className="flex justify-between gap-3 text-xs">
+                <span className="text-bg-text-secondary min-w-0">{item.quantity} × {itemName(item)}</span>
+                <span className="text-bg-text-primary font-medium ltr-nums shrink-0">{formatPrice(itemTotal(item))}</span>
+              </div>
+            ))}
+            <div className="flex justify-between text-sm font-bold text-bg-text-primary pt-2 border-t border-bg-border">
+              <span>{t('tracking.details.total', { ns: 'common' })}</span>
+              <span className="ltr-nums">{formatPrice(order.total)}</span>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
 export default function MyOrders() {
   const { t } = useLocale();
-  const [query, setQuery] = useState('');
+  const [searchParams] = useSearchParams();
+  const autoOrder = searchParams.get('order') || '';
+  const autoPhone = searchParams.get('phone') || '';
+  const [query, setQuery] = useState(autoPhone);
   const [orders, setOrders] = useState([]);
-  const [status, setStatus] = useState('idle');
+  const [status, setStatus] = useState(autoPhone ? 'loading' : 'idle');
+  const [currentPhone, setCurrentPhone] = useState(autoPhone);
+
+  useEffect(() => {
+    if (!autoPhone) return;
+    let cancelled = false;
+    setCurrentPhone(autoPhone);
+    setStatus('loading');
+    lookupOrders(autoPhone)
+      .then((data) => {
+        if (cancelled) return;
+        setOrders(data.data || data || []);
+        setStatus('done');
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setOrders([]);
+        setStatus('done');
+      });
+    return () => { cancelled = true; };
+  }, [autoPhone]);
+
+  // Silent refresh: order status updates live (pending → confirmed → shipped
+  // → delivered) without reloading the page. Existing cards stay on screen —
+  // no spinner flicker. Pauses while the tab is hidden.
+  useEffect(() => {
+    if (status !== 'done' || !currentPhone) return undefined;
+    const id = setInterval(async () => {
+      if (document.visibilityState !== 'visible') return;
+      try {
+        const data = await lookupOrders(currentPhone);
+        setOrders(data.data || data || []);
+      } catch {
+        // transient poll errors keep the last known orders
+      }
+    }, AUTO_REFRESH_MS);
+    return () => clearInterval(id);
+  }, [status, currentPhone]);
 
   async function handleLookup(e) {
     e.preventDefault();
     const q = query.trim();
     if (!q) return;
+    setCurrentPhone(q);
     setStatus('loading');
     try {
       const data = await lookupOrders(q);
@@ -168,6 +302,10 @@ export default function MyOrders() {
       setStatus('done');
     }
   }
+
+  const isAuto = (order) =>
+    autoOrder &&
+    (order.orderNumber === autoOrder || order.order_number === autoOrder || order.id === autoOrder);
 
   return (
     <div className="max-w-2xl mx-auto px-5 sm:px-8 py-14 sm:py-20">
@@ -215,7 +353,7 @@ export default function MyOrders() {
           <motion.div className="space-y-4" variants={staggerContainer} initial="hidden" whileInView="show" viewport={{ once: true, amount: 0.05 }}>
             {orders.map((order) => (
               <motion.div key={order.id} variants={staggerItem}>
-                <OrderCard order={order} />
+                <OrderCard order={order} onRefresh={handleLookup} autoOpen={isAuto(order)} />
               </motion.div>
             ))}
           </motion.div>

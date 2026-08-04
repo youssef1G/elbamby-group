@@ -228,15 +228,15 @@
   .input-base {
     background-color: var(--bg-surface);
     color: var(--bg-text-primary);
-    border-radius: var(--radius-sm);
+    border-radius: var(--radius-md);
     border: 1px solid var(--bg-border);
     min-height: 44px;
-    padding-inline: 0.75rem;
+    padding-inline: 1rem;
   }
   .input-base:focus {
     outline: none;
     border-color: var(--bg-primary-500);
-    box-shadow: 0 0 0 3px rgba(230, 0, 126, 0.4);
+    box-shadow: 0 0 0 2px rgba(230, 0, 126, 0.35);
   }
   .input-base.input-error {
     border-color: var(--bg-error);

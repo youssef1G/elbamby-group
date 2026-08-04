@@ -6,7 +6,7 @@ import { formatPrice } from '@/lib/formatters.js';
 
 export default function ProductCard({ product }) {
   const { t, isAr } = useLocale();
-  const { addItem, setIsCartOpen: openCartDrawer } = useCart();
+  const { addItem, openCartDrawer } = useCart();
 
   const name = isAr ? product.nameAr || product.nameEn : product.nameEn;
   const image = (product.productImages?.[0]?.imageUrl) || '';

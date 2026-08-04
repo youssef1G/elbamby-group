@@ -14,8 +14,10 @@ const Cart = lazy(() => import('@/pages/Cart.jsx'));
 const Checkout = lazy(() => import('@/pages/Checkout.jsx'));
 const CheckoutSuccess = lazy(() => import('@/pages/CheckoutSuccess.jsx'));
 const ProductDetail = lazy(() => import('@/pages/ProductDetail.jsx'));
-const OrderTracking = lazy(() => import('@/pages/OrderTracking.jsx'));
 const MyOrders = lazy(() => import('@/pages/MyOrders.jsx'));
+const Login = lazy(() => import('@/pages/Login.jsx'));
+const Register = lazy(() => import('@/pages/Register.jsx'));
+const Account = lazy(() => import('@/pages/Account.jsx'));
 const NotFound = lazy(() => import('@/pages/NotFound.jsx'));
 import ContactButton from '@/components/common/ContactButton.jsx';
 
@@ -31,15 +33,15 @@ const spinner = (
 const AdminDashboard = lazy(() => import('@/pages/admin/AdminDashboard.jsx'));
 const AdminLogin = lazy(() => import('@/pages/AdminLogin.jsx'));
 const AdminProducts = lazy(() => import('@/pages/admin/AdminProducts.jsx'));
-const AdminProductForm = lazy(() => import('@/pages/admin/AdminProductForm.jsx'));
+const ProductForm = lazy(() => import('@/pages/admin/ProductForm.jsx'));
 const AdminCategories = lazy(() => import('@/pages/admin/AdminCategories.jsx'));
 const AdminOrders = lazy(() => import('@/pages/admin/AdminOrders.jsx'));
-const AdminOrderDetail = lazy(() => import('@/pages/admin/AdminOrderDetail.jsx'));
-const AdminBanners = lazy(() => import('@/pages/admin/AdminBanners.jsx'));
 const AdminSettings = lazy(() => import('@/pages/admin/AdminSettings.jsx'));
-const AdminAdmins = lazy(() => import('@/pages/admin/AdminAdmins.jsx'));
+const AdminManage = lazy(() => import('@/pages/admin/AdminManage.jsx'));
 const AdminSupport = lazy(() => import('@/pages/admin/AdminSupport.jsx'));
 const AdminAnalytics = lazy(() => import('@/pages/admin/AdminAnalytics.jsx'));
+const AdminCustomers = lazy(() => import('@/pages/admin/AdminCustomers.jsx'));
+const AdminCustomerDetail = lazy(() => import('@/pages/admin/AdminCustomerDetail.jsx'));
 
 function Layout() {
   const { t } = useLocale();
@@ -80,11 +82,13 @@ export default function App() {
             <Route path="/shop" element={<Shop />} />
             <Route path="/about" element={<About />} />
             <Route path="/contact" element={<Contact />} />
-            <Route path="/track-order" element={<OrderTracking />} />
             <Route path="/my-orders" element={<MyOrders />} />
             <Route path="/cart" element={<Cart />} />
             <Route path="/checkout" element={<Checkout />} />
             <Route path="/checkout/success" element={<CheckoutSuccess />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/account" element={<Account />} />
             <Route path="/product/:slug" element={<ProductDetail />} />
             <Route path="*" element={<NotFound />} />
           </Route>
@@ -105,10 +109,10 @@ export default function App() {
               <Suspense fallback={spinner}><AdminProducts /></Suspense>
             } />
             <Route path="products/new" element={
-              <Suspense fallback={spinner}><AdminProductForm /></Suspense>
+              <Suspense fallback={spinner}><ProductForm /></Suspense>
             } />
             <Route path="products/:id/edit" element={
-              <Suspense fallback={spinner}><AdminProductForm /></Suspense>
+              <Suspense fallback={spinner}><ProductForm /></Suspense>
             } />
             <Route path="categories" element={
               <Suspense fallback={spinner}><AdminCategories /></Suspense>
@@ -116,17 +120,17 @@ export default function App() {
             <Route path="orders" element={
               <Suspense fallback={spinner}><AdminOrders /></Suspense>
             } />
-            <Route path="orders/:id" element={
-              <Suspense fallback={spinner}><AdminOrderDetail /></Suspense>
+            <Route path="customers" element={
+              <Suspense fallback={spinner}><AdminCustomers /></Suspense>
             } />
-            <Route path="banners" element={
-              <Suspense fallback={spinner}><AdminBanners /></Suspense>
+            <Route path="customers/:id" element={
+              <Suspense fallback={spinner}><AdminCustomerDetail /></Suspense>
             } />
             <Route path="settings" element={
               <Suspense fallback={spinner}><AdminSettings /></Suspense>
             } />
-            <Route path="admins" element={
-              <Suspense fallback={spinner}><AdminAdmins /></Suspense>
+            <Route path="manage" element={
+              <Suspense fallback={spinner}><AdminManage /></Suspense>
             } />
             <Route path="support" element={
               <Suspense fallback={spinner}><AdminSupport /></Suspense>

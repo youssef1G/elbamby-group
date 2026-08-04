@@ -8,11 +8,15 @@ import useFocusTrap from '@/hooks/useFocusTrap.js';
 
 export default function CartDrawer() {
   const { t, isAr } = useLocale();
-  const { items, updateQuantity, removeItem, isCartOpen: isOpen, setIsCartOpen: close } = useCart();
+  const { items, updateQuantity, removeItem, isCartOpen: isOpen, closeCart } = useCart();
   const subtotal = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
 
   const panelRef = useRef(null);
-  useFocusTrap({ isOpen, ref: panelRef, onClose: close });
+  // Pass the real closer (a function that calls setIsCartOpen(false)), not
+  // the raw context setter — useFocusTrap calls onClose() with no arguments
+  // on Escape, which happened to work by accident before, but closeCart is
+  // explicit and safe regardless of how it's invoked.
+  useFocusTrap({ isOpen, ref: panelRef, onClose: closeCart });
 
   return (
     <>
@@ -20,16 +24,20 @@ export default function CartDrawer() {
         className={`fixed inset-0 bg-black/50 z-50 transition-opacity duration-300 backdrop-blur-sm ${
           isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
         }`}
-        onClick={close}
+        onClick={closeCart}
         aria-hidden="true"
       />
 
       <aside
         ref={panelRef}
-        className={`fixed top-0 h-full w-full sm:w-[420px] bg-bg-surface z-[51] shadow-xl transition-transform duration-300 flex flex-col start-0 ${
+        className={`fixed top-0 h-full w-full sm:w-[420px] bg-bg-surface z-[51] shadow-xl transition-transform duration-300 flex flex-col end-0 ${
           isOpen ? '' : 'invisible pointer-events-none'
         }`}
         style={{
+          // end-0 already anchors the panel to the correct physical side per
+          // direction (right in LTR, left in RTL). The slide-out direction on
+          // close still needs isAr explicitly, since transform/translateX is
+          // a JS value, not a CSS logical property — it doesn't auto-flip.
           transform: isOpen ? 'translateX(0)' : `translateX(${isAr ? '-100%' : '100%'})`,
         }}
         role="dialog"
@@ -41,7 +49,7 @@ export default function CartDrawer() {
             {t('nav.cart', { ns: 'common' })}
           </h2>
           <button
-            onClick={close}
+            onClick={closeCart}
             className="p-2 rounded-full hover:bg-bg-border/40 transition-colors text-bg-text-secondary"
             aria-label={t('common:common.close')}
           >
@@ -58,7 +66,7 @@ export default function CartDrawer() {
               <p className="text-sm text-bg-text-secondary">
                 {t('cart.continueShopping', { ns: 'common' })}
               </p>
-              <Link to="/shop" onClick={close} className="btn-primary mt-2 text-sm">
+              <Link to="/shop" onClick={closeCart} className="btn-primary mt-2 text-sm">
                 {t('nav.shop', { ns: 'common' })}
               </Link>
             </div>
@@ -131,10 +139,10 @@ export default function CartDrawer() {
                 {formatPrice(subtotal)}
               </span>
             </div>
-            <Link to="/cart" onClick={close} className="btn-primary w-full py-3 text-sm">
+            <Link to="/cart" onClick={closeCart} className="btn-primary w-full py-3 text-sm">
               {t('nav.cart', { ns: 'common' })}
             </Link>
-            <Link to="/checkout" onClick={close} className="btn-secondary w-full py-3 text-sm">
+            <Link to="/checkout" onClick={closeCart} className="btn-secondary w-full py-3 text-sm">
               {t('nav.checkout', { ns: 'common' })}
             </Link>
           </div>

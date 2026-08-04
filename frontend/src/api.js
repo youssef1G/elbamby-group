@@ -63,6 +63,7 @@ export function deleteAdmin(id) {
 
 // ─── Analytics ─────────────────────────────────────────────────────────────────
 export function fetchAnalyticsOverview() { return apiClient('/admin/analytics/overview'); }
+export function fetchAnalytics(period) { return apiClient(`/admin/analytics?period=${period || '30d'}`); }
 export function fetchAnalyticsSales(period) {
   return apiClient(`/admin/analytics/sales?period=${period}`);
 }
@@ -118,8 +119,12 @@ export function deleteBanner(id) {
 
 // ─── Settings ────────────────────────────────────────────────────────────────
 export function getSettings() { return apiClient('/settings'); }
+export function fetchAdminSettings() { return apiClient('/admin/settings'); }
 export function updateSettings(data) {
   return apiClient('/admin/settings', { method: 'PUT', body: JSON.stringify(data) });
+}
+export function updatePointsSettings(data) {
+  return apiClient('/admin/settings/points', { method: 'PUT', body: JSON.stringify(data) });
 }
 
 // ─── Auth ────────────────────────────────────────────────────────────────────
@@ -128,6 +133,30 @@ export function login(username, password) {
 }
 export function logout() { return apiClient('/auth/logout', { method: 'POST' }); }
 export function getMe() { return apiClient('/auth/me'); }
+
+// ─── Customer auth + account (docs/13 §5.1) ─────────────────────────────────
+export function registerCustomer(data) {
+  return apiClient('/customers/register', { method: 'POST', body: JSON.stringify(data) });
+}
+export function loginCustomer(data) {
+  return apiClient('/customers/login', { method: 'POST', body: JSON.stringify(data) });
+}
+export function logoutCustomer() { return apiClient('/customers/logout', { method: 'POST' }); }
+export function getCustomerMe() { return apiClient('/customers/me'); }
+export function fetchMyPointsHistory(params = {}) {
+  const qs = new URLSearchParams(params).toString();
+  return apiClient(`/customers/me/points-history${qs ? `?${qs}` : ''}`);
+}
+export function fetchMyOrders(params = {}) {
+  const qs = new URLSearchParams(params).toString();
+  return apiClient(`/customers/me/orders${qs ? `?${qs}` : ''}`);
+}
+export function updateMyProfile(data) {
+  return apiClient('/customers/me', { method: 'PATCH', body: JSON.stringify(data) });
+}
+export function changeMyPassword(data) {
+  return apiClient('/customers/me/password', { method: 'PUT', body: JSON.stringify(data) });
+}
 
 // ─── Support (complaints + returns) ──────────────────────────────────────────
 export function submitComplaint(data) {
@@ -149,4 +178,27 @@ export function updateSupportComplaint(id, data) {
 }
 export function updateSupportReturn(id, data) {
   return apiClient(`/admin/support/returns/${id}`, { method: 'PATCH', body: JSON.stringify(data) });
+}
+export function deleteSupportComplaint(id) {
+  return apiClient(`/admin/support/complaints/${id}`, { method: 'DELETE' });
+}
+export function deleteSupportReturn(id) {
+  return apiClient(`/admin/support/returns/${id}`, { method: 'DELETE' });
+}
+
+// ─── Customers (admin, docs/13 §5.3) ─────────────────────────────────────────
+export function fetchCustomers(params = {}) {
+  const qs = new URLSearchParams(params).toString();
+  return apiClient(`/admin/customers${qs ? `?${qs}` : ''}`);
+}
+export function fetchCustomer(id) { return apiClient(`/admin/customers/${id}`); }
+export function fetchCustomerPointsHistory(id, params = {}) {
+  const qs = new URLSearchParams(params).toString();
+  return apiClient(`/admin/customers/${id}/points-history${qs ? `?${qs}` : ''}`);
+}
+export function createCustomer(data) {
+  return apiClient('/admin/customers', { method: 'POST', body: JSON.stringify(data) });
+}
+export function adjustCustomerPoints(id, data) {
+  return apiClient(`/admin/customers/${id}/points-adjust`, { method: 'POST', body: JSON.stringify(data) });
 }

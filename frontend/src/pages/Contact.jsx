@@ -4,6 +4,7 @@ import { motion } from 'motion/react';
 import { useLocale } from '@/context/LocaleContext.jsx';
 import { submitComplaint } from '@/api.js';
 import { fadeUp, scaleIn } from '@/lib/animations.js';
+import { normalizePhone } from '@/lib/formatters.js';
 
 function Field({ label, error, children, id }) {
   return (
@@ -40,7 +41,7 @@ export default function Contact() {
   function validateForm(data) {
     const e = {};
     if (data.name.trim().length < 2) e.name = t('errors:validation.required');
-    if (!/^(010|011|012|015)\d{8}$/.test(data.phone.replace(/\s/g, ''))) e.phone = t('errors:validation.phone');
+    if (!/^(01[0-2,5]\d{8}|\+201[0-2,5]\d{8})$/.test(normalizePhone(data.phone))) e.phone = t('errors:validation.phone');
     if (data.message.trim().length < 10) e.message = t('errors:validation.required');
     return e;
   }

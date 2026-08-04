@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useLocale } from '@/context/LocaleContext.jsx';
-import { Plus, Pencil } from 'lucide-react';
-import { motion } from 'motion/react';
+import { Plus } from 'lucide-react';
 import { fetchAdminBanners, deleteBanner, createBanner, updateBanner } from '@/api.js';
 import DataTable from '@/components/admin/DataTable.jsx';
 import ConfirmDialog from '@/components/admin/ConfirmDialog.jsx';

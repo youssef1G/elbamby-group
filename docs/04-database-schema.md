@@ -66,6 +66,7 @@ $$ language plpgsql;
 | price | numeric(10,2), not null | current selling price |
 | compare_at_price | numeric(10,2), nullable | original price, for showing a strikethrough discount |
 | stock_quantity | integer, not null, default 0 | |
+| **unlimited_stock** | boolean, not null, default false | `true` = infinite stock — storefront never shows out-of-stock, checkout skips stock validation/decrement, admin shows "∞". Added in migration 014. |
 | low_stock_threshold | integer, not null, default 5 | below this → "Low Stock" badge in admin |
 | is_featured | boolean, not null, default false | |
 | is_new_arrival | boolean, not null, default false | |
@@ -111,6 +112,7 @@ Separate table (not a JSON array column) so images have stable ordering, individ
 | total | numeric(10,2), not null | subtotal + shipping_fee |
 | status | text, not null, default `'pending'` | enum: `pending`, `confirmed`, `processing`, `shipped`, `delivered`, `cancelled`, `returned` |
 | payment_method | text, not null, default `'cod'` | fixed value, kept as column for future-proofing only |
+| **estimated_delivery** | date, nullable | admin-set expected delivery date, shown in admin orders list + public tracking. Added in migration 014. |
 | admin_note | text, nullable | internal note, not shown to customer |
 | created_at / updated_at | timestamptz | |
 

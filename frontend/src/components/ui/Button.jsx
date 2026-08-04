@@ -16,8 +16,6 @@ const sizes = {
   lg: 'text-body-lg h-12 px-8 gap-2.5',
 };
 
-const iconProps = { size: 18 };
-
 /**
  * @param {{ variant?: 'primary'|'secondary'|'ghost'|'danger', size?: 'sm'|'md'|'lg', disabled?: boolean, loading?: boolean, children?: React.ReactNode, className?: string }} props
  */

@@ -1,23 +1,38 @@
 import { useEffect } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { useLocale } from '@/context/LocaleContext.jsx';
 import { useCart } from '@/context/CartContext.jsx';
 import { scaleIn } from '@/lib/animations.js';
+import { formatPrice } from '@/lib/formatters.js';
+import SEO from '@/components/common/SEO.jsx';
 
 export default function CheckoutSuccess() {
   const { t } = useLocale();
+  const navigate = useNavigate();
   const [params] = useSearchParams();
   const { clearCart } = useCart();
   const orderId = params.get('orderId');
+  const phone = params.get('phone') || '';
+  const redeemed = Number(params.get('redeemed') || 0);
+  const discount = Number(params.get('discount') || 0);
+  const earn = Number(params.get('earn') || 0);
 
-  useEffect(() => { clearCart(); }, []);
+  useEffect(() => {
+    if (!orderId) {
+      navigate('/', { replace: true });
+      return;
+    }
+    clearCart();
+  }, [orderId]);
 
   return (
     <motion.div className="max-w-lg mx-auto px-5 py-24 text-center" {...scaleIn}>
+      <SEO titleKey="checkout.success.title" />
+
       <div className="w-16 h-16 rounded-full bg-bg-success/10 border border-bg-success/30 flex items-center justify-center mx-auto mb-5">
         <motion.svg
-          width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--bg-success)" strokeWidth="2.5" aria-hidden="true"
+          width="28" height="28" viewBox="0 0 24 24" fill="none"           stroke="var(--bg-success)" strokeWidth="2.5" aria-hidden="true"
           initial={{ pathLength: 0 }}
           animate={{ pathLength: 1 }}
           transition={{ duration: 0.6, ease: 'easeOut', delay: 0.3 }}
@@ -34,13 +49,29 @@ export default function CheckoutSuccess() {
       </div>
       <h1 className="text-display text-bg-text-primary mb-3">{t('checkout:success.title')}</h1>
       <p className="text-sm text-bg-text-secondary mb-2">{t('checkout:success.subtitle')}</p>
-      {orderId && (
-        <p className="text-xs font-mono text-bg-text-secondary mb-8">
-          Order #<span className="ltr-nums">{orderId}</span>
-        </p>
+      <p className="text-xs text-bg-text-secondary mb-1">{t('checkout:success.estimatedDelivery')}</p>
+      <p className="text-xs font-mono text-bg-text-secondary mb-8">
+        {t('admin.orders.orderNumber')}: <span className="ltr-nums">{orderId}</span>
+      </p>
+      {(earn > 0 || redeemed > 0) && (
+        <div className="max-w-sm mx-auto text-start bg-bg-primary-500/10 border border-bg-primary-500/30 rounded-2xl px-5 py-4 mb-8 space-y-1.5">
+          {earn > 0 && (
+            <p className="text-xs font-semibold text-bg-text-primary">
+              {t('checkout:success.pointsEarned', { points: earn.toLocaleString('en-US') })}
+            </p>
+          )}
+          {redeemed > 0 && (
+            <p className="text-xs text-bg-text-secondary">
+              {t('checkout:success.pointsRedeemed', {
+                points: redeemed.toLocaleString('en-US'),
+                amount: formatPrice(discount),
+              })}
+            </p>
+          )}
+        </div>
       )}
       <div className="flex flex-col sm:flex-row gap-3 justify-center">
-        <Link to="/track-order" className="btn-primary text-sm">
+        <Link to={phone ? { pathname: '/my-orders', search: `?order=${orderId}&phone=${phone}` } : '/my-orders'} className="btn-primary text-sm">
           {t('checkout:success.trackOrder')}
         </Link>
         <Link to="/shop" className="btn-secondary text-sm">

@@ -2,12 +2,14 @@ import { useState, useEffect, useRef } from 'react';
 import { useLocale } from '@/context/LocaleContext.jsx';
 import { motion, AnimatePresence } from 'motion/react';
 import { Link } from 'react-router-dom';
-import { Truck, Clock, ShieldCheck } from 'lucide-react';
+import { Truck, Clock, ShieldCheck, Plug, Smartphone, Package, ChevronRight, Cable, BatteryCharging, Headphones, MemoryStick } from 'lucide-react';
 import { fetchCategories, fetchProducts, fetchBanners } from '@/api.js';
 import { fadeUp } from '@/lib/animations.js';
 import ProductGrid from '@/components/shop/ProductGrid.jsx';
 import SEO from '@/components/common/SEO.jsx';
 import HeroVisual from '@/components/common/HeroVisual.jsx';
+import EmptyState from '@/components/ui/EmptyState.jsx';
+import Skeleton from '@/components/ui/Skeleton.jsx';
 
 /**
  * SIGNATURE ELEMENT: the capacity marquee.
@@ -19,10 +21,23 @@ import HeroVisual from '@/components/common/HeroVisual.jsx';
  */
 const CAPACITIES = ['8GB', '16GB', '32GB', '64GB', '128GB', '256GB', '512GB', '1TB', '2TB'];
 
+const CATEGORY_ICONS = {
+  chargers: Plug,
+  cables: Cable,
+  'power-banks': BatteryCharging,
+  'screen-protectors': ShieldCheck,
+  'phone-cases': Smartphone,
+  cases: Smartphone,
+  storage: MemoryStick,
+  memmory: MemoryStick,
+  earbuds: Headphones,
+  headphones: Headphones,
+};
+
 function CapacityMarquee() {
   return (
-    <div className="relative overflow-hidden border-y border-bg-border bg-bg-ink py-3 select-none" aria-hidden="true">
-      <div className="flex w-max animate-marquee gap-8 font-mono text-caption tracking-wider text-bg-ink-text/70">
+    <div className="relative overflow-hidden border-y border-bg-border py-3 select-none" aria-hidden="true">
+      <div className="flex w-max animate-marquee gap-8 font-mono text-caption tracking-wider text-bg-text-secondary">
         {[...CAPACITIES, ...CAPACITIES, ...CAPACITIES].map((cap, i) => (
           <span key={i} className="flex items-center gap-8">
             <span>{cap}</span>
@@ -82,7 +97,7 @@ function HeroCarousel() {
   // built from CSS, not stock photography. This is the thesis image.
   if (!isLoading && banners.length === 0) {
     return (
-      <section className="relative overflow-hidden bg-bg-ink">
+      <section className="relative overflow-hidden">
         <div className="mx-auto grid max-w-7xl grid-cols-1 items-center gap-10 px-4 py-16 sm:px-6 lg:grid-cols-2 lg:gap-16 lg:px-8 lg:py-24">
           {/* Copy side — staggered reveal, same orchestrated entrance as the visual */}
           <motion.div
@@ -98,7 +113,7 @@ function HeroCarousel() {
             >
               {t('home.heroEyebrow')}
             </motion.p>
-            <h1 className="text-display font-bold leading-[1.05] text-bg-ink-text">
+            <h1 className="text-display font-bold leading-[1.05] text-bg-text-primary">
               <motion.span
                 className="block overflow-hidden"
                 variants={{ hidden: { opacity: 0, y: 10 }, show: { opacity: 1, y: 0 } }}
@@ -117,7 +132,7 @@ function HeroCarousel() {
             <motion.p
               variants={{ hidden: { opacity: 0, y: 10 }, show: { opacity: 1, y: 0 } }}
               transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-              className="mt-6 max-w-md text-body-lg text-bg-ink-text/70"
+              className="mt-6 max-w-md text-body-lg text-bg-text-secondary"
             >
               {t('home.heroSubtitle')}
             </motion.p>
@@ -134,7 +149,7 @@ function HeroCarousel() {
               </Link>
               <Link
                 to="/shop?category=storage"
-                className="text-body-sm font-medium text-bg-ink-text/80 underline decoration-bg-ink-text/30 underline-offset-4 transition hover:text-bg-ink-text hover:decoration-bg-ink-text"
+                className="text-body-sm font-medium text-bg-text-secondary underline decoration-bg-text-secondary/40 underline-offset-4 transition hover:text-bg-text-primary hover:decoration-bg-text-primary"
               >
                 {t('home.heroCtaSecondary')}
               </Link>
@@ -152,7 +167,12 @@ function HeroCarousel() {
   }
 
   if (isLoading) {
-    return <div className="h-[60vh] sm:h-[70vh] animate-pulse bg-bg-surface-sunken" />;
+    return (
+      <section className="relative overflow-hidden">
+        <div className="h-[60vh] sm:h-[70vh] animate-pulse bg-bg-surface-sunken" />
+        <CapacityMarquee />
+      </section>
+    );
   }
 
   return (
@@ -238,23 +258,37 @@ function HeroCarousel() {
 }
 
 function SecondaryBanners() {
-  const { isAr } = useLocale();
+  const { t, isAr } = useLocale();
   const [banners, setBanners] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isError, setIsError] = useState(false);
+  const [reload, setReload] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
+    setIsLoading(true);
+    setIsError(false);
     fetchBanners({ position: 'home_secondary' })
       .then((res) => { if (!cancelled) setBanners(res?.data || []); })
-      .catch(() => { if (!cancelled) setBanners([]); })
+      .catch(() => { if (!cancelled) setIsError(true); })
       .finally(() => { if (!cancelled) setIsLoading(false); });
     return () => { cancelled = true; };
-  }, []);
+  }, [reload]);
 
   if (isLoading) {
     return (
       <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
         <div className="h-48 rounded-xl animate-pulse bg-bg-surface-sunken" />
+      </section>
+    );
+  }
+  if (isError) {
+    return (
+      <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
+        <EmptyState
+          message={t('common.common.error')}
+          action={{ label: t('common.common.retry'), onClick: () => setReload((v) => v + 1) }}
+        />
       </section>
     );
   }
@@ -309,6 +343,7 @@ export default function Home() {
   const [catData, setCatData] = useState(null);
   const [catLoading, setCatLoading] = useState(true);
   const [catError, setCatError] = useState(false);
+  const [catReload, setCatReload] = useState(0);
 
   const [featuredData, setFeaturedData] = useState(null);
   const [featLoading, setFeatLoading] = useState(true);
@@ -322,12 +357,14 @@ export default function Home() {
 
   useEffect(() => {
     let cancelled = false;
+    setCatLoading(true);
+    setCatError(false);
     fetchCategories()
       .then((res) => { if (!cancelled) setCatData(res); })
       .catch(() => { if (!cancelled) setCatError(true); })
       .finally(() => { if (!cancelled) setCatLoading(false); });
     return () => { cancelled = true; };
-  }, []);
+  }, [catReload]);
 
   useEffect(() => {
     let cancelled = false;
@@ -361,104 +398,135 @@ export default function Home() {
 
       <HeroCarousel />
 
-      {/* Categories — numbered spec-row treatment, not generic pills */}
-      {!catLoading && !catError && categories.length > 0 && (
-        <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10 lg:py-14">
-          <motion.div {...fadeUp}>
-            <p className="mb-5 font-mono text-caption uppercase tracking-[0.2em] text-bg-text-secondary">
+      {/* Categories — tiled cards: tinted icon tile, name, slide-in chevron on hover */}
+      <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 lg:py-10">
+        <motion.div {...fadeUp}>
+          <div className="mb-5 flex items-end justify-between">
+            <p className="font-mono text-caption uppercase tracking-[0.2em] text-bg-text-secondary">
               {t('home.shopByCategory')}
             </p>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-              {categories.map((cat, i) => (
-                <motion.div
-                  key={cat.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true, margin: '-80px' }}
-                  transition={{ duration: 0.3, delay: i * 0.05 }}
-                >
-                  <Link
-                    to={`/shop?category=${cat.slug}`}
-                    className="group flex items-center justify-between rounded-lg border border-bg-border bg-bg-surface px-4 py-4 transition-all hover:border-bg-primary-300 hover:shadow-card active:scale-[0.98]"
-                  >
-                    <span className="text-body-sm font-medium text-bg-text-primary">
-                      {isAr ? cat.nameAr : cat.nameEn}
-                    </span>
-                    <span className="font-mono text-caption text-bg-text-secondary/50 transition group-hover:text-bg-primary-500 rtl:rotate-180">
-                      &rarr;
-                    </span>
-                  </Link>
-                </motion.div>
+            <Link to="/shop" className="text-body-sm font-medium text-bg-primary-500 hover:text-bg-primary-600 transition">
+              {t('common.viewAll')}
+            </Link>
+          </div>
+          {catLoading && (
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 sm:gap-4">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <Skeleton key={i} className="h-[68px] w-full rounded-md" />
               ))}
             </div>
-          </motion.div>
-        </section>
-      )}
+          )}
+          {catError && !catLoading && (
+            <EmptyState
+              message={t('common.common.error')}
+              action={{ label: t('common.common.retry'), onClick: () => setCatReload((v) => v + 1) }}
+            />
+          )}
+          {!catLoading && !catError && categories.length > 0 && (
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 sm:gap-4">
+              {categories.map((cat, i) => {
+                const CategoryIcon = CATEGORY_ICONS[cat.slug] || Package;
+                const isHiddenOnMobile = i >= 4;
+                return (
+                  <motion.div
+                    key={cat.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true, margin: '-80px' }}
+                    transition={{ duration: 0.3, delay: i * 0.05 }}
+                    className={isHiddenOnMobile ? 'hidden sm:block' : ''}
+                  >
+                    <Link
+                      to={`/shop?category=${cat.slug}`}
+                      className="group flex items-center gap-4 rounded-md border border-bg-border bg-bg-surface px-4 py-3.5 transition-all duration-300 hover:-translate-y-0.5 hover:border-bg-primary-300 hover:shadow-card"
+                    >
+                      <span
+                        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md"
+                        style={{ background: 'color-mix(in srgb, var(--bg-primary-500) 10%, transparent)' }}
+                      >
+                        <CategoryIcon size={20} strokeWidth={1.5} className="text-bg-primary-500" />
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-body-sm font-medium text-bg-text-primary transition-colors duration-300 group-hover:text-bg-primary-500">
+                          {isAr ? cat.nameAr : cat.nameEn}
+                        </span>
+                      </span>
+                      <ChevronRight
+                        size={16}
+                        strokeWidth={2}
+                        className="hidden shrink-0 -translate-x-2 text-bg-primary-500 opacity-0 transition-all duration-300 group-hover:translate-x-0 group-hover:opacity-100 rtl:rotate-180 rtl:translate-x-2 rtl:group-hover:translate-x-0 sm:block"
+                      />
+                    </Link>
+                  </motion.div>
+                );
+              })}
+            </div>
+          )}
+        </motion.div>
+      </section>
 
       {/* Featured */}
-      {featured.length > 0 && (
-        <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pb-12 lg:pb-16">
-          <motion.div {...fadeUp}>
-            <div className="flex items-end justify-between mb-6 lg:mb-8">
-              <div>
-                <p className="mb-1 font-mono text-caption uppercase tracking-[0.2em] text-bg-primary-500">{t('home.featuredEyebrow')}</p>
-                <h2 className="text-h2 font-semibold text-bg-text-primary">{t('shop:featured')}</h2>
-              </div>
-              <Link to="/shop?sort=featured" className="text-body-sm font-medium text-bg-primary-500 hover:text-bg-primary-600 transition">
-                {t('common.viewAll')}
-              </Link>
+      <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pb-12 lg:pb-16">
+        <motion.div {...fadeUp}>
+          <div className="flex items-end justify-between mb-6 lg:mb-8">
+            <div>
+              <p className="mb-1 font-mono text-caption uppercase tracking-[0.2em] text-bg-primary-500">{t('home.featuredEyebrow')}</p>
+              <h2 className="text-h2 font-semibold text-bg-text-primary">{t('shop:featured')}</h2>
             </div>
-            <ProductGrid
-              products={featured}
-              isLoading={featLoading}
-              isError={featError}
-              onRetry={() => setFeatReload((v) => v + 1)}
-              emptyMessage={t('shop:noProducts')}
-            />
-          </motion.div>
-        </section>
-      )}
+            <Link to="/shop?sort=featured" className="text-body-sm font-medium text-bg-primary-500 hover:text-bg-primary-600 transition">
+              {t('common.viewAll')}
+            </Link>
+          </div>
+          <ProductGrid
+            products={featured}
+            isLoading={featLoading}
+            isError={featError}
+            onRetry={() => setFeatReload((v) => v + 1)}
+            emptyMessage={t('shop:noProducts')}
+          />
+        </motion.div>
+      </section>
 
       <SecondaryBanners />
 
       {/* New Arrivals */}
-      {newArrivals.length > 0 && (
-        <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pb-12 lg:pb-16">
-          <motion.div {...fadeUp}>
-            <div className="flex items-end justify-between mb-6 lg:mb-8">
-              <div>
-                <p className="mb-1 font-mono text-caption uppercase tracking-[0.2em] text-bg-primary-500">{t('home.newEyebrow')}</p>
-                <h2 className="text-h2 font-semibold text-bg-text-primary">{t('shop:newArrivals')}</h2>
-              </div>
-              <Link to="/shop?sort=newest" className="text-body-sm font-medium text-bg-primary-500 hover:text-bg-primary-600 transition">
-                {t('common.viewAll')}
-              </Link>
+      <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pb-12 lg:pb-16">
+        <motion.div {...fadeUp}>
+          <div className="flex items-end justify-between mb-6 lg:mb-8">
+            <div>
+              <p className="mb-1 font-mono text-caption uppercase tracking-[0.2em] text-bg-primary-500">{t('home.newEyebrow')}</p>
+              <h2 className="text-h2 font-semibold text-bg-text-primary">{t('shop:newArrivals')}</h2>
             </div>
-            <ProductGrid
-              products={newArrivals}
-              isLoading={newLoading}
-              isError={newError}
-              onRetry={() => setNewReload((v) => v + 1)}
-              emptyMessage={t('shop:noProducts')}
-            />
-          </motion.div>
-        </section>
-      )}
+            <Link to="/shop?sort=newest" className="text-body-sm font-medium text-bg-primary-500 hover:text-bg-primary-600 transition">
+              {t('common.viewAll')}
+            </Link>
+          </div>
+          <ProductGrid
+            products={newArrivals}
+            isLoading={newLoading}
+            isError={newError}
+            onRetry={() => setNewReload((v) => v + 1)}
+            emptyMessage={t('shop:noProducts')}
+          />
+        </motion.div>
+      </section>
 
-      {/* Trust strip — spec-sheet row, mono labels, one hairline border, no icon soup */}
-      <section className="border-t border-bg-border bg-bg-ink">
+      {/* Trust strip — light spec-sheet band, hardware icon chips, hairline dividers */}
+      <section className="border-y border-bg-border bg-bg-surface-sunken/50">
         <motion.div {...fadeUp} className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8 lg:py-12">
-          <div className="grid grid-cols-1 divide-y divide-white/10 sm:grid-cols-3 sm:divide-y-0 sm:divide-x rtl:sm:divide-x-reverse">
+          <div className="grid grid-cols-1 divide-y divide-bg-border sm:grid-cols-3 sm:divide-y-0 sm:divide-x rtl:sm:divide-x-reverse">
             {[
               { Icon: Truck, labelKey: 'footer.cod', descKey: 'home.codDesc' },
               { Icon: Clock, labelKey: 'home.deliveryDays', descKey: 'home.deliveryDesc' },
               { Icon: ShieldCheck, labelKey: 'home.quality', descKey: 'home.qualityDesc' },
             ].map(({ Icon, labelKey, descKey }, i) => (
               <div key={i} className="flex items-center gap-4 py-6 sm:justify-center sm:py-0 sm:px-8">
-                <Icon size={20} strokeWidth={1.5} className="shrink-0 text-bg-primary-400" />
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-sm border border-bg-border bg-bg-surface shadow-card">
+                  <Icon size={20} strokeWidth={1.5} className="text-bg-primary-500" />
+                </span>
                 <div>
-                  <h3 className="text-body-sm font-semibold text-bg-ink-text">{t(labelKey)}</h3>
-                  <p className="text-caption text-bg-ink-text/50">{t(descKey)}</p>
+                  <h3 className="text-body-sm font-semibold text-bg-text-primary">{t(labelKey)}</h3>
+                  <p className="mt-0.5 text-caption text-bg-text-secondary">{t(descKey)}</p>
                 </div>
               </div>
             ))}

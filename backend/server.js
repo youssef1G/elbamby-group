@@ -1,4 +1,4 @@
-import 'dotenv/config';
+﻿import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -47,6 +47,8 @@ import {
   getOrderCount,
   getDeliveredOrderTotals,
   getActiveProducts,
+  getProductCount,
+  getAnalyticsSummary,
   getOrdersSince,
   getItemsWithOrdersSince,
   getProductsByIds,
@@ -61,13 +63,37 @@ import {
   listComplaints,
   getComplaintById,
   updateComplaint,
+  deleteComplaint,
   createReturnRequest,
   listReturnRequests,
   getReturnRequestById,
   updateReturnRequest,
+  deleteReturnRequest,
+  // ── points / customer-accounts (docs/13-points-system.md, Stage A) ──
+  getCustomerByPhone,
+  getCustomerById,
+  getCustomerAuthById,
+  createCustomer,
+  setCustomerPasswordByPhone,
+  updateCustomer,
+  updateCustomerPassword,
+  listOrdersByCustomer,
+  listCustomerDirectory,
+  listPointsTransactionsByCustomer,
+  createPointsTransaction,
+  getPointsEarnRate,
+  creditOrderEarnedPoints,
+  refundOrderRedeemedPoints,
+  reverseOrderEarnedPoints,
 } from './db.js';
 import { signToken, verifyToken, requireAdmin, requireSuperAdmin } from './auth.js';
 import { sendOrderConfirmation } from './email.js';
+import {
+  requireCustomer,
+  optionalCustomer,
+  CUSTOMER_COOKIE,
+  CUSTOMER_COOKIE_OPTIONS,
+} from './customerAuth.js';
 
 // ──────────────────────────────────────────────
 //  constants
@@ -96,6 +122,11 @@ const PUBLIC_SETTINGS_FIELDS = [
   'default_shipping_fee',
   'free_shipping_threshold',
   'currency_code',
+  // Points rates — exposed publicly so the checkout can recalculate the
+  // order total live as redeemed points change (docs/13 §7.4) and the
+  // success page can show the earned estimate (docs/13 §3.1).
+  'points_earn_rate',
+  'points_redeem_rate',
 ];
 
 // ──────────────────────────────────────────────
@@ -146,7 +177,8 @@ const windowMs = parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000', 10);
 const authLimiter = rateLimit({ windowMs, max: 5, standardHeaders: true, legacyHeaders: false, message: { error: { message: 'Too many login attempts, try again later', code: 'RATE_LIMITED' } } });
 const orderLimiter = rateLimit({ windowMs, max: 10, standardHeaders: true, legacyHeaders: false, message: { error: { message: 'Too many requests, please wait', code: 'RATE_LIMITED' } } });
 const trackingLimiter = rateLimit({ windowMs, max: 20, standardHeaders: true, legacyHeaders: false, message: { error: { message: 'Too many requests, please wait', code: 'RATE_LIMITED' } } });
-const publicGetLimiter = rateLimit({ windowMs, max: 100, standardHeaders: true, legacyHeaders: false, message: { error: { message: 'Too many requests, please wait', code: 'RATE_LIMITED' } } });
+const publicGetLimiter = () =>
+  rateLimit({ windowMs, max: 100, standardHeaders: true, legacyHeaders: false, message: { error: { message: 'Too many requests, please wait', code: 'RATE_LIMITED' } } });
 
 // ──────────────────────────────────────────────
 //  validation middleware
@@ -168,7 +200,30 @@ function validate(schema) {
 //  zod schemas
 // ──────────────────────────────────────────────
 
+// Accepts local (01XXXXXXXXX), international (+201XXXXXXXXX), and spaced/dashed
+// variants; normalizePhone() runs BEFORE the regex so all forms pass and every
+// validated value is stored in local form.
 const phoneRegex = /^01[0-2,5]\d{8}$/;
+
+function normalizePhone(value) {
+  if (typeof value !== 'string') return value;
+  const cleaned = value.replace(/[\s\-()]/g, '');
+  if (cleaned.startsWith('+20')) return `0${cleaned.slice(3)}`;
+  return cleaned;
+}
+
+// Admin list-search: users may paste +20/international forms — normalize only
+// phone-like queries (starts with +), never name/order-number searches.
+function normalizeSearchPhone(value) {
+  if (typeof value !== 'string') return value;
+  const trimmed = value.trim();
+  return trimmed.startsWith('+') ? normalizePhone(trimmed) : trimmed;
+}
+
+const phoneField = z
+  .string()
+  .transform(normalizePhone)
+  .pipe(z.string().regex(phoneRegex, 'Invalid Egyptian phone number'));
 
 const loginSchema = z.object({
   username: z.string().min(1, 'Username is required'),
@@ -216,7 +271,7 @@ const categorySchema = z.object({
 
 const complaintSchema = z.object({
   name: z.string().min(1, 'Name is required'),
-  phone: z.string().regex(phoneRegex, 'Invalid Egyptian phone number'),
+  phone: phoneField,
   email: z.string().email('Invalid email').optional(),
   message: z.string().min(1, 'Message is required'),
   order_id: z.string().uuid().optional(),
@@ -229,8 +284,8 @@ const updateComplaintSchema = z.object({
 
 const createOrderSchema = z.object({
   customer_name: z.string().min(1, 'Name is required'),
-  phone: z.string().regex(phoneRegex, 'Invalid Egyptian phone number'),
-  alt_phone: z.string().regex(phoneRegex, 'Invalid Egyptian phone number').optional(),
+  phone: phoneField,
+  alt_phone: phoneField.optional(),
   email: z.string().email('Invalid email').optional(),
   address_line: z.string().min(1, 'Address is required'),
   city: z.string().min(1, 'City is required'),
@@ -242,6 +297,11 @@ const createOrderSchema = z.object({
       quantity: z.number().int().min(1, 'Quantity must be at least 1'),
     }),
   ).min(1, 'At least one item is required'),
+  // ── points (docs/13-points-system.md 3.2 / 4) — additive, optional ──
+  // Only honored when a logged-in customer session is present. Guests sending
+  // this field get it rejected below (in submitOrder), so a guest cannot
+  // sneak a redemption through.
+  points_to_redeem: z.number().int().min(0).default(0),
 });
 
 const createProductSchema = z.object({
@@ -249,13 +309,18 @@ const createProductSchema = z.object({
   name_en: z.string().min(1, 'Name (English) is required'),
   name_ar: z.string().min(1, 'Name (Arabic) is required'),
   slug: z.string().min(1, 'Slug is required'),
-  description_en: z.string().optional(),
-  description_ar: z.string().optional(),
+  description_en: z.string().nullable().optional(),
+  description_ar: z.string().nullable().optional(),
   category_id: z.string().uuid('Invalid category'),
   price: z.number().positive('Price must be positive'),
-  compare_at_price: z.number().positive().optional(),
+  compare_at_price: z.number().positive().nullable().optional(),
   stock_quantity: z.number().int().min(0, 'Stock cannot be negative'),
+  unlimited_stock: z.boolean().default(false),
   low_stock_threshold: z.number().int().min(0).default(5),
+  capacity_gb: z.number().int().positive().nullable().optional(),
+  speed_class: z.string().nullable().optional(),
+  interface_type: z.string().nullable().optional(),
+  form_factor: z.string().nullable().optional(),
   is_featured: z.boolean().default(false),
   is_new_arrival: z.boolean().default(false),
   is_active: z.boolean().default(true),
@@ -294,6 +359,64 @@ const settingsSchema = z.object({
   free_shipping_threshold: z.number().min(0).optional(),
   low_stock_threshold_default: z.number().int().min(0).optional(),
   currency_code: z.string().optional(),
+  // ── points config (docs/13-points-system.md 2.4) — additive, optional ──
+  // shippable through the existing admin PUT /api/admin/settings. A dedicated
+  // `PUT /api/admin/settings/points` route is part of Stage B/C and is NOT
+  // introduced here (no new route, just two fields on the existing schema).
+  points_earn_rate: z.number().min(0).optional(),
+  points_redeem_rate: z.number().min(0).optional(),
+});
+
+// ── Customer auth (docs/13-points-system.md 5.1) ─────────────────────────────
+// Separate from admin auth. Inlined here per the backend 4-file convention
+// (schemas live in server.js, not a separate schemas/ folder).
+
+const customerRegisterSchema = z.object({
+  name: z.string().min(1, 'Name is required'),
+  phone: phoneField,
+  password: z.string().min(6, 'Password must be at least 6 characters'),
+  email: z.string().email('Invalid email').optional(),
+});
+
+const customerLoginSchema = z.object({
+  phone: phoneField,
+  password: z.string().min(1, 'Password is required'),
+});
+
+const customerProfileUpdateSchema = z.object({
+  name: z.string().min(1, 'Name is required').optional(),
+  // empty string = clear the email (stored as NULL)
+  email: z
+    .union([z.string().email('Invalid email'), z.literal('')])
+    .optional(),
+});
+
+const customerPasswordSchema = z.object({
+  current_password: z.string().min(1, 'Current password is required'),
+  new_password: z.string().min(6, 'Password must be at least 6 characters'),
+});
+
+// ── Admin customer/points management (docs/13-points-system.md §5.3 / §6) ─────
+// In-store path: create an account with name + phone only — no password; the
+// customer claims it online later via register (see §2.1 claim note).
+
+const adminCreateCustomerSchema = z.object({
+  name: z.string().min(1, 'Name is required'),
+  phone: phoneField,
+});
+
+// direction-specific requirement (egp_amount for grant, points for deduct) is
+// enforced inline in the handler (same pattern as the inline status checks).
+const pointsAdjustSchema = z.object({
+  direction: z.enum(['grant', 'deduct']),
+  egp_amount: z.number().positive().optional(),
+  points: z.number().int().positive().optional(),
+  note: z.string().min(1, 'Note is required'),
+});
+
+const pointsSettingsSchema = z.object({
+  points_earn_rate: z.number().min(0),
+  points_redeem_rate: z.number().min(0),
 });
 
 // ──────────────────────────────────────────────
@@ -321,7 +444,11 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 app.use(helmet());
-app.use(cors({ origin: process.env.FRONTEND_URL || 'http://localhost:5173', credentials: true }));
+const frontendUrls = (process.env.FRONTEND_URL || 'http://localhost:5173,http://localhost:5174')
+  .split(',')
+  .map((s) => s.trim())
+  .filter(Boolean);
+app.use(cors({ origin: frontendUrls, credentials: true }));
 app.use(express.json({ limit: '2mb' }));
 app.use(cookieParser());
 
@@ -364,7 +491,7 @@ async function login(req, res, next) {
       return res.status(401).json({ error: { message: 'Invalid username or password', code: 'AUTH_FAILED' } });
     }
 
-    const token = signToken({ id: admin.id, username: admin.username, role: admin.role });
+    const token = signToken({ id: admin.id, username: admin.username, role: admin.role, kind: 'admin' });
 
     res.cookie(COOKIE_NAME, token, {
       httpOnly: true,
@@ -518,7 +645,7 @@ async function adminListProducts(req, res, next) {
       category_id: category || undefined,
       search: search || undefined,
       is_active:
-        is_active === 'true' ? true : is_active === 'false' ? false : undefined,
+        is_active === 'true' ? true : is_active === 'false' ? false : true,
       is_featured: featured === 'true' ? true : undefined,
       is_new_arrival: is_new_arrival === 'true' ? true : undefined,
       page: Math.max(1, parseInt(page, 10) || 1),
@@ -533,10 +660,12 @@ async function adminListProducts(req, res, next) {
     rows = rows || [];
 
     if (low_stock === 'true') {
-      rows = rows.filter((p) => p.stock_quantity > 0 && p.stock_quantity <= p.low_stock_threshold);
+      rows = rows.filter(
+        (p) => !p.unlimited_stock && p.stock_quantity > 0 && p.stock_quantity <= p.low_stock_threshold,
+      );
     }
     if (out_of_stock === 'true') {
-      rows = rows.filter((p) => p.stock_quantity === 0);
+      rows = rows.filter((p) => !p.unlimited_stock && p.stock_quantity === 0);
     }
     if (low_stock === 'true' || out_of_stock === 'true') {
       count = rows.length;
@@ -711,7 +840,7 @@ async function adminToggleProduct(req, res, next) {
   }
 }
 
-app.use('/api/products', publicGetLimiter);
+app.use('/api/products', publicGetLimiter());
 app.get('/api/products', listPublicProducts);
 app.get('/api/products/:slug', getPublicProduct);
 
@@ -750,7 +879,19 @@ async function adminListCategories(req, res, next) {
 
     if (error) return next(error);
 
-    res.json({ data: (rows || []).map((r) => toCamelCase(r)) });
+    const counts = {};
+    if (rows?.length) {
+      await Promise.all(
+        rows.map(async (c) => {
+          const { count, error: cErr } = await getProductCountByCategory(c.id);
+          if (!cErr) counts[c.id] = count ?? 0;
+        }),
+      );
+    }
+
+    res.json({
+      data: (rows || []).map((r) => toCamelCase({ ...r, product_count: counts[r.id] ?? 0 })),
+    });
   } catch (err) {
     next(err);
   }
@@ -827,7 +968,7 @@ async function adminGetCategory(req, res, next) {
   }
 }
 
-app.use('/api/categories', publicGetLimiter);
+app.use('/api/categories', publicGetLimiter());
 app.get('/api/categories', listPublicCategories);
 
 app.use('/api/admin/categories', requireAdmin);
@@ -886,6 +1027,55 @@ async function submitOrder(req, res, next) {
     }
     const total = subtotal + shippingFee;
 
+    // ── points redemption (docs/13 3.2 / 4) ───────────────────────────────
+    // Only honored when a customer session is present. A guest sending
+    // points_to_redeem > 0 is rejected here (the schema already accepted the
+    // field but we don't honor it without an authenticated customer).
+    const customerId = req.customer?.id || null;
+    let pointsToRedeem = Number(validated.points_to_redeem || 0);
+    let pointsDiscountEgp = 0;
+
+    if (pointsToRedeem > 0) {
+      if (!customerId) {
+        return res.status(400).json({
+          error: {
+            message: 'Points redemption requires a logged-in customer account',
+            code: 'VALIDATION_ERROR',
+          },
+        });
+      }
+      // No minimum redemption amount — any positive value is allowed.
+      // (open item #1 in docs/13 §8, default per user instruction.)
+      if (!Number.isInteger(pointsToRedeem) || pointsToRedeem < 0) {
+        return res.status(400).json({
+          error: { message: 'points_to_redeem must be a non-negative integer', code: 'VALIDATION_ERROR' },
+        });
+      }
+      const redeemRate = Number(settings.points_redeem_rate ?? 0.1);
+      if (redeemRate <= 0) {
+        return res.status(400).json({
+          error: {
+            message: 'Points redemption is currently unavailable',
+            code: 'REDEMPTION_DISABLED',
+          },
+        });
+      }
+      pointsDiscountEgp = Math.round(pointsToRedeem * redeemRate * 100) / 100;
+      if (pointsDiscountEgp > total) {
+        // Spec 3.2 explicitly allows a fully-points order (0 EGP due) for COD,
+        // so cap the discount at the order total and redeem only the points
+        // needed to cover it. Excess points stay in the customer's balance.
+        const pointsNeeded = Math.ceil(total / redeemRate);
+        pointsToRedeem = Math.min(pointsToRedeem, pointsNeeded);
+        pointsDiscountEgp = total;
+      }
+    }
+
+    // `total` below is the amount the customer actually owes — already
+    // reduced by any points discount. Per spec 3.1, points are later EARNED
+    // on this post-discount total (the floor(total * earn_rate) calculation).
+    const totalAfterDiscount = Math.max(0, total - pointsDiscountEgp);
+
     const orderNumber = await generateOrderNumber();
 
     const orderParams = {
@@ -893,8 +1083,11 @@ async function submitOrder(req, res, next) {
       ...customerFields,
       subtotal,
       shipping_fee: shippingFee,
-      total,
+      total: totalAfterDiscount,
       items: lineItems,
+      ...(customerId ? { customer_id: customerId } : {}),
+      points_to_redeem: pointsToRedeem,
+      points_discount_egp: pointsDiscountEgp,
     };
 
     let order;
@@ -903,6 +1096,34 @@ async function submitOrder(req, res, next) {
       order = result.data;
     } catch (err) {
       if (err.code === 'STOCK_CHECK_FAILED') {
+        // Points-related failures are surfaced by the RPC (migration 017)
+        // as specific exception messages; map each to a clear 4xx so the
+        // frontend can distinguish them from a stock conflict.
+        const msg = err.message || '';
+        if (msg.includes('INSUFFICIENT_POINTS')) {
+          return res.status(400).json({
+            error: {
+              message: 'Not enough points to redeem the requested amount',
+              code: 'INSUFFICIENT_POINTS',
+            },
+          });
+        }
+        if (msg.includes('CUSTOMER_NOT_FOUND')) {
+          return res.status(400).json({
+            error: {
+              message: 'Customer account not found',
+              code: 'CUSTOMER_NOT_FOUND',
+            },
+          });
+        }
+        if (msg.includes('INVALID_REDEMPTION')) {
+          return res.status(400).json({
+            error: {
+              message: 'Points redemption requires a logged-in customer account',
+              code: 'INVALID_REDEMPTION',
+            },
+          });
+        }
         const affectedItems = (err.details || []).map((d) => ({
           productId: d.product_id,
           error: d.error,
@@ -957,7 +1178,7 @@ async function trackOrder(req, res, next) {
       });
     }
 
-    const { data: order, error } = await getOrderByNumberAndPhone(order_number, phone);
+    const { data: order, error } = await getOrderByNumberAndPhone(order_number, normalizePhone(phone));
 
     if (error || !order) {
       return res.status(404).json({ error: { message: 'Order not found', code: 'NOT_FOUND' } });
@@ -979,7 +1200,7 @@ async function lookupOrders(req, res, next) {
       });
     }
 
-    const { data: orders, error } = await getOrdersByPhone(phone);
+    const { data: orders, error } = await getOrdersByPhone(normalizePhone(phone));
 
     if (error) return next(error);
 
@@ -1006,7 +1227,7 @@ async function cancelOrder(req, res, next) {
       return res.status(404).json({ error: { message: 'Order not found', code: 'NOT_FOUND' } });
     }
 
-    if (order.phone !== phone) {
+    if (order.phone !== normalizePhone(phone)) {
       return res.status(403).json({ error: { message: 'Phone does not match this order', code: 'FORBIDDEN' } });
     }
 
@@ -1021,6 +1242,13 @@ async function cancelOrder(req, res, next) {
 
     const { data: updated, error: updateError } = await updateOrderStatus(id, 'cancelled');
     if (updateError) return next(updateError);
+
+    // Points: a pending order can have points_redeemed (redeemed at checkout)
+    // but never points_earned (earned only on delivery), so only the
+    // redeem-side refund applies here. (docs/13 §3.3)
+    if (order.customer_id && Number(order.points_redeemed || 0) > 0) {
+      await refundOrderRedeemedPoints(order, 'cancelled');
+    }
 
     await createStatusHistoryEntry({
       order_id: id,
@@ -1043,7 +1271,7 @@ async function adminListOrders(req, res, next) {
       status: status || undefined,
       date_from: date_from || undefined,
       date_to: date_to || undefined,
-      search: search || undefined,
+      search: search ? normalizeSearchPhone(search) : undefined,
       page: Math.max(1, parseInt(page, 10) || 1),
       limit: Math.min(100, Math.max(1, parseInt(limit, 10) || 20)),
     };
@@ -1084,7 +1312,7 @@ async function adminGetOrder(req, res, next) {
 async function adminUpdateOrderStatus(req, res, next) {
   try {
     const { id } = req.params;
-    const { status, note } = req.body;
+    const { status, note, estimated_delivery } = req.body;
 
     if (!ORDER_STATUSES.includes(status)) {
       return res.status(400).json({
@@ -1095,13 +1323,55 @@ async function adminUpdateOrderStatus(req, res, next) {
       });
     }
 
+    if (
+      estimated_delivery !== undefined &&
+      estimated_delivery !== null &&
+      estimated_delivery !== '' &&
+      !/^\d{4}-\d{2}-\d{2}$/.test(estimated_delivery)
+    ) {
+      return res.status(400).json({
+        error: { message: 'estimated_delivery must be a YYYY-MM-DD date', code: 'VALIDATION_ERROR' },
+      });
+    }
+
     const { data: existing } = await getOrderById(id);
     if (!existing) {
       return res.status(404).json({ error: { message: 'Order not found', code: 'NOT_FOUND' } });
     }
 
-    const { data: updated, error } = await updateOrderStatus(id, status);
+    const { data: updated, error } = await updateOrderStatus(
+      id,
+      status,
+      estimated_delivery === '' ? null : estimated_delivery,
+    );
     if (error) return next(error);
+
+    // ── points lifecycle (docs/13-points-system.md §3) ──────────────────────
+    // Earning: credited ONLY on a transition INTO delivered (not when an
+    // already-delivered order is re-saved as delivered — that's a no-op
+    // transition, and re-applying delivered shouldn't re-credit). The
+    // `creditOrderEarnedPoints` helper additionally guards on
+    // orders.points_earned = 0 for belt-and-braces idempotency.
+    if (existing.status !== 'delivered' && status === 'delivered') {
+      await creditOrderEarnedPoints(existing);
+    }
+
+    // Reversal: when moving INTO a terminal non-fulfilled status:
+    //   1. points_redeemed > 0 → refund the redeemed points back
+    //      (refund_reversal, positive ledger entry)
+    //   2. points_earned > 0  → the order WAS delivered; the state machine
+    //      here permits delivered → cancelled/returned (no transition guard
+    //      in adminUpdateOrderStatus), so per the user's decision on
+    //      docs/13 §3.3 open item #2 we DO reverse earned points via a
+    //      negative manual_deduct-style ledger entry.
+    if (status === 'cancelled' || status === 'returned') {
+      if (existing.customer_id && Number(existing.points_redeemed || 0) > 0) {
+        await refundOrderRedeemedPoints(existing, status);
+      }
+      if (existing.customer_id && Number(existing.points_earned || 0) > 0) {
+        await reverseOrderEarnedPoints(existing, status);
+      }
+    }
 
     await createStatusHistoryEntry({
       order_id: id,
@@ -1148,7 +1418,7 @@ async function adminUpdateOrderNote(req, res, next) {
 }
 
 app.use('/api/orders', orderLimiter);
-app.post('/api/orders', validate(createOrderSchema), submitOrder);
+app.post('/api/orders', optionalCustomer, validate(createOrderSchema), submitOrder);
 app.get('/api/orders/track', trackingLimiter, trackOrder);
 app.get('/api/orders/lookup', trackingLimiter, lookupOrders);
 app.patch('/api/orders/:id/cancel', cancelOrder);
@@ -1158,6 +1428,393 @@ app.get('/api/admin/orders', adminListOrders);
 app.get('/api/admin/orders/:id', adminGetOrder);
 app.patch('/api/admin/orders/:id/status', adminUpdateOrderStatus);
 app.patch('/api/admin/orders/:id/note', adminUpdateOrderNote);
+
+// ──────────────────────────────────────────────
+//  CUSTOMERS
+// ──────────────────────────────────────────────
+
+async function adminListCustomers(req, res, next) {
+  try {
+    const { search = '', page = '1', limit = '20' } = req.query;
+    const { data, error, count } = await listCustomerDirectory({
+      search: normalizeSearchPhone(search),
+      page: Math.max(1, parseInt(page, 10) || 1),
+      limit: Math.min(100, Math.max(1, parseInt(limit, 10) || 20)),
+    });
+
+    if (error) return next(error);
+
+    res.json({
+      data: (data || []).map((r) => toCamelCase(r)),
+      meta: {
+        page: Math.max(1, parseInt(page, 10) || 1),
+        limit: Math.min(100, Math.max(1, parseInt(limit, 10) || 20)),
+        total: count || 0,
+        totalPages: Math.ceil((count || 0) / (Math.min(100, Math.max(1, parseInt(limit, 10) || 20)))),
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function adminGetCustomer(req, res, next) {
+  try {
+    const { data: customer, error } = await getCustomerById(req.params.id);
+
+    if (error || !customer) {
+      return res.status(404).json({ error: { message: 'Customer not found', code: 'NOT_FOUND' } });
+    }
+
+    res.json(toCamelCase(customer));
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function adminGetCustomerPointsHistory(req, res, next) {
+  try {
+    const { page = '1', limit = '20' } = req.query;
+    const p = Math.max(1, parseInt(page, 10) || 1);
+    const l = Math.min(100, Math.max(1, parseInt(limit, 10) || 20));
+
+    const { data, error, count } = await listPointsTransactionsByCustomer(req.params.id, {
+      page: p,
+      limit: l,
+    });
+
+    if (error) return next(error);
+
+    res.json({
+      data: (data || []).map((r) => toCamelCase(r)),
+      meta: {
+        page: p,
+        limit: l,
+        total: count || 0,
+        totalPages: Math.ceil((count || 0) / l),
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function adminCreateCustomerAccount(req, res, next) {
+  try {
+    const { name, phone } = req.validatedBody;
+
+    const { data: customer, error } = await createCustomer({ name, phone });
+
+    if (error) {
+      // unique phone index (migration 016) — same 409 pattern as customerRegister
+      if (error.code === '23505') {
+        return res.status(409).json({
+          error: { message: 'An account already exists for this phone number', code: 'CONFLICT' },
+        });
+      }
+      return next(error);
+    }
+
+    res.status(201).json(toCamelCase(customer));
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function adminAdjustCustomerPoints(req, res, next) {
+  try {
+    const { direction, egp_amount, points, note } = req.validatedBody;
+    const customerId = req.params.id;
+
+    const { data: customer, error: findErr } = await getCustomerById(customerId);
+
+    if (findErr || !customer) {
+      return res.status(404).json({ error: { message: 'Customer not found', code: 'NOT_FOUND' } });
+    }
+
+    let signedPoints;
+    let type;
+
+    if (direction === 'grant') {
+      // Spec §6: admin enters the EGP amount spent in-store; conversion always
+      // goes through points_earn_rate (floor), exactly like online orders.
+      if (egp_amount == null) {
+        return res.status(400).json({
+          error: { message: 'egp_amount is required for a grant', code: 'VALIDATION_ERROR' },
+        });
+      }
+      const rate = await getPointsEarnRate();
+      signedPoints = Math.floor(egp_amount * rate);
+      type = 'manual_grant';
+      if (signedPoints <= 0) {
+        return res.status(400).json({
+          error: { message: 'Grant amount converts to 0 points', code: 'VALIDATION_ERROR' },
+        });
+      }
+    } else {
+      if (points == null) {
+        return res.status(400).json({
+          error: { message: 'points is required for a deduction', code: 'VALIDATION_ERROR' },
+        });
+      }
+      // Balance floor: a manual deduction must never push the balance negative
+      // (the ledger trigger has no guard of its own — user decision on §6.5).
+      if (points > Number(customer.points_balance || 0)) {
+        return res.status(422).json({
+          error: { message: 'Deduction exceeds the customer balance', code: 'INSUFFICIENT_POINTS' },
+        });
+      }
+      signedPoints = -points;
+      type = 'manual_deduct';
+    }
+
+    const { data: transaction, error: txErr } = await createPointsTransaction({
+      customer_id: customerId,
+      order_id: null,
+      type,
+      points: signedPoints,
+      note,
+      created_by_admin_id: req.admin.id,
+    });
+
+    if (txErr) return next(txErr);
+
+    const { data: updated } = await getCustomerById(customerId);
+
+    res.status(201).json({
+      transaction: toCamelCase(transaction),
+      customer: toCamelCase(updated),
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+app.use('/api/admin/customers', requireAdmin);
+app.get('/api/admin/customers', adminListCustomers);
+app.get('/api/admin/customers/:id', adminGetCustomer);
+app.get('/api/admin/customers/:id/points-history', adminGetCustomerPointsHistory);
+app.post('/api/admin/customers', validate(adminCreateCustomerSchema), adminCreateCustomerAccount);
+app.post('/api/admin/customers/:id/points-adjust', validate(pointsAdjustSchema), adminAdjustCustomerPoints);
+
+// ──────────────────────────────────────────────────────────────
+//  CUSTOMER AUTH + ACCOUNT (docs/13-points-system.md §5.1)
+//  Fully separate from admin auth: separate JWT (kind: 'customer'),
+//  separate httpOnly cookie (bg_customer_token), separate middleware.
+// ──────────────────────────────────────────────────────────────
+
+async function customerRegister(req, res, next) {
+  try {
+    const { name, phone, password, email } = req.validatedBody;
+
+    const { data: existing, error: findErr } = await getCustomerByPhone(phone);
+
+    if (findErr && findErr.code !== 'PGRST116') return next(findErr);
+
+    if (existing) {
+      // Claim flow (docs/13 §2.1 / §5.1): a customer created via in-store
+      // admin grant (password_hash NULL) can claim their account online by
+      // registering with the same phone. If they already have a password,
+      // it's a plain duplicate-registration error.
+      if (existing.password_hash) {
+        return res.status(409).json({
+          error: { message: 'An account already exists for this phone number', code: 'CONFLICT' },
+        });
+      }
+
+      const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
+      const { data: claimed, error: claimErr } = await setCustomerPasswordByPhone(phone, passwordHash);
+      if (claimErr) return next(claimErr);
+
+      const token = signToken({ id: claimed.id, kind: 'customer' });
+      res.cookie(CUSTOMER_COOKIE, token, CUSTOMER_COOKIE_OPTIONS);
+      return res.status(201).json({
+        id: claimed.id,
+        name: claimed.name,
+        phone: claimed.phone,
+        email: claimed.email || null,
+        points_balance: claimed.points_balance ?? 0,
+      });
+    }
+
+    const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
+    const { data: customer, error: createErr } = await createCustomer({
+      name,
+      phone,
+      email: email || null,
+      password_hash: passwordHash,
+    });
+
+    if (createErr) return next(createErr);
+
+    const token = signToken({ id: customer.id, kind: 'customer' });
+    res.cookie(CUSTOMER_COOKIE, token, CUSTOMER_COOKIE_OPTIONS);
+
+    res.status(201).json({
+      id: customer.id,
+      name: customer.name,
+      phone: customer.phone,
+      email: customer.email || null,
+      points_balance: customer.points_balance ?? 0,
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function customerLogin(req, res, next) {
+  try {
+    const { phone, password } = req.validatedBody;
+
+    const { data: customer, error } = await getCustomerByPhone(phone);
+
+    if (error || !customer || !customer.password_hash) {
+      return res.status(401).json({ error: { message: 'Invalid phone or password', code: 'AUTH_FAILED' } });
+    }
+
+    const valid = await bcrypt.compare(password, customer.password_hash);
+    if (!valid) {
+      return res.status(401).json({ error: { message: 'Invalid phone or password', code: 'AUTH_FAILED' } });
+    }
+
+    const token = signToken({ id: customer.id, kind: 'customer' });
+    res.cookie(CUSTOMER_COOKIE, token, CUSTOMER_COOKIE_OPTIONS);
+
+    res.json({
+      id: customer.id,
+      name: customer.name,
+      phone: customer.phone,
+      email: customer.email || null,
+      points_balance: customer.points_balance ?? 0,
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+function customerLogout(_req, res) {
+  res.clearCookie(CUSTOMER_COOKIE, CUSTOMER_COOKIE_OPTIONS);
+  res.json({ message: 'Logged out' });
+}
+
+async function customerMe(req, res, next) {
+  try {
+    const { data: customer, error } = await getCustomerById(req.customer.id);
+
+    if (error || !customer) {
+      res.clearCookie(CUSTOMER_COOKIE, CUSTOMER_COOKIE_OPTIONS);
+      return res.status(401).json({ error: { message: 'Customer not found', code: 'UNAUTHORIZED' } });
+    }
+
+    res.json(toCamelCase(customer));
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function customerPointsHistory(req, res, next) {
+  try {
+    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 20));
+
+    const { data: rows, error, count } = await listPointsTransactionsByCustomer(req.customer.id, { page, limit });
+
+    if (error) return next(error);
+
+    res.json({
+      data: (rows || []).map((r) => toCamelCase(r)),
+      meta: {
+        page,
+        limit,
+        total: count || 0,
+        totalPages: Math.ceil((count || 0) / limit),
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function customerOrders(req, res, next) {
+  try {
+    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 10));
+
+    const { data: rows, error, count } = await listOrdersByCustomer(req.customer.id, { page, limit });
+
+    if (error) return next(error);
+
+    res.json({
+      data: (rows || []).map((o) => toCamelCase(o)),
+      meta: {
+        page,
+        limit,
+        total: count || 0,
+        totalPages: Math.ceil((count || 0) / limit),
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function customerUpdateProfile(req, res, next) {
+  try {
+    const { name, email } = req.validatedBody;
+
+    const fields = {};
+    if (name !== undefined) fields.name = name;
+    if (email !== undefined) fields.email = email === '' ? null : email;
+
+    const { data: customer, error } = await updateCustomer(req.customer.id, fields);
+
+    if (error || !customer) {
+      return next(error || new Error('Customer not found'));
+    }
+
+    res.json(toCamelCase(customer));
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function customerChangePassword(req, res, next) {
+  try {
+    const { current_password, new_password } = req.validatedBody;
+
+    // Full row (incl. password_hash) keyed by the session's customer id.
+    const { data: customer, error } = await getCustomerAuthById(req.customer.id);
+    if (error || !customer || !customer.password_hash) {
+      return res.status(401).json({
+        error: { message: 'Current password is incorrect', code: 'WRONG_PASSWORD' },
+      });
+    }
+
+    const valid = await bcrypt.compare(current_password, customer.password_hash);
+    if (!valid) {
+      return res.status(401).json({
+        error: { message: 'Current password is incorrect', code: 'WRONG_PASSWORD' },
+      });
+    }
+
+    const passwordHash = await bcrypt.hash(new_password, BCRYPT_ROUNDS);
+    const { error: updateErr } = await updateCustomerPassword(req.customer.id, passwordHash);
+    if (updateErr) return next(updateErr);
+
+    res.json({ message: 'Password updated' });
+  } catch (err) {
+    next(err);
+  }
+}
+
+app.post('/api/customers/register', authLimiter, validate(customerRegisterSchema), customerRegister);
+app.post('/api/customers/login', authLimiter, validate(customerLoginSchema), customerLogin);
+app.post('/api/customers/logout', customerLogout);
+app.get('/api/customers/me', requireCustomer, customerMe);
+app.get('/api/customers/me/points-history', requireCustomer, customerPointsHistory);
+app.get('/api/customers/me/orders', requireCustomer, customerOrders);
+app.patch('/api/customers/me', requireCustomer, validate(customerProfileUpdateSchema), customerUpdateProfile);
+app.put('/api/customers/me/password', requireCustomer, validate(customerPasswordSchema), customerChangePassword);
 
 // ──────────────────────────────────────────────
 //  BANNERS
@@ -1252,7 +1909,7 @@ async function adminDeleteBanner(req, res, next) {
   }
 }
 
-app.use('/api/banners', publicGetLimiter);
+app.use('/api/banners', publicGetLimiter());
 app.get('/api/banners', listPublicBanners);
 
 app.use('/api/admin/banners', requireAdmin);
@@ -1326,12 +1983,26 @@ async function adminUpdateSettings(req, res, next) {
   }
 }
 
-app.use('/api/settings', publicGetLimiter);
+app.use('/api/settings', publicGetLimiter());
 app.get('/api/settings', getPublicSettings);
 
 app.use('/api/admin/settings', requireAdmin);
 app.get('/api/admin/settings', adminGetSettings);
 app.put('/api/admin/settings', validate(settingsSchema), adminUpdateSettings);
+
+async function adminUpdatePointsSettings(req, res, next) {
+  try {
+    const { data: settings, error } = await upsertSettings(req.validatedBody);
+
+    if (error) return next(error);
+
+    res.json(toCamelCase(settings));
+  } catch (err) {
+    next(err);
+  }
+}
+
+app.put('/api/admin/settings/points', validate(pointsSettingsSchema), adminUpdatePointsSettings);
 
 // ──────────────────────────────────────────────
 //  SUPPORT (complaints + returns)
@@ -1413,6 +2084,19 @@ async function adminUpdateComplaint(req, res, next) {
     }
 
     res.json(toCamelCase(complaint));
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function adminDeleteComplaint(req, res, next) {
+  try {
+    const { id } = req.params;
+    const { error } = await deleteComplaint(id);
+
+    if (error) return next(error);
+
+    res.status(204).send();
   } catch (err) {
     next(err);
   }
@@ -1529,6 +2213,19 @@ async function adminUpdateReturnRequest(req, res, next) {
   }
 }
 
+async function adminDeleteReturnRequest(req, res, next) {
+  try {
+    const { id } = req.params;
+    const { error } = await deleteReturnRequest(id);
+
+    if (error) return next(error);
+
+    res.status(204).send();
+  } catch (err) {
+    next(err);
+  }
+}
+
 app.use('/api/support', trackingLimiter);
 app.post('/api/support/complaints', validate(complaintSchema), submitComplaint);
 app.post('/api/support/returns', validate(returnRequestSchema), submitReturnRequest);
@@ -1537,9 +2234,11 @@ app.use('/api/admin/support', requireAdmin);
 app.get('/api/admin/support/complaints', adminListComplaints);
 app.get('/api/admin/support/complaints/:id', adminGetComplaint);
 app.patch('/api/admin/support/complaints/:id', validate(updateComplaintSchema), adminUpdateComplaint);
+app.delete('/api/admin/support/complaints/:id', adminDeleteComplaint);
 app.get('/api/admin/support/returns', adminListReturnRequests);
 app.get('/api/admin/support/returns/:id', adminGetReturnRequest);
 app.patch('/api/admin/support/returns/:id', validate(updateReturnRequestSchema), adminUpdateReturnRequest);
+app.delete('/api/admin/support/returns/:id', adminDeleteReturnRequest);
 
 // ──────────────────────────────────────────────
 //  ADMINS (super admin only)
@@ -1665,29 +2364,50 @@ app.delete('/api/admin/admins/:id', deleteAdminUser);
 
 async function getOverview(_req, res, next) {
   try {
-    const [orders, revenue, pending, lowStock] = await Promise.all([
+    const [orders, revenue, pending, products, lowStock] = await Promise.all([
       getOrderCount(),
       getDeliveredOrderTotals(),
       getOrderCount({ status: 'pending' }),
+      getProductCount(),
       getActiveProducts(),
     ]);
 
     if (orders.error) return next(orders.error);
     if (revenue.error) return next(revenue.error);
     if (pending.error) return next(pending.error);
+    if (products.error) return next(products.error);
     if (lowStock.error) return next(lowStock.error);
 
     const revenueTotal = (revenue.data || []).reduce((sum, o) => sum + Number(o.total), 0);
     const lowStockCount = (lowStock.data || []).filter(
-      (p) => p.stock_quantity > 0 && p.stock_quantity <= p.low_stock_threshold,
+      (p) => !p.unlimited_stock && p.stock_quantity > 0 && p.stock_quantity <= p.low_stock_threshold,
+    ).length;
+    const outOfStockCount = (lowStock.data || []).filter(
+      (p) => !p.unlimited_stock && p.stock_quantity === 0,
     ).length;
 
     res.json({
-      totalOrders: orders.count || 0,
-      totalRevenue: revenueTotal,
-      pendingOrders: pending.count || 0,
-      lowStockCount,
+      total_orders: orders.count || 0,
+      total_revenue: revenueTotal,
+      pending_orders: pending.count || 0,
+      total_products: products.count || 0,
+      low_stock_count: lowStockCount,
+      out_of_stock_count: outOfStockCount,
     });
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function getAnalyticsSummaryHandler(req, res, next) {
+  try {
+    const period = mapPeriod(req.query.period);
+    const days = daysForPeriod(period);
+    const startDate = new Date();
+    startDate.setUTCDate(startDate.getUTCDate() - days);
+    const { data, error } = await getAnalyticsSummary(startDate.toISOString());
+    if (error) return next(error);
+    res.json({ period, data });
   } catch (err) {
     next(err);
   }
@@ -1782,6 +2502,8 @@ async function getTopProducts(req, res, next) {
 }
 
 app.use('/api/admin/analytics', requireAdmin);
+
+app.get('/api/admin/analytics', getAnalyticsSummaryHandler);
 app.get('/api/admin/analytics/overview', getOverview);
 app.get('/api/admin/analytics/sales', getSales);
 app.get('/api/admin/analytics/top-products', getTopProducts);
@@ -1797,3 +2519,4 @@ app.listen(PORT, () => {
 });
 
 export default app;
+

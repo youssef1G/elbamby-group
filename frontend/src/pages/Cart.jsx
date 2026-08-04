@@ -1,116 +1,92 @@
-import { Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { useLocale } from '@/context/LocaleContext.jsx';
-import { Trash2 } from 'lucide-react';
 import { useCart } from '@/context/CartContext.jsx';
-import { formatPrice } from '@/lib/formatters.js';
-import { fadeUp, scaleIn, staggerContainer, staggerItem } from '@/lib/animations.js';
+import CartItem from '@/components/cart/CartItem.jsx';
+import CartSummary from '@/components/cart/CartSummary.jsx';
+import EmptyState from '@/components/ui/EmptyState.jsx';
+import SEO from '@/components/common/SEO.jsx';
+import { fetchProducts } from '@/api.js';
+import { fadeUp } from '@/lib/animations.js';
 
 export default function Cart() {
-  const { t, isAr } = useLocale();
-  const { items, updateQuantity, removeItem } = useCart();
-  const subtotal = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
+  const { t } = useLocale();
+  const navigate = useNavigate();
+  const { items } = useCart();
 
-  if (items.length === 0) {
+  const [stockMap, setStockMap] = useState(null);
+  const [stockLoading, setStockLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    setStockLoading(true);
+    fetchProducts()
+      .then((res) => {
+        if (cancelled) return;
+        const rows = res?.data || res || [];
+        const map = {};
+        rows.forEach((p) => { map[p.id] = p.stockQuantity ?? 0; });
+        setStockMap(map);
+      })
+      .catch(() => {})
+      .finally(() => { if (!cancelled) setStockLoading(false); });
+    return () => { cancelled = true; };
+  }, []);
+
+  const itemsWithLiveStock = items.map((item) => ({
+    ...item,
+    stock: stockMap != null ? (stockMap[item.productId] ?? 0) : item.stock,
+  }));
+
+  const stockExceeded = itemsWithLiveStock.some((i) => i.quantity > i.stock);
+
+  if (items.length === 0 && !stockLoading) {
     return (
-      <motion.div className="max-w-xl mx-auto px-5 py-24 text-center" {...scaleIn}>
-        <div className="w-16 h-16 rounded-full bg-bg-primary-50 flex items-center justify-center mx-auto mb-5">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-bg-primary-500">
-            <circle cx="9" cy="21" r="1" /><circle cx="19" cy="21" r="1" />
-            <path d="M2.05 2.05h2l2.66 12.42a2 2 0 002 1.58h8.58a2 2 0 001.95-1.57l1.65-7.43H5.12" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </div>
-        <h1 className="text-heading-lg text-bg-text-primary mb-2">{t('cart.empty', { ns: 'common' })}</h1>
-        <p className="text-sm text-bg-text-secondary mb-6">{t('cart.continueShopping', { ns: 'common' })}</p>
-        <Link to="/shop" className="btn-primary">{t('nav.shop', { ns: 'common' })}</Link>
-      </motion.div>
+      <EmptyState
+        message={t('cart.empty')}
+        action={{ label: t('cart.continueShopping'), onClick: () => navigate('/shop') }}
+      />
     );
   }
 
+  const handleCheckout = () => {
+    navigate('/checkout');
+  };
+
   return (
-    <div className="max-w-3xl mx-auto px-5 sm:px-8 py-12 sm:py-16">
+    <div className="max-w-4xl mx-auto px-5 sm:px-8 py-12 sm:py-16">
+      <SEO titleKey="nav.cart" />
+
       <motion.h1 className="text-display text-bg-text-primary mb-8" {...fadeUp}>
         {t('nav.cart', { ns: 'common' })}
       </motion.h1>
 
-      <motion.ul
-        className="space-y-6"
-        variants={staggerContainer}
-        initial="hidden"
-        whileInView="show"
-        viewport={{ once: true, amount: 0.1 }}
-      >
-        {items.map((item) => {
-          const name = isAr ? item.nameAr || item.nameEn : item.nameEn;
-          return (
-            <motion.li key={item.productId} variants={staggerItem} className="flex gap-5 border-b border-bg-border pb-6">
-              <img
-                src={item.image}
-                alt={name}
-                className="h-24 w-24 rounded-2xl object-cover bg-bg-surface-sunken shrink-0"
-              />
-              <div className="flex-1 min-w-0">
-                <p className="text-[15px] font-semibold text-bg-text-primary">{name}</p>
-                <p className="text-sm font-medium text-bg-text-primary mt-0.5 ltr-nums">
-                  {formatPrice(item.price)}
-                </p>
-                <div className="mt-3 flex items-center gap-4">
-                  <div className="flex items-center rounded-full border border-bg-border">
-                    <button
-                      onClick={() => updateQuantity(item.productId, item.quantity - 1)}
-                      className="h-9 w-9 flex items-center justify-center text-bg-text-primary hover:bg-bg-neutral-100 rounded-s-full transition-colors"
-                      aria-label={t('common:common.decrease')}
-                    >
-                      −
-                    </button>
-                    <span className="w-8 text-center text-sm font-medium">{item.quantity}</span>
-                    <button
-                      onClick={() => updateQuantity(item.productId, item.quantity + 1)}
-                      disabled={item.stock && item.quantity >= item.stock}
-                      className="h-9 w-9 flex items-center justify-center text-bg-text-primary hover:bg-bg-neutral-100 rounded-e-full transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                      aria-label={t('common:common.increase')}
-                    >
-                      +
-                    </button>
-                  </div>
-                  <button
-                    onClick={() => removeItem(item.productId)}
-                    className="inline-flex items-center gap-1 text-xs font-medium text-bg-text-secondary hover:text-bg-primary-500 transition-colors"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                    {t('common:common.delete')}
-                  </button>
-                </div>
-              </div>
-              <p className="text-[15px] font-semibold text-bg-text-primary whitespace-nowrap ltr-nums">
-                {formatPrice(item.price * item.quantity)}
-              </p>
-            </motion.li>
-          );
-        })}
-      </motion.ul>
+      {stockExceeded && (
+        <motion.div
+          className="mb-6 p-3 rounded-lg border border-amber-200 bg-amber-50 text-amber-700 text-sm"
+          {...fadeUp}
+        >
+          {t('cart.stockChanged')}
+        </motion.div>
+      )}
 
-      <motion.div className="mt-8 flex items-center justify-between font-heading text-lg font-semibold" {...fadeUp}>
-        <span className="text-bg-text-primary">{t('checkout:summary.subtotal')}</span>
-        <span className="text-bg-text-primary ltr-nums">{formatPrice(subtotal)}</span>
-      </motion.div>
+      <div className="flex flex-col gap-0">
+        {itemsWithLiveStock.map((item) => (
+          <CartItem key={item.productId} item={item} compact={false} />
+        ))}
+      </div>
 
-      <motion.div {...fadeUp}>
-        <Link to="/checkout" className="btn-primary w-full py-3.5 mt-6 text-sm inline-block text-center">
-          {t('nav.checkout', { ns: 'common' })}
-        </Link>
-      </motion.div>
-
-      <motion.div
-        className="text-center mt-4"
-        initial={{ opacity: 0, y: 10 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true }}
-        transition={{ duration: 0.4, delay: 0.3 }}
-      >
-        <Link to="/shop" className="text-sm font-medium text-bg-primary-500 hover:underline">
-          {t('cart.continueShopping', { ns: 'common' })}
-        </Link>
+      <motion.div className="mt-8 flex flex-col gap-4" {...fadeUp}>
+        <CartSummary checkoutCta={
+          <button
+            onClick={handleCheckout}
+            disabled={items.length === 0 || stockExceeded}
+            className="btn-primary w-full py-3.5 text-sm text-center disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            {t('nav.checkout')}
+          </button>
+        } />
       </motion.div>
     </div>
   );
