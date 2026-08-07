@@ -13,13 +13,13 @@ import { verifyToken } from './auth.js';
 // matters (cookie name + the `kind` claim guard below) lives here.
 
 const CUSTOMER_COOKIE_NAME = 'bg_customer_token';
-const isProduction = process.env.NODE_ENV === 'production';
 
 export const CUSTOMER_COOKIE = CUSTOMER_COOKIE_NAME;
+// SameSite=None + Secure for split-domain deployments (see auth.js).
 export const CUSTOMER_COOKIE_OPTIONS = {
   httpOnly: true,
-  secure: isProduction,
-  sameSite: 'lax',
+  secure: true,
+  sameSite: 'none',
   path: '/',
   maxAge: 7 * 24 * 60 * 60 * 1000,
 };
@@ -37,14 +37,14 @@ export function requireCustomer(req, res, next) {
     // (or any token without this claim) is rejected so admin↔customer tokens
     // cannot be cross-used.
     if (decoded?.kind !== 'customer') {
-      res.clearCookie(CUSTOMER_COOKIE_NAME, { httpOnly: true, secure: isProduction, sameSite: 'lax', path: '/' });
+      res.clearCookie(CUSTOMER_COOKIE_NAME, CUSTOMER_COOKIE_OPTIONS);
       return res.status(401).json({ error: { message: 'Invalid session', code: 'UNAUTHORIZED' } });
     }
 
     req.customer = decoded;
     next();
   } catch {
-    res.clearCookie(CUSTOMER_COOKIE_NAME, { httpOnly: true, secure: isProduction, sameSite: 'lax', path: '/' });
+    res.clearCookie(CUSTOMER_COOKIE_NAME, CUSTOMER_COOKIE_OPTIONS);
     res.status(401).json({ error: { message: 'Invalid or expired session', code: 'UNAUTHORIZED' } });
   }
 }
@@ -64,9 +64,9 @@ export function optionalCustomer(req, res, next) {
       return next();
     }
 
-    res.clearCookie(CUSTOMER_COOKIE_NAME, { httpOnly: true, secure: isProduction, sameSite: 'lax', path: '/' });
+    res.clearCookie(CUSTOMER_COOKIE_NAME, CUSTOMER_COOKIE_OPTIONS);
   } catch {
-    res.clearCookie(CUSTOMER_COOKIE_NAME, { httpOnly: true, secure: isProduction, sameSite: 'lax', path: '/' });
+    res.clearCookie(CUSTOMER_COOKIE_NAME, CUSTOMER_COOKIE_OPTIONS);
   }
   next();
 }

@@ -96,8 +96,10 @@ import {
 //  constants
 // ──────────────────────────────────────────────
 
-const isProduction = process.env.NODE_ENV === 'production';
+const isProduction = process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'production';
 const COOKIE_NAME = 'bg_admin_token';
+// SameSite=None + Secure for split-domain deployments (see auth.js).
+const ADMIN_COOKIE_OPTIONS = { httpOnly: true, secure: true, sameSite: 'none', path: '/', maxAge: 7 * 24 * 60 * 60 * 1000 };
 const BCRYPT_ROUNDS = 12;
 const CANCEL_EMAIL_STATUSES = ['confirmed', 'shipped', 'delivered', 'cancelled'];
 const COMPLAINT_STATUSES = ['open', 'in_progress', 'resolved', 'closed'];
@@ -483,13 +485,7 @@ async function login(req, res, next) {
 
     const token = signToken({ id: admin.id, username: admin.username, role: admin.role, kind: 'admin' });
 
-    res.cookie(COOKIE_NAME, token, {
-      httpOnly: true,
-      secure: isProduction,
-      sameSite: 'lax',
-      path: '/',
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-    });
+    res.cookie(COOKIE_NAME, token, ADMIN_COOKIE_OPTIONS);
 
     await supabase.from('admins').update({ last_login_at: new Date().toISOString() }).eq('id', admin.id);
 
@@ -500,7 +496,7 @@ async function login(req, res, next) {
 }
 
 function logout(_req, res) {
-  res.clearCookie(COOKIE_NAME, { httpOnly: true, secure: isProduction, sameSite: 'lax', path: '/' });
+  res.clearCookie(COOKIE_NAME, ADMIN_COOKIE_OPTIONS);
   res.json({ message: 'Logged out' });
 }
 
@@ -521,14 +517,14 @@ async function me(req, res, next) {
       .single();
 
     if (!admin || !admin.is_active) {
-      res.clearCookie(COOKIE_NAME, { httpOnly: true, secure: isProduction, sameSite: 'lax', path: '/' });
+      res.clearCookie(COOKIE_NAME, ADMIN_COOKIE_OPTIONS);
       return res.status(401).json({ error: { message: 'Admin not found or deactivated', code: 'UNAUTHORIZED' } });
     }
 
     res.json(admin);
   } catch (err) {
     if (err.name === 'JsonWebTokenError' || err.name === 'TokenExpiredError') {
-      res.clearCookie(COOKIE_NAME, { httpOnly: true, secure: isProduction, sameSite: 'lax', path: '/' });
+      res.clearCookie(COOKIE_NAME, ADMIN_COOKIE_OPTIONS);
       return res.status(401).json({ error: { message: 'Invalid or expired session', code: 'UNAUTHORIZED' } });
     }
     next(err);

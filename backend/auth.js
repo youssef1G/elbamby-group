@@ -2,9 +2,13 @@ import jwt from 'jsonwebtoken';
 import { getAdminSessionById } from './db.js';
 
 const JWT_SECRET = process.env.JWT_SECRET;
-const isProduction = process.env.NODE_ENV === 'production';
+// Vercel lambdas don't set NODE_ENV at runtime — they set VERCEL_ENV.
+const isProduction = process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'production';
 
-const COOKIE_OPTIONS = { httpOnly: true, secure: isProduction, sameSite: 'lax', path: '/' };
+// SameSite=None + Secure is required for cookie auth across split domains
+// (frontend on vercel.app, backend on its own subdomain or a custom domain).
+// Browsers accept Secure cookies on localhost (potentially trustworthy origin).
+const COOKIE_OPTIONS = { httpOnly: true, secure: true, sameSite: 'none', path: '/' };
 
 function clearAdminCookie(res) {
   res.clearCookie('bg_admin_token', COOKIE_OPTIONS);
