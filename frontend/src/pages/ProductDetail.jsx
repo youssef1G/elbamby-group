@@ -1,10 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { MessageCircle, Share2, Copy, Check } from 'lucide-react';
+import { MessageCircle } from 'lucide-react';
 import { useLocale } from '@/context/LocaleContext.jsx';
 import { useCart } from '@/context/CartContext.jsx';
-import { useToast } from '@/components/ui/Toast.jsx';
 import ProductCard from '@/components/shop/ProductCard.jsx';
 import ProductGallery from '@/components/shop/ProductGallery.jsx';
 import Badge from '@/components/ui/Badge.jsx';
@@ -27,9 +26,6 @@ export default function ProductDetail() {
   // addItem now opens the cart drawer itself (CartContext.jsx) — no need to
   // call anything cart-drawer-related here directly.
   const { addItem } = useCart();
-  const { toast } = useToast();
-
-  const [copied, setCopied] = useState(false);
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
 
@@ -143,23 +139,6 @@ export default function ProductDetail() {
         : 'https://schema.org/InStock',
       url: pageUrl,
     },
-  };
-
-  const handleShare = (e) => {
-    e.preventDefault();
-    const text = `${t('shop:product.shareText')}: ${name}`;
-    const url = `https://wa.me/?text=${encodeURIComponent(`${text} ${pageUrl}`)}`;
-    window.open(url, '_blank', 'noopener,noreferrer');
-  };
-
-  const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(pageUrl);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      toast(t('common:common.error'), 'error');
-    }
   };
 
   return (
@@ -293,27 +272,7 @@ export default function ProductDetail() {
             </a>
           )}
 
-          <div className="mt-2 flex items-center gap-2">
-            <button
-              type="button"
-              onClick={handleShare}
-              className="flex-1 inline-flex items-center justify-center gap-2 rounded-full border border-bg-border text-bg-text-secondary font-medium py-2.5 text-sm hover:bg-bg-neutral-100 transition-colors"
-              aria-label={t('shop:product.share')}
-            >
-              <Share2 size={16} />
-              {t('shop:product.share')}
-            </button>
-            <button
-              type="button"
-              onClick={handleCopy}
-              className="flex-1 inline-flex items-center justify-center gap-2 rounded-full border border-bg-border text-bg-text-secondary font-medium py-2.5 text-sm hover:bg-bg-neutral-100 transition-colors"
-              aria-label={t('shop:product.copyLink')}
-            >
-              {copied ? <Check size={16} className="text-bg-success" /> : <Copy size={16} />}
-              {copied ? t('shop:product.linkCopied') : t('shop:product.copyLink')}
-            </button>
-          </div>
-        </motion.div>
+          </motion.div>
       </div>
 
       {related.length > 0 && (

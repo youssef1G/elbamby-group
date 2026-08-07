@@ -26,11 +26,11 @@ export default function StatCard({
             </div>
           )}
           <div className="min-w-0">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-bg-text-secondary truncate">
+            <p className="text-sm font-semibold uppercase tracking-[0.05em] text-bg-text-secondary">
               {label}
             </p>
             <p
-              className={`font-heading font-bold text-bg-text-primary ltr-nums mt-0.5 ${valueClass} ${accent}`}
+              className={`font-heading font-bold text-bg-text-primary ltr-nums break-words leading-tight mt-0.5 ${valueClass} ${accent}`}
             >
               {value ?? 0}
             </p>

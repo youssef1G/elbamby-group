@@ -146,10 +146,7 @@ export default {
   "shop.product.lowStock": "{{count}} متبقٍ فقط",
   "shop.product.quantity": "الكمية",
   "shop.product.askAbout": "استفسر عن هذا المنتج",
-  "shop.product.share": "مشاركة",
-  "shop.product.copyLink": "نسخ الرابط",
-  "shop.product.linkCopied": "تم نسخ الرابط",
-  "shop.product.shareText": "شوف ده على BG",
+  
   "shop.product.relatedProducts": "منتجات ذات صلة",
   "shop.categories": "التصنيفات",
   "shop.noCategories": "لا توجد تصنيفات بعد",

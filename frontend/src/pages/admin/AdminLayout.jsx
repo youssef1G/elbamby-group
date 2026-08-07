@@ -17,10 +17,10 @@ export default function AdminLayout() {
           <div className="flex items-center gap-3">
             <button
               onClick={() => setMobileOpen(true)}
-              className="lg:hidden btn-ghost !min-h-0 h-10 w-10 flex items-center justify-center text-bg-text-secondary"
+              className="lg:hidden btn-ghost !min-h-0 h-11 w-11 flex items-center justify-center text-bg-text-secondary"
               aria-label={t('common:nav.menu')}
             >
-              <Menu size={18} strokeWidth={1.5} />
+              <Menu size={24} strokeWidth={2} />
             </button>
             <h2 className="text-body-lg font-heading font-bold text-bg-text-primary hidden sm:block">
               {t('common:brand.fullName')}

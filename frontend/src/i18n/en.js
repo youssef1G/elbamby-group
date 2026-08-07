@@ -146,10 +146,7 @@ export default {
   "shop.product.lowStock": "Only {{count}} left",
   "shop.product.quantity": "Quantity",
   "shop.product.askAbout": "Ask about this product",
-  "shop.product.share": "Share",
-  "shop.product.copyLink": "Copy link",
-  "shop.product.linkCopied": "Link copied",
-  "shop.product.shareText": "Check this out on BG",
+  
   "shop.product.relatedProducts": "Related Products",
   "shop.categories": "Categories",
   "shop.noCategories": "No categories yet",

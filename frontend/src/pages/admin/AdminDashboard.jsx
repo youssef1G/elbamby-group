@@ -14,8 +14,8 @@ function StatCard({ label, value, icon: Icon, accent }) {
         <Icon size={20} strokeWidth={1.5} />
       </div>
       <div className="min-w-0">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-bg-text-secondary truncate">{label}</p>
-        <p className={`font-heading text-xl font-bold ${accent || 'text-bg-text-primary'}`}>{value}</p>
+        <p className="text-sm font-semibold uppercase tracking-[0.05em] text-bg-text-secondary">{label}</p>
+        <p className={`font-heading text-xl font-bold break-words leading-tight ${accent || 'text-bg-text-primary'}`}>{value}</p>
       </div>
     </div>
   );
