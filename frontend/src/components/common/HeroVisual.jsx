@@ -1,146 +1,166 @@
-import { useEffect, useRef, useState } from 'react';
-import { motion, useInView } from 'motion/react';
-import { Usb, MemoryStick, HardDrive } from 'lucide-react';
+import { motion } from 'motion/react';
+
+const FRAME = 'M12,12 H508 M12,12 V388 H508 V12';
+
+const CORNER_TICKS = ['M12,34 V12 H34', 'M474,12 H508 V34', 'M508,366 V388 H474', 'M34,388 H12 V366'];
+
+var tickIn = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: { duration: 0.4, ease: 'easeOut' },
+  },
+};
+
+var specCaption = {
+  hidden: { opacity: 0, y: 8 },
+  show: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.5, ease: [0.25, 0.1, 0.25, 1] },
+  },
+};
 
 /**
- * useCountUp — drives the "256GB" counter in the central card.
- * Runs once, when the hero scrolls into view (it's above the fold, so
- * effectively on mount) — not a decorative loop, a one-time reveal that
- * mirrors what a spec sheet does: the number IS the content.
+ * HeroVisual — the page's signature element (v3, "spec plate").
+ *
+ * One idea, done quietly: a product rendered as a printed catalogue plate.
+ * A hairline frame with printer's crop marks encloses the device; "FIG 01"
+ * and a mono spec line caption it like a figure in a technical manual.
+ *
+ * Motion is a single settle: the frame draws itself once (stroke reveal),
+ * the corner ticks tick in, the device and caption fall into place — then
+ * everything is still. No loop, no float, no parallax, no glow. This is the
+ * "spec sheet, not a template" promise at its most literal.
+ *
+ * The drawing is symmetric and layout-neutral, so it reads correctly in RTL
+ * with no mirroring tricks, and Arabic never touches mono glyphs.
  */
-function useCountUp(target, duration = 1100, startWhen = true) {
-  const [value, setValue] = useState(0);
-  const startedRef = useRef(false);
-
-  useEffect(() => {
-    if (!startWhen || startedRef.current) return;
-    startedRef.current = true;
-    const start = performance.now();
-    let raf;
-    const tick = (now) => {
-      const progress = Math.min((now - start) / duration, 1);
-      // easeOutExpo — fast start, settles precisely, feels like a readout snapping into place
-      const eased = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
-      setValue(Math.round(eased * target));
-      if (progress < 1) raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, [target, duration, startWhen]);
-
-  return value;
-}
-
-/**
- * A single floating device card — USB / SD / memory-stick glyph on a small
- * elevated card, each bobbing on its own independent sine-ish loop so the
- * cluster never moves in unison (that's what reads as "alive" rather than
- * "looping animation").
- */
-function FloatingCard({ Icon, label, rotate, delay, duration, className }) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 16, scale: 0.9 }}
-      animate={{
-        opacity: 1,
-        scale: 1,
-        y: [0, -10, 0],
-      }}
-      transition={{
-        opacity: { duration: 0.5, delay },
-        scale: { duration: 0.5, delay },
-        y: { duration, repeat: Infinity, ease: 'easeInOut', delay: delay + 0.5 },
-      }}
-      style={{ rotate }}
-      className={`absolute flex flex-col items-center gap-1.5 rounded-2xl border border-bg-border bg-bg-surface-raised px-4 py-3 shadow-card ${className}`}
-    >
-      <Icon size={20} strokeWidth={1.5} className="text-bg-primary-400" />
-      <span className="font-mono text-[10px] tracking-wide text-bg-text-secondary">{label}</span>
-    </motion.div>
-  );
-}
 
 export default function HeroVisual() {
-  const containerRef = useRef(null);
-  const inView = useInView(containerRef, { once: true, margin: '-40px' });
-
-  const capacity = useCountUp(256, 1200, inView);
-  const [speedPct, setSpeedPct] = useState(0);
-
-  useEffect(() => {
-    if (!inView) return;
-    const t = setTimeout(() => setSpeedPct(92), 250);
-    return () => clearTimeout(t);
-  }, [inView]);
-
   return (
-    <div ref={containerRef} className="relative mx-auto w-full max-w-sm">
-      {/* Ambient glow — restrained, single source, not a generic radial blob centerpiece */}
-      <div className="absolute inset-0 -z-10 rounded-full bg-bg-primary-500/30 blur-[80px]" />
+    <figure className="mx-auto w-full max-w-md lg:max-w-none">
+      <div className="relative">
+        <motion.svg
+          viewBox="0 0 520 400"
+          className="block h-auto w-full overflow-visible"
+          initial="hidden"
+          whileInView="show"
+          viewport={{ once: true, margin: '-80px' }}
+          variants={{ hidden: {}, show: { transition: { staggerChildren: 0.1, delayChildren: 0.25 } } }}
+          aria-hidden="true"
+        >
+          {/* The frame — draws on once, clockwise, a single 700ms sweep */}
+          <path
+            d={FRAME}
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1"
+            strokeLinecap="square"
+            className="text-bg-text-primary"
+            pathLength="1"
+            initial={{ pathLength: 0, opacity: 0 }}
+            animate={{ pathLength: 1, opacity: 1 }}
+            transition={{ duration: 0.9, ease: [0.25, 0.1, 0.25, 1], delay: 0.1 }}
+          />
 
-      {/* Central card — the thesis object */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={inView ? { opacity: 1, y: 0 } : {}}
-        transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-        className="relative aspect-[4/3] rounded-3xl border border-bg-border bg-bg-surface-raised p-6 shadow-card"
-      >
-        <div className="flex h-full flex-col justify-between">
-          <div className="flex items-start justify-between">
-            <div className="h-8 w-11 rounded-md bg-bg-primary-500/90" />
-            <span className="font-mono text-caption text-bg-text-secondary">BG · microSD</span>
-          </div>
+          {/* Catalogue marks — the printer's crop ticks */}
+          {CORNER_TICKS.map((d, i) => (
+            <motion.path
+              key={d}
+              d={d}
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1"
+              strokeLinecap="square"
+              className="text-bg-text-secondary"
+              variants={tickIn}
+            />
+          ))}
 
-          <div>
-            <p className="font-mono text-h1 font-bold text-bg-text-primary tabular-nums">
-              {capacity}
-              <span className="text-bg-primary-400">GB</span>
-            </p>
+          {/* Top-of-plate meta: edition number + a registration disc */}
+          <motion.text
+            x="40"
+            y="40"
+            textAnchor="start"
+            fontFamily="'JetBrains Mono', monospace"
+            fontSize="10"
+            letterSpacing="2"
+            fill="currentColor"
+            className="text-bg-text-secondary"
+            variants={tickIn}
+          >
+            FIG.01
+          </motion.text>
+          <motion.g variants={tickIn}>
+            <circle cx="480" cy="40" r="7" fill="none" stroke="currentColor" strokeWidth="1" className="text-bg-text-secondary" />
+            <circle cx="480" cy="40" r="3" fill="currentColor" className="text-bg-primary-500" />
+          </motion.g>
 
-            {/* Transfer-speed bar — fills once, a real spec being demonstrated, not decoration */}
-            <div className="mt-3">
-              <div className="mb-1 flex items-center justify-between font-mono text-[10px] text-bg-text-secondary">
-                <span>WRITE</span>
-                <span className="tabular-nums">{speedPct}MB/s</span>
-              </div>
-              <div className="h-1 w-full overflow-hidden rounded-full bg-bg-border">
-                <motion.div
-                  className="h-full rounded-full bg-bg-primary-400"
-                  initial={{ width: '0%' }}
-                  animate={{ width: `${speedPct}%` }}
-                  transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }}
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-      </motion.div>
+          {/* The device — line-art, ink strokes, one flat screen */}
+          <motion.g variants={specCaption}>
+            {/* body */}
+            <path
+              d="M166,70 h188 a26,26 0 0 1 26,26 v222 a26,26 0 0 1 -26,26 h-188 a26,26 0 0 1 -26,-26 v-222 a26,26 0 0 1 26,-26 z"
+              fill="var(--bg-surface)"
+              stroke="currentColor"
+              strokeWidth="1.25"
+              className="text-bg-text-primary"
+            />
+            {/* screen */}
+            <rect x="182" y="88" width="156" height="212" rx="15" fill="none" stroke="currentColor" strokeWidth="0.75" className="text-bg-text-primary" />
+            {/* home button */}
+            <rect x="236" y="302" width="48" height="6" rx="3" fill="currentColor" className="text-bg-text-primary opacity-50" />
+            {/* camera + flash */}
+            <circle cx="242" cy="38" r="5" fill="currentColor" className="text-bg-text-secondary" />
+            <circle cx="262" cy="38" r="2" fill="currentColor" className="text-bg-primary-500" />
+            {/* speaker slot */}
+            <rect x="230" y="78" width="26" height="3" rx="1.5" fill="currentColor" className="text-bg-text-primary opacity-40" />
+            {/* capacity readout — the one piece of content */}
+            <text
+              x="260"
+              y="146"
+              textAnchor="middle"
+              fontFamily="'JetBrains Mono', monospace"
+              fontSize="17"
+              letterSpacing="1"
+              fill="currentColor"
+              className="text-bg-text-primary"
+            >
+              256GB
+            </text>
+            <line x1="220" y1="160" x2="300" y2="160" stroke="currentColor" strokeWidth="1" strokeLinecap="square" className="text-bg-text-primary opacity-30" />
+            <line x1="226" y1="168" x2="294" y2="168" stroke="currentColor" strokeWidth="1" strokeLinecap="square" className="text-bg-text-primary opacity-30" />
+            <circle cx="260" cy="188" r="10" fill="none" stroke="currentColor" strokeWidth="1" className="text-bg-primary-500" />
+            <circle cx="260" cy="188" r="3" fill="currentColor" className="text-bg-primary-500" />
+          </motion.g>
 
-      {/* Orbiting device cluster — independent float rates, not a synchronized loop */}
-      <FloatingCard
-        Icon={Usb}
-        label="32GB"
-        rotate={-8}
-        delay={0.35}
-        duration={4.2}
-        className="-top-6 end-[-12%] sm:end-[-18%]"
-      />
-      <FloatingCard
-        Icon={MemoryStick}
-        label="128GB"
-        rotate={6}
-        delay={0.5}
-        duration={3.6}
-        className="-bottom-8 start-[-8%] sm:start-[-14%]"
-      />
-      <FloatingCard
-        Icon={HardDrive}
-        label="1TB"
-        rotate={-4}
-        delay={0.65}
-        duration={5}
-        className="top-1/2 end-[-16%] hidden -translate-y-1/2 sm:flex"
-      />
-    </div>
+          {/* Caption — set inside the plate, like a catalogue legend */}
+          <motion.text
+            x="40"
+            y="360"
+            textAnchor="start"
+            fontFamily="'JetBrains Mono', monospace"
+            fontSize="10"
+            letterSpacing="1.5"
+            fill="currentColor"
+            className="text-bg-text-secondary"
+            variants={specCaption}
+          >
+            BG — 01 / ACCESSORIES
+          </motion.text>
+          <motion.line
+            x1="40"
+            y1="370"
+            x2="96"
+            y2="370"
+            stroke="currentColor"
+            strokeWidth="1"
+            className="text-bg-primary-500"
+            variants={specCaption}
+          />
+        </motion.svg>
+      </div>
+    </figure>
   );
 }

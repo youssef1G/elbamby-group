@@ -1,10 +1,13 @@
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { motion } from 'motion/react';
+import { Loader2, RotateCcw } from 'lucide-react';
 import { useLocale } from '@/context/LocaleContext.jsx';
-import { lookupOrders, cancelOrder, submitReturn } from '@/api.js';
+import { useCart } from '@/context/CartContext.jsx';
+import { lookupOrders, cancelOrder, submitReturn, fetchProducts } from '@/api.js';
 import { formatPrice } from '@/lib/formatters.js';
 import { AUTO_REFRESH_MS } from '@/lib/constants.js';
+import { ORDER_STATUSES } from '@/lib/constants.js';
 import { fadeUp, staggerContainer, staggerItem } from '@/lib/animations.js';
 import { useToast } from '@/components/ui/Toast.jsx';
 import Select from '@/components/ui/Select.jsx';
@@ -25,7 +28,7 @@ const STEPS = [
 ];
 const STATUS_IDX = { pending: 0, confirmed: 1, shipped: 2, delivered: 3 };
 
-function ReturnForm({ orderId, onClose }) {
+function ReturnForm({ order, onClose }) {
   const { t } = useLocale();
   const [reason, setReason] = useState('');
   const [details, setDetails] = useState('');
@@ -46,10 +49,27 @@ function ReturnForm({ orderId, onClose }) {
     setLoading(true);
     setError('');
     try {
-      await submitReturn({ order_id: orderId, reason, details });
+      // Server expects { order_number, phone, reason }; there is no separate
+      // `details` column, so the free-text note is appended to the reason.
+      const orderNumber = order?.orderNumber || order?.order_number || order?.id || '';
+      const payload = {
+        order_number: orderNumber,
+        phone: order?.phone || '',
+        reason: details.trim() ? `${reason}: ${details.trim()}` : reason,
+      };
+      if (!orderNumber || !order?.phone) throw new Error(t('support:return.missingInfo'));
+      await submitReturn(payload);
       setOk(true);
     } catch (err) {
-      setError(err.message || t('common:common.error'));
+      setError(
+        err.code === 'NOT_FOUND'
+          ? t('support:return.notFound')
+          : err.code === 'RATE_LIMITED'
+          ? t('auth:errors.rateLimited')
+          : err.code === 'VALIDATION_ERROR'
+            ? t('support:return.validationFailed')
+            : err.message || t('common.error'),
+      );
     } finally {
       setLoading(false);
     }
@@ -81,11 +101,55 @@ function ReturnForm({ orderId, onClose }) {
 export function OrderCard({ order, onRefresh, autoOpen }) {
   const { t, isAr } = useLocale();
   const { toast } = useToast();
+  const { reorderItems } = useCart();
   const [trackingOpen, setTrackingOpen] = useState(Boolean(autoOpen));
   const [returning, setReturning] = useState(false);
   const [cancelling, setCancelling] = useState(false);
+  const [reordering, setReordering] = useState(false);
+
+  async function handleReorder() {
+    if (reordering) return;
+    setReordering(true);
+    try {
+      const items = order.orderItems || order.items || [];
+      const ids = items.map((i) => i.productId).filter(Boolean);
+      const liveMap = new Map();
+      if (ids.length > 0) {
+        const res = await fetchProducts({ limit: 100, is_active: 'true' });
+        const list = res?.data || res || [];
+        for (const p of list) liveMap.set(p.id, p);
+      }
+      const toAdd = items
+        .map((i) => {
+          const live = i.productId ? liveMap.get(i.productId) : null;
+          const image = live?.productImages?.[0]?.imageUrl || i.productImage || i.productImageSnapshot || '';
+          const stock = live ? (live.unlimitedStock ? 0 : live.stockQuantity ?? 0) : 0;
+          const unlimited = live ? Boolean(live.unlimitedStock) : false;
+          return {
+            productId: i.productId,
+            nameEn: live?.nameEn || i.productNameSnapshot || '',
+            nameAr: live?.nameAr || i.productNameSnapshot || '',
+            image,
+            price: live?.price ?? (i.lineTotal && i.quantity ? i.lineTotal / i.quantity : 0),
+            quantity: i.quantity,
+            stock,
+            unlimitedStock: unlimited,
+            skip: !live || (!unlimited && stock <= 0),
+          };
+        })
+        .filter((i) => i.productId);
+      const added = reorderItems(toAdd);
+      if (added > 0) toast(t('common:myOrders.reorderAdded'), 'success');
+      else toast(t('common:myOrders.reorderEmpty'), 'error');
+    } catch (err) {
+      toast(err?.message || t('common:common.error'), 'error');
+    } finally {
+      setReordering(false);
+    }
+  }
 
   async function handleCancel() {
+    if (cancelling) return;
     if (!window.confirm(t('tracking.cancelConfirm', { ns: 'common' }))) return;
     setCancelling(true);
     try {
@@ -110,12 +174,9 @@ export function OrderCard({ order, onRefresh, autoOpen }) {
   }
 
   const eStatus = (s) => {
-    if (s === 'pending') return t('tracking.status_pending', { ns: 'common' });
-    if (s === 'confirmed') return t('tracking.status_confirmed', { ns: 'common' });
-    if (s === 'shipped') return t('tracking.status_shipped', { ns: 'common' });
-    if (s === 'delivered') return t('tracking.status_delivered', { ns: 'common' });
-    if (s === 'cancelled') return t('tracking.status_cancelled', { ns: 'common' });
-    return order.status;
+    const known = ORDER_STATUSES[s];
+    if (known) return isAr ? known.ar : known.en;
+    return s;
   };
 
   const currentIdx = STATUS_IDX[order.status] ?? 0;
@@ -161,9 +222,36 @@ export function OrderCard({ order, onRefresh, autoOpen }) {
         >
           {t('myOrders.track', { ns: 'common' })}
         </button>
+        <button
+          onClick={handleReorder}
+          disabled={reordering}
+          aria-busy={reordering}
+          aria-disabled={reordering}
+          className="inline-flex items-center gap-1.5 text-xs font-medium border rounded-full px-4 py-1.5 transition-colors border-bg-border text-bg-text-primary hover:bg-bg-neutral-100 disabled:opacity-60 disabled:cursor-not-allowed"
+        >
+          {reordering ? (
+            <Loader2 size={12} className="animate-spin" aria-hidden="true" focusable="false" />
+          ) : (
+            <RotateCcw size={12} aria-hidden="true" focusable="false" />
+          )}
+          {t('myOrders.reorder', { ns: 'common' })}
+        </button>
         {order.status === 'pending' && (
-          <button onClick={handleCancel} disabled={cancelling} className="text-xs font-medium text-bg-error border border-bg-error/20 rounded-full px-4 py-1.5 hover:bg-bg-neutral-100 transition-colors disabled:opacity-50">
-            {cancelling ? '...' : t('tracking.cancelTitle', { ns: 'common' })}
+          <button
+            onClick={handleCancel}
+            disabled={cancelling}
+            aria-busy={cancelling}
+            aria-disabled={cancelling}
+            className="text-xs font-medium text-bg-error border border-bg-error/20 rounded-full px-4 py-1.5 hover:bg-bg-neutral-100 transition-colors disabled:opacity-60 disabled:cursor-not-allowed inline-flex items-center gap-1.5"
+          >
+            {cancelling ? (
+              <>
+                <Loader2 size={12} className="animate-spin" aria-hidden="true" focusable="false" />
+                {t('tracking.cancelling', { ns: 'common' })}
+              </>
+            ) : (
+              t('tracking.cancelTitle', { ns: 'common' })
+            )}
           </button>
         )}
         {order.status === 'delivered' && (
@@ -173,7 +261,7 @@ export function OrderCard({ order, onRefresh, autoOpen }) {
         )}
       </div>
 
-      {returning && <ReturnForm orderId={order.id} onClose={() => setReturning(false)} />}
+      {returning && <ReturnForm order={order} onClose={() => setReturning(false)} />}
 
       {trackingOpen && (
         <div className="border-t border-bg-border pt-4 space-y-5">
@@ -288,7 +376,7 @@ export default function MyOrders() {
   }, [status, currentPhone]);
 
   async function handleLookup(e) {
-    e.preventDefault();
+    e?.preventDefault();
     const q = query.trim();
     if (!q) return;
     setCurrentPhone(q);

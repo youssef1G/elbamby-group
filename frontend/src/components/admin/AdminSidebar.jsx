@@ -40,6 +40,10 @@ export default function AdminSidebar({ mobileOpen, onClose }) {
 
   const toggleLang = () => setLang(isAr ? 'en' : 'ar');
 
+  // The Admins page is super-admin-only; the backend 403s regular admins, but
+  // the menu shouldn't even offer it (we never surface the 403).
+  const visibleLinks = links.filter((l) => l.key !== 'admins' || admin?.role === 'super_admin');
+
   const handleLogout = async () => {
     try {
       await logout();
@@ -82,7 +86,7 @@ export default function AdminSidebar({ mobileOpen, onClose }) {
       </div>
 
       <nav className="flex-1 overflow-y-auto p-3 space-y-1">
-        {links.map((l) => (
+        {visibleLinks.map((l) => (
           <NavLink
             key={l.key}
             to={l.to}

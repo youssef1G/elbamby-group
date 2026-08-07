@@ -90,6 +90,20 @@ export async function getAdminById(id) {
   return _from(TABLE.ADMINS).select('*').eq('id', id).single();
 }
 
+/**
+ * Session row for requireAdmin — deliberately narrow: id/username/email/role/
+ * is_active only, never password_hash. Kept separate from getAdminById (which
+ * selects `*`) so a fresh role/is_active can be read on every authenticated
+ * request (deactivated/deleted/demoted admins lose access immediately,
+ * instead of on JWT expiry).
+ */
+export async function getAdminSessionById(id) {
+  return _from(TABLE.ADMINS)
+    .select('id, username, email, role, is_active')
+    .eq('id', id)
+    .single();
+}
+
 export async function listAdmins({ page, limit } = {}) {
   let q = _from(TABLE.ADMINS).select('*', { count: 'exact' }).order('created_at', { ascending: false });
   return paginate(q, { page, limit });
@@ -105,6 +119,18 @@ export async function updateAdmin(id, data) {
 
 export async function deleteAdmin(id) {
   return _from(TABLE.ADMINS).delete().eq('id', id);
+}
+
+/**
+ * Number of currently-active super admins — used to guard self-demotion,
+ * self-deactivation and deleting the last active super admin (an admin panel
+ * with no reachable super admin is unrecoverable). Head-only count, no rows.
+ */
+export async function countActiveSuperAdmins() {
+  return _from(TABLE.ADMINS)
+    .select('id', { count: 'exact', head: true })
+    .eq('role', 'super_admin')
+    .eq('is_active', true);
 }
 
 // ──────────────────────────────────────────────
@@ -139,11 +165,16 @@ export async function deleteCategory(id) {
   return _from(TABLE.CATEGORIES).delete().eq('id', id);
 }
 
+/**
+ * ALL products (active AND inactive) in a category. Used both for the admin
+ * list's product-count column and as the category-delete guard — soft-deleted
+ * products still reference the category row, so counting only active ones let
+ * a delete slip through with orphaned FKs (or a 500 from the FK constraint).
+ */
 export async function getProductCountByCategory(categoryId) {
   return _from(TABLE.PRODUCTS)
     .select('id', { count: 'exact' })
-    .eq('category_id', categoryId)
-    .eq('is_active', true);
+    .eq('category_id', categoryId);
 }
 
 // ──────────────────────────────────────────────
@@ -161,11 +192,17 @@ export async function listProducts({
   is_active,
   is_featured,
   is_new_arrival,
+  low_stock_only = false,
+  out_of_stock_only = false,
   page = 1,
   limit = 20,
   sort = 'newest',
+  embedCategory = false,
 } = {}) {
-  let q = _from(TABLE.PRODUCTS).select(PRODUCT_SELECT, { count: 'exact' });
+  const select = embedCategory
+    ? `${PRODUCT_SELECT}, category:categories(id, name_en, name_ar, slug)`
+    : PRODUCT_SELECT;
+  let q = _from(TABLE.PRODUCTS).select(select, { count: 'exact' });
 
   if (category_id) q = q.eq('category_id', category_id);
   if (is_active !== undefined) q = q.eq('is_active', is_active);
@@ -175,6 +212,12 @@ export async function listProducts({
   if (search) {
     q = q.or(`name_en.ilike.%${search}%,name_ar.ilike.%${search}%`);
   }
+
+  // NOTE: low_stock/out_of_stock are intentionally NOT pushed down into SQL
+  // here. PostgREST cannot compare `stock_quantity` against the per-product
+  // `low_stock_threshold` column, and a constant would be wrong. The admin
+  // route applies those predicates in JS over the full result set, then
+  // paginates — see adminListProducts in server.js.
 
   switch (sort) {
     case 'price_asc':
@@ -187,6 +230,29 @@ export async function listProducts({
       q = q.order('is_featured', { ascending: false });
       q = q.order('sort_order', { ascending: true });
       break;
+    // Admin columns — server-side so the sort spans every page, not just the
+    // currently loaded one.
+    case 'name_en_asc':
+    case 'name_en_desc':
+      q = q.order('name_en', { ascending: sort === 'name_en_asc' });
+      break;
+    case 'name_ar_asc':
+    case 'name_ar_desc':
+      q = q.order('name_ar', { ascending: sort === 'name_ar_asc' });
+      break;
+    case 'stock_asc':
+    case 'stock_desc':
+      q = q.order('stock_quantity', { ascending: sort === 'stock_asc' });
+      break;
+    case 'category_en_asc':
+    case 'category_en_desc':
+    case 'category_ar_asc':
+    case 'category_ar_desc': {
+      const col = sort.startsWith('category_ar_') ? 'name_ar' : 'name_en';
+      q = q.order(col, { foreignTable: 'categories', ascending: sort.endsWith('_asc') });
+      q = q.order('created_at', { ascending: false }); // deterministic tiebreak
+      break;
+    }
     case 'newest':
     default:
       q = q.order('created_at', { ascending: false });
@@ -314,13 +380,39 @@ export async function getOrderById(id) {
     .single();
 }
 
+/**
+ * Customer-facing order lookup (tracking + return-request verification).
+ *
+ * Query-keyed on order_number + phone which is how the public endpoints
+ * authenticate the caller, but the SELECT is still an explicit projection —
+ * NOT `*` — so internal-only fields never leave the server:
+ *   - `orders.admin_note`        internal admin commentary
+ *   - `order_status_history.changed_by`  admin UUIDs (who moved the status)
+ *   - `order_status_history.note`        admin commentary on the transition
+ */
 export async function getOrderByNumberAndPhone(orderNumber, phone) {
   return _from(TABLE.ORDERS)
     .select(
       `
-      *,
-      order_items (*),
-      order_status_history (*)
+      id,
+      order_number,
+      status,
+      customer_name,
+      phone,
+      email,
+      address_line,
+      city,
+      notes,
+      subtotal,
+      shipping_fee,
+      total,
+      estimated_delivery,
+      created_at,
+      points_earned,
+      points_redeemed,
+      points_discount_egp,
+      order_items (product_id, product_name_snapshot, product_image_snapshot, unit_price_snapshot, quantity, line_total),
+      order_status_history (status, created_at)
     `
     )
     .eq('order_number', orderNumber)
@@ -340,7 +432,7 @@ export async function getOrdersByPhone(phone) {
       phone,
       address_line,
       city,
-      order_items (product_name_snapshot, product_image_snapshot, quantity, line_total)
+      order_items (product_id, product_name_snapshot, product_image_snapshot, quantity, line_total)
     `
     )
     .eq('phone', phone)
@@ -359,13 +451,13 @@ export async function getOrdersByPhone(phone) {
  *
  * @param {{
  *   orderNumber: string,
+ *   generateOrderNumber?: () => Promise<string>,
  *   customer_name: string,
  *   phone: string,
  *   alt_phone?: string,
  *   email?: string,
  *   address_line: string,
  *   city: string,
- *   governorate: string,
  *   notes?: string,
  *   subtotal: number,
  *   shipping_fee: number,
@@ -378,13 +470,13 @@ export async function getOrdersByPhone(phone) {
  */
 export async function createOrder({
   orderNumber,
+  generateOrderNumber = null,
   customer_name,
   phone,
   alt_phone,
   email,
   address_line,
   city,
-  governorate,
   notes,
   subtotal,
   shipping_fee,
@@ -443,7 +535,6 @@ export async function createOrder({
     email,
     address_line,
     city,
-    governorate,
     notes,
     subtotal,
     shipping_fee,
@@ -459,12 +550,41 @@ export async function createOrder({
     orderRow.points_discount_egp = points_discount_egp || 0;
   }
 
-  const { data: order, error: orderError } = await _from(TABLE.ORDERS)
-    .insert(orderRow)
-    .select('*')
-    .single();
+  // Retry the order-number insert up to 4 times on a 23505 collision. Stock
+  // and points are only consumed on the winning attempt, so a re-generated
+  // number must NOT trigger compensateOrder — the guard used to treat every
+  // orderError as fatal and reverse stock unnecessarily (which then got
+  // re-reversed on retry → negative balances).
+  let order = null;
+  let orderError = null;
+  for (let attempt = 1; attempt <= 4; attempt++) {
+    if (attempt > 1) {
+      if (typeof generateOrderNumber !== 'function') break;
+      orderNumber = await generateOrderNumber();
+    }
 
-  if (orderError) throw orderError;
+    const res = await _from(TABLE.ORDERS).insert(orderRow).select('*').single();
+    order = res.data;
+    orderError = res.error;
+    if (!orderError) break;
+
+    const isOrderNumberCollision =
+      orderError.code === '23505' && /order_number/i.test(orderError.message || '');
+    if (isOrderNumberCollision && attempt < 4 && typeof generateOrderNumber === 'function') {
+      continue;
+    }
+    break;
+  }
+
+  // ── Atomicity compensation ────────────────────────────────────────────────
+  // decrement_stock (stock decrement + points redeem) committed in its own
+  // transaction BEFORE this insert. If the order row then fails to insert
+  // (e.g. order_number collision, constraint, network), stock and points must
+  // be put back — otherwise they are lost with no order to account for them.
+  if (orderError) {
+    await compensateOrder({ stockItems, customerId: customer_id, points_to_redeem });
+    throw orderError;
+  }
 
   const lineItems = items.map((i) => ({
     order_id: order.id,
@@ -480,9 +600,67 @@ export async function createOrder({
     .insert(lineItems)
     .select('*');
 
-  if (itemsError) throw itemsError;
+  if (itemsError) {
+    // Order row exists but has no items — delete it and reverse stock/points.
+    await compensateOrder({ orderId: order.id, customerId: customer_id, points_to_redeem, stockItems });
+    throw itemsError;
+  }
 
   return { data: { ...order, items: insertedItems } };
+}
+
+/**
+ * Best-effort rollback of the stock/points side of decrement_stock when an
+ * order row never made it to disk (or its insert failed). The ledger is
+ * append-only, so redeemed points are reversed with a compensating positive
+ * entry rather than a DELETE. Retries each step; failures are logged but not
+ * thrown — the original insert error is what the caller surfaces.
+ */
+async function compensateOrder({ orderId = null, customerId, points_to_redeem, stockItems }) {
+  if (orderId) {
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      const { error } = await _from(TABLE.ORDERS).delete().eq('id', orderId);
+      if (!error) break;
+      if (attempt === 3) console.error(`Order ${orderId} compensation delete failed:`, error.message);
+    }
+  }
+
+  for (const item of stockItems) {
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      const { data: current, error } = await _from(TABLE.PRODUCTS)
+        .select('stock_quantity')
+        .eq('id', item.product_id)
+        .single();
+      if (error || !current) {
+        if (attempt === 3) console.error(`Compensation: could not read stock for ${item.product_id}:`, error?.message);
+        continue;
+      }
+      const { error: upErr } = await _from(TABLE.PRODUCTS)
+        .update({ stock_quantity: (current.stock_quantity ?? 0) + item.quantity })
+        .eq('id', item.product_id);
+      if (!upErr) break;
+      if (attempt === 3) console.error(`Compensation: stock restore failed for ${item.product_id}:`, upErr.message);
+    }
+  }
+
+  if (customerId && points_to_redeem > 0) {
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      const { error } = await _from(TABLE.POINTS_TRANSACTIONS)
+        .insert({
+          customer_id: customerId,
+          order_id: null,
+          type: 'refund_reversal',
+          points: points_to_redeem,
+          balance_after: 0, // trigger-overwritten
+          note: 'Compensation — order creation failed and redeemed points refunded',
+          created_by_admin_id: null,
+        })
+        .select('*')
+        .single();
+      if (!error) break;
+      if (attempt === 3) console.error('Compensation: points refund failed:', error.message);
+    }
+  }
 }
 
 export async function updateOrderStatus(id, status, estimatedDelivery) {
@@ -495,26 +673,37 @@ export async function updateOrderStatus(id, status, estimatedDelivery) {
     .single();
 }
 
+/**
+ * Atomic cancel/return transition (migration 020): restock + status flip +
+ * history entry inside ONE database transaction.
+ *
+ * The plain updateOrderStatus() above ONLY flips the status — it never puts
+ * product quantities back. decrement_stock (017) consumes stock at creation,
+ * so a cancel/return must use THIS function instead of updateOrderStatus,
+ * or the order's items leak their stock_quantity forever.
+ *
+ * Idempotent: an order already in a terminal cancel/return state returns
+ * `{ ok: true, already_cancelled: true }` with nothing touched (safe to
+ * retry; never double-restocks).
+ *
+ * @param {{ orderId: string, status: 'cancelled'|'returned', changedBy: string|null, note?: string|null }} params
+ * @returns {Promise<{ data?: { ok: boolean, already_cancelled: boolean, order?: object }, error?: any }>}
+ */
+export function cancelOrderAndRestock({ orderId, status, changedBy, note = null }) {
+  return _rpc('cancel_order_and_restock', {
+    p_order_id: orderId,
+    p_status: status,
+    p_changed_by: changedBy,
+    p_note: note,
+  });
+}
+
 export async function updateOrderAdminNote(id, adminNote) {
   return _from(TABLE.ORDERS)
     .update({ admin_note: adminNote })
     .eq('id', id)
     .select('*')
     .single();
-}
-
-export async function getTodayOrderCount() {
-  const now = new Date();
-  const yyyy = now.getUTCFullYear();
-  const mm = String(now.getUTCMonth() + 1).padStart(2, '0');
-  const dd = String(now.getUTCDate()).padStart(2, '0');
-  const startOfDay = `${yyyy}-${mm}-${dd}T00:00:00.000Z`;
-  const endOfDay = `${yyyy}-${mm}-${dd}T23:59:59.999Z`;
-
-  return _from(TABLE.ORDERS)
-    .select('id', { count: 'exact', head: true })
-    .gte('created_at', startOfDay)
-    .lt('created_at', endOfDay);
 }
 
 // ──────────────────────────────────────────────
@@ -702,7 +891,7 @@ export async function listOrdersByCustomer(customerId, { page = 1, limit = 20 } 
         phone,
         address_line,
         city,
-        order_items (product_name_snapshot, product_image_snapshot, quantity, line_total)
+order_items (product_id, product_name_snapshot, product_image_snapshot, quantity, line_total)
       `
       )
       .eq('customer_id', customerId)
@@ -753,24 +942,46 @@ export async function listPointsTransactionsByCustomer(customerId, { page = 1, l
 }
 
 /**
- * Idempotent earn hook (docs/13 3.1).
+ * Whether a ledger row already exists for a given order + type — the
+ * idempotency key for the status-transition hooks below. Application code
+ * inserts at most ONE row of each lifecycle type per order:
+ *   'earn'             → creditOrderEarnedPoints
+ *   'refund_reversal'  → refundOrderRedeemedPoints (and createOrder compensation)
+ *   'manual_deduct'    → reverseOrderEarnedPoints
+ * Returns the first matching row (or null).
+ */
+export async function getPointsTransactionByOrderAndType(orderId, type) {
+  return _from(TABLE.POINTS_TRANSACTIONS)
+    .select('id')
+    .eq('order_id', orderId)
+    .eq('type', type)
+    .limit(1)
+    .maybeSingle();
+}
+
+/**
+ * Idempotent earn hook (docs/13 3.1) with a crash-recovery path.
  *
- * Credits `points_earned` to the customer ONLY when the order's existing
- * `points_earned = 0` (i.e. never credited before — guards against
- * double-credit on a re-apply of status=delivered).
+ * Credits `points_earned` to the customer when the order reaches `delivered`.
+ * Three cases:
  *
- * Ordering: the conditional UPDATE (`... WHERE points_earned = 0`) is the
- * atomic claim — at most one concurrent caller can flip the row from 0 to N.
- * The ledger INSERT runs only after the claim succeeded, so double-crediting
- * (the financially important failure) is impossible. Known trade-off vs. the
- * spec's "set atomically in the same statement": the two statements are not
- * one DB transaction, so a crash between them could leave `points_earned`
- * stamped with no matching ledger row (customer got no points — harmless to
- * the balance, detectable as a mismatch). Supabase-js offers no single
- * statement covering both; flagging this rather than inventing a new RPC.
+ *   1. Never credited (points_earned = 0): the conditional UPDATE
+ *      (`... WHERE points_earned = 0`) is the atomic claim — at most one
+ *      concurrent caller can flip the row from 0 to N. Then the ledger INSERT
+ *      runs.
+ *   2. Claimed but ledger row lost (points_earned = N, no 'earn' ledger row):
+ *      a crash between claim and insert. SELF-HEAL: insert the missing ledger
+ *      row for the already-stamped N. Without this an admin retrying the
+ *      delivered transition used to skip the whole hook (points_earned > 0)
+ *      and the customer lost their points forever.
+ *   3. Fully credited (points_earned = N AND 'earn' ledger row exists): no-op.
  *
- * Mutates nothing if the order has no customer attached (guest order) or
- * `pointsEarned > 0` already (idempotent skip).
+ * Ordering: the conditional UPDATE is the atomic claim (at most one success),
+ * so double-crediting is impossible. The ledger-existence check in case 2/3
+ * makes the whole hook idempotent across retries.
+ *
+ * Mutates nothing if the order has no customer attached (guest order),
+ * `pointsToEarn <= 0`, or the earn ledger row already exists.
  *
  * @returns {Promise<{ credited: boolean, pointsEarned?: number }>}
  */
@@ -778,7 +989,36 @@ export async function creditOrderEarnedPoints(order) {
   const customerId = order.customer_id;
   if (!customerId) return { credited: false };
   const existingEarned = Number(order.points_earned || 0);
-  if (existingEarned > 0) return { credited: false };
+  if (existingEarned > 0) {
+    // Already stamped — verify the ledger caught up. If the ledger row is
+    // missing (claim survived, insert did not), backfill it now.
+    const { data: ledgerRow, error: findErr } = await getPointsTransactionByOrderAndType(
+      order.id,
+      'earn',
+    );
+    if (findErr) {
+      const err = new Error(findErr.message);
+      err.code = 'POINTS_EARN_FAILED';
+      err.supabaseError = findErr;
+      throw err;
+    }
+    if (ledgerRow) return { credited: true, pointsEarned: existingEarned };
+
+    const { error: backfillErr } = await createPointsTransaction({
+      customer_id: customerId,
+      order_id: order.id,
+      type: 'earn',
+      points: existingEarned,
+      note: `Earned on order ${order.order_number} (recovered after missing ledger row)`,
+    });
+    if (backfillErr) {
+      const err = new Error(backfillErr.message);
+      err.code = 'POINTS_EARN_FAILED';
+      err.supabaseError = backfillErr;
+      throw err;
+    }
+    return { credited: true, pointsEarned: existingEarned };
+  }
 
   const rate = await getPointsEarnRate();
   const baseTotal = Number(order.total || 0);
@@ -824,8 +1064,10 @@ export async function creditOrderEarnedPoints(order) {
 
 /**
  * Refund redeemed points when an order leaves the fulfillment pipeline
- * (cancelled/returned). Idempotent: only fires if `points_redeemed > 0`.
- * Inserts one `refund_reversal` (positive) ledger row. (docs/13 3.3)
+ * (cancelled/returned). Idempotent: only fires if `points_redeemed > 0`, and
+ * only inserts the `refund_reversal` (positive) ledger row if none exists for
+ * this order+type yet — so a retried status transition can never double-refund.
+ * (docs/13 3.3)
  *
  * @param {object} order   pre-transition order snapshot
  * @param {string} toStatus  destination status (cancelled/returned) — used
@@ -836,6 +1078,18 @@ export async function refundOrderRedeemedPoints(order, toStatus) {
   if (!customerId) return { refunded: false };
   const redeemed = Number(order.points_redeemed || 0);
   if (redeemed <= 0) return { refunded: false };
+
+  const { data: existing, error: findErr } = await getPointsTransactionByOrderAndType(
+    order.id,
+    'refund_reversal',
+  );
+  if (findErr) {
+    const err = new Error(findErr.message);
+    err.code = 'POINTS_REVERSAL_FAILED';
+    err.supabaseError = findErr;
+    throw err;
+  }
+  if (existing) return { refunded: true, pointsRefunded: redeemed };
 
   const { error: histError } = await createPointsTransaction({
     customer_id: customerId,
@@ -872,6 +1126,20 @@ export async function reverseOrderEarnedPoints(order, toStatus) {
   if (!customerId) return { reversed: false };
   const earned = Number(order.points_earned || 0);
   if (earned <= 0) return { reversed: false };
+
+  // Idempotency: if the reversal ledger row already exists, the deduction
+  // already happened — retrying must not deduct twice.
+  const { data: existing, error: findErr } = await getPointsTransactionByOrderAndType(
+    order.id,
+    'manual_deduct',
+  );
+  if (findErr) {
+    const err = new Error(findErr.message);
+    err.code = 'POINTS_REVERSAL_FAILED';
+    err.supabaseError = findErr;
+    throw err;
+  }
+  if (existing) return { reversed: true, pointsReversed: earned };
 
   const { error: histError } = await createPointsTransaction({
     customer_id: customerId,
@@ -932,22 +1200,6 @@ export async function listBanners({ position, is_active } = {}) {
   if (position) q = q.eq('position', position);
   if (is_active !== undefined) q = q.eq('is_active', is_active);
   return q;
-}
-
-export async function getBannerById(id) {
-  return _from(TABLE.BANNERS).select('*').eq('id', id).single();
-}
-
-export async function createBanner(data) {
-  return _from(TABLE.BANNERS).insert(data).select('*').single();
-}
-
-export async function updateBanner(id, data) {
-  return _from(TABLE.BANNERS).update(data).eq('id', id).select('*').single();
-}
-
-export async function deleteBanner(id) {
-  return _from(TABLE.BANNERS).delete().eq('id', id);
 }
 
 // ──────────────────────────────────────────────

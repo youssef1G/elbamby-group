@@ -36,7 +36,7 @@ No substitutions. If a library listed here is unavailable/deprecated at implemen
 | helmet | ^8.2.0 | Security headers |
 | express-rate-limit | ^8.5.2 | Rate limiting (auth + public write endpoints) |
 | **zod** | ^3.23.0 | Server-side logged validation (schemas inlined in `server.js`) |
-| resend | ^6.18.0 | Transactional emails (order confirmation) |
+| nodemailer | ^6.0.0 | Transactional emails via Gmail SMTP (order confirmation) |
 | dotenv | ^16.0.0 | Environment variables |
 | nodemon (dev) | ^3.0.0 | Dev auto-restart |
 
@@ -46,7 +46,7 @@ No substitutions. If a library listed here is unavailable/deprecated at implemen
 |---|---|
 | Supabase (PostgreSQL) | Primary database — see `04-database-schema.md` |
 | Cloudinary | Image hosting — unsigned uploads directly from frontend (products, banners, categories, logo) |
-| Resend | Order confirmation emails (optional; no-ops without `RESEND_API_KEY`) |
+| Gmail SMTP (nodemailer) | Order confirmation emails (optional; no-ops without `GMAIL_EMAIL` + `GMAIL_APP_PASSWORD`) |
 | Vercel | Hosting — frontend as static SPA, backend as serverless functions |
 
 ## Why the tictoc-xpoint Pattern (Plain Context + Single api.js + 4-File Backend)
@@ -56,7 +56,7 @@ BG was originally designed with a richer state/data layer (TanStack Query, Zusta
 - **Plain React Context** for cart/theme/locale/auth — no external state library (no TanStack Query, no Zustand). Context is enough for this scope and avoids re-render cascades.
 - **Single `src/api.js`** for all data access — every part that calls `fetch()` goes through one file. Components use `useState` + `useEffect` with `cancelled` flags — consistent pattern, no hidden cache/invalidation complexity.
 - **Plain-JS `ar.js`/`en.js`** flat dictionaries serviced by `LocaleContext` — no i18next namespaces, no pluralization library, no language detector. Simple key-value lookup with `{{variable}}` interpolation and English fallback.
-- **Backend: 4 files** — `server.js` (routes + handlers + schemas + limiters + error handler inline), `db.js` (supabase client + all data functions), `auth.js` (JWT sign/verify + guards), `email.js` (Resend). See `03-file-architecture.md` for the full tree.
+- **Backend: 4 files** — `server.js` (routes + handlers + schemas + limiters + error handler inline), `db.js` (supabase client + all data functions), `auth.js` (JWT sign/verify + guards), `email.js` (Gmail SMTP via nodemailer). See `03-file-architecture.md` for the full tree.
 
 The tradeoff (no caching layer, no automatic refetch-on-focus) is acceptable because BG is a single-store COD-only site with no real-time stock contention — stale cart data is re-validated at checkout, not mid-browse.
 

@@ -34,6 +34,49 @@ const CATEGORY_ICONS = {
   headphones: Headphones,
 };
 
+/**
+ * Hero category chips — the plainest possible answer to "what do you sell":
+ * say it. Seven real categories, each linking straight into the shop with
+ * that filter applied. This is the textual counterpart to the flat-lay
+ * visual — the same catalog, spelled out for anyone scanning past the art.
+ */
+const HERO_CHIPS = [
+  { slug: 'cables', Icon: Cable, key: 'home.chip.cables' },
+  { slug: 'chargers', Icon: Plug, key: 'home.chip.chargers' },
+  { slug: 'power-banks', Icon: BatteryCharging, key: 'home.chip.powerBanks' },
+  { slug: 'phone-cases', Icon: Smartphone, key: 'home.chip.cases' },
+  { slug: 'screen-protectors', Icon: ShieldCheck, key: 'home.chip.screenProtectors' },
+  { slug: 'earbuds', Icon: Headphones, key: 'home.chip.earbuds' },
+  { slug: 'storage', Icon: MemoryStick, key: 'home.chip.storage' },
+];
+
+/**
+ * MaskedWords — word-by-word headline reveal.
+ * Each word sits in an overflow-hidden mask and slides up into place with a
+ * 60ms stagger — an editorial "typeset" entrance. Works in both languages
+ * (Arabic falls out of the mask identically; no mono/uppercase applied).
+ */
+function MaskedWords({ text, delayBase = 0.1 }) {
+  const words = text.split(' ');
+  return (
+    <>
+      {words.map((word, i) => (
+        <span key={i} className="inline-block overflow-hidden align-top">
+          <motion.span
+            className="inline-block"
+            initial={{ y: '110%' }}
+            animate={{ y: 0 }}
+            transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1], delay: delayBase + i * 0.06 }}
+          >
+            {word}
+            {i < words.length - 1 ? '\u00A0' : ''}
+          </motion.span>
+        </span>
+      ))}
+    </>
+  );
+}
+
 function CapacityMarquee() {
   return (
     <div className="relative overflow-hidden border-y border-bg-border py-3 select-none" aria-hidden="true">
@@ -91,74 +134,100 @@ function HeroCarousel() {
     }
   };
 
-  // --- No-banner fallback: this IS the brand hero, not a placeholder. ---
-  // Split layout: headline + CTA on one side, a rendered "memory card" glyph
-  // on the other — an abstracted chip/card silhouette in brand magenta,
-  // built from CSS, not stock photography. This is the thesis image.
+// --- No-banner fallback: this IS the brand hero, not a placeholder. ---
+  // Editorial "spec plate" spread: the page is the paper — warm surface,
+  // ink hairlines, the HeroVisual plate as the figure. One quiet typeset
+  // entrance, then stillness. No dark band, no glow, no free-floating motion.
   if (!isLoading && banners.length === 0) {
     return (
       <section className="relative overflow-hidden">
-        <div className="mx-auto grid max-w-7xl grid-cols-1 items-center gap-10 px-4 py-16 sm:px-6 lg:grid-cols-2 lg:gap-16 lg:px-8 lg:py-24">
-          {/* Copy side — staggered reveal, same orchestrated entrance as the visual */}
-          <motion.div
-            className="order-2 lg:order-1"
-            initial="hidden"
-            animate="show"
-            variants={{ hidden: {}, show: { transition: { staggerChildren: 0.09, delayChildren: 0.05 } } }}
-          >
-            <motion.p
-              variants={{ hidden: { opacity: 0, y: 10 }, show: { opacity: 1, y: 0 } }}
-              transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-              className="mb-4 font-mono text-caption uppercase tracking-[0.2em] text-bg-primary-400"
-            >
-              {t('home.heroEyebrow')}
-            </motion.p>
-            <h1 className="text-display font-bold leading-[1.05] text-bg-text-primary">
-              <motion.span
-                className="block overflow-hidden"
-                variants={{ hidden: { opacity: 0, y: 10 }, show: { opacity: 1, y: 0 } }}
-                transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-              >
-                {t('home.heroLine1')}
-              </motion.span>
-              <motion.span
-                className="block text-bg-primary-500"
-                variants={{ hidden: { opacity: 0, y: 10 }, show: { opacity: 1, y: 0 } }}
-                transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-              >
-                {t('home.heroLine2')}
-              </motion.span>
-            </h1>
-            <motion.p
-              variants={{ hidden: { opacity: 0, y: 10 }, show: { opacity: 1, y: 0 } }}
-              transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-              className="mt-6 max-w-md text-body-lg text-bg-text-secondary"
-            >
-              {t('home.heroSubtitle')}
-            </motion.p>
+        <div className="mx-auto max-w-7xl px-4 pb-12 pt-14 sm:px-6 lg:px-8 lg:pb-16 lg:pt-20">
+          <div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-12 lg:gap-8">
+            {/* Copy side — staggered masked reveal */}
             <motion.div
-              variants={{ hidden: { opacity: 0, y: 10 }, show: { opacity: 1, y: 0 } }}
-              transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-              className="mt-8 flex flex-wrap items-center gap-4"
+              className="lg:col-span-5"
+              initial="hidden"
+              animate="show"
+              variants={{ hidden: {}, show: { transition: { staggerChildren: 0.12, delayChildren: 0.15 } } }}
             >
-              <Link
-                to="/shop"
-                className="inline-flex items-center gap-2 rounded-md bg-bg-primary-500 px-7 py-3.5 text-body-sm font-semibold text-white transition hover:bg-bg-primary-400 active:scale-[0.98]"
+              {/* Eyebrow — hairline-bracketed mono caption, set in ink */}
+              <motion.p
+                variants={{ hidden: { opacity: 0, y: 8 }, show: { opacity: 1, y: 0 } }}
+                transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+                className="mb-6 flex items-center gap-4 font-mono text-caption uppercase tracking-[0.25em] text-bg-text-secondary"
               >
-                {t('home.heroCta')}
-              </Link>
-              <Link
-                to="/shop?category=storage"
-                className="text-body-sm font-medium text-bg-text-secondary underline decoration-bg-text-secondary/40 underline-offset-4 transition hover:text-bg-text-primary hover:decoration-bg-text-primary"
-              >
-                {t('home.heroCtaSecondary')}
-              </Link>
-            </motion.div>
-          </motion.div>
+                <span className="h-px w-8 bg-bg-text-secondary/50" aria-hidden="true" />
+                {t('home.heroEyebrow')}
+                <span className="h-px w-8 bg-bg-text-secondary/50" aria-hidden="true" />
+              </motion.p>
 
-          {/* Animated device cluster — the signature visual */}
-          <div className="order-1 flex items-center justify-center lg:order-2">
-            <HeroVisual />
+              <h1 className="text-display font-bold leading-[1.05] tracking-tight">
+                <motion.span
+                  className="block"
+                  variants={{ hidden: { opacity: 0, y: 10 }, show: { opacity: 1, y: 0 } }}
+                  transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+                >
+                  <MaskedWords text={t('home.heroLine1')} delayBase={0.1} />
+                </motion.span>
+                <motion.span
+                  className="block text-bg-primary-600"
+                  variants={{ hidden: { opacity: 0, y: 10 }, show: { opacity: 1, y: 0 } }}
+                  transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+                >
+                  <MaskedWords text={t('home.heroLine2')} delayBase={0.28} />
+                </motion.span>
+              </h1>
+
+              <motion.p
+                variants={{ hidden: { opacity: 0, y: 10 }, show: { opacity: 1, y: 0 } }}
+                transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+                className="mt-6 max-w-md text-body-lg text-bg-text-secondary"
+              >
+                {t('home.heroSubtitle')}
+              </motion.p>
+
+              <motion.div
+                variants={{ hidden: { opacity: 0, y: 10 }, show: { opacity: 1, y: 0 } }}
+                transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+                className="mt-9 flex flex-wrap items-center gap-5"
+              >
+                <Link
+                  to="/shop"
+                  className="inline-flex items-center gap-2 rounded-md bg-bg-primary-500 px-8 py-3.5 text-body-sm font-semibold text-white transition-colors hover:bg-bg-primary-600"
+                >
+                  {t('home.heroCta')}
+                </Link>
+                <Link
+                  to="/shop?sort=newest"
+                  className="text-body-sm font-medium text-bg-text-secondary underline decoration-bg-border underline-offset-4 transition hover:text-bg-text-primary hover:decoration-bg-primary-500"
+                >
+                  {t('home.heroCtaSecondary')}
+                </Link>
+              </motion.div>
+
+              {/* Category chips — ink-on-paper tags, bordered paper pills */}
+              <motion.div
+                variants={{ hidden: { opacity: 0, y: 10 }, show: { opacity: 1, y: 0 } }}
+                transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+                className="mt-10 flex flex-wrap gap-2 border-t border-bg-border pt-7"
+              >
+                {HERO_CHIPS.map(({ slug, Icon, key }) => (
+                  <Link
+                    key={slug}
+                    to={`/shop?category=${slug}`}
+                    className="group inline-flex items-center gap-1.5 rounded-full border border-bg-border bg-bg-surface-raised px-3.5 py-2 text-caption text-bg-text-primary transition-colors duration-200 hover:border-bg-primary-400 hover:text-bg-primary-600"
+                  >
+                    <Icon size={13} strokeWidth={1.75} className="text-bg-primary-500" />
+                    {t(key)}
+                  </Link>
+                ))}
+              </motion.div>
+            </motion.div>
+
+            {/* Spec visual — the signature */}
+            <div className="lg:col-span-7 lg:-mx-4 xl:-mx-10">
+              <HeroVisual />
+            </div>
           </div>
         </div>
         <CapacityMarquee />
@@ -394,7 +463,16 @@ export default function Home() {
 
   return (
     <>
-      <SEO titleKey="nav.home" />
+      <SEO
+        titleKey="nav.home"
+        jsonLd={{
+          '@context': 'https://schema.org',
+          '@type': 'Organization',
+          name: t('brand.fullName'),
+          url: window.location.origin,
+          logo: `${window.location.origin}/logo.png`,
+        }}
+      />
 
       <HeroCarousel />
 

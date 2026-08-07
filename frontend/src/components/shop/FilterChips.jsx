@@ -16,7 +16,7 @@ export default function FilterChips({ filters = [], onRemove, onClearAll }) {
           <button
             onClick={() => onRemove(f.key)}
             className="hover:text-bg-primary-900 transition-colors"
-            aria-label={`Remove ${f.key} filter`}
+            aria-label={`${t('common:common.remove')} ${f.label}`}
           >
             <X size={14} />
           </button>

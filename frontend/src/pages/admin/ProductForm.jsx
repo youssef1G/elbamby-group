@@ -219,7 +219,7 @@ export default function ProductForm() {
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <h2 className="font-heading text-xl font-bold text-bg-text-primary">{isEdit ? t("admin:products.edit") : t("admin.form.add")}</h2>
-          {isDirty && <span className="text-[10px] font-semibold text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-full px-2.5 py-0.5">{t("admin.form.unsaved")}</span>}
+          {isDirty && <span className="text-[10px] font-semibold text-bg-warning border border-bg-warning/25 bg-bg-warning/10 rounded-full px-2.5 py-0.5">{t("admin.form.unsaved")}</span>}
         </div>
         {isEdit && origSlug && (
           <Link to={`/product/${origSlug}`} target="_blank" className="text-xs font-medium text-bg-primary-500 hover:underline">{t("admin.form.viewStorefront")}</Link>

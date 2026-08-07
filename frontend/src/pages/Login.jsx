@@ -11,7 +11,7 @@ import { normalizePhone } from '@/lib/formatters.js';
 import Button from '@/components/ui/Button.jsx';
 import SEO from '@/components/common/SEO.jsx';
 
-const phoneRegex = /^01[0-2,5]\d{8}$/;
+const phoneRegex = /^01[0-25]\d{8}$/;
 
 const loginSchema = z.object({
   phone: z.string().transform(normalizePhone).pipe(z.string().regex(phoneRegex, 'auth:validation.phone')),
@@ -39,7 +39,15 @@ export default function Login() {
       await login(data.phone, data.password);
       navigate('/account');
     } catch (err) {
-      setError(err.code === 'AUTH_FAILED' ? t('auth:login.invalidCredentials') : err.message || t('errors.generic'));
+      setError(
+        err.code === 'AUTH_FAILED' || err.code === 'UNAUTHORIZED'
+          ? t('auth:login.invalidCredentials')
+          : err.code === 'RATE_LIMITED'
+          ? t('auth:errors.rateLimited')
+          : err.code === 'VALIDATION_ERROR'
+            ? t('auth:errors.validationFailed')
+            : err.message || t('errors.generic'),
+      );
     }
   };
 

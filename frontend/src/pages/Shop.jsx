@@ -50,6 +50,11 @@ export default function Shop() {
   const sentinelRef = useRef(null);
   const filterKeyRef = useRef('');
   const seenIdsRef = useRef(new Set());
+  // Monotonic request id — each loadPage() call claims an id; if a response
+  // comes back for a *different* (older) id it means the filter changed while
+  // it was in flight, so the result is discarded. Kills the search/filter race
+  // where a slow page-2 response appended stale rows onto the new results.
+  const requestSeqRef = useRef(0);
 
   const currentKey = `${category}__${sort}__${debouncedSearch}`;
 
@@ -62,6 +67,7 @@ export default function Shop() {
   }, []);
 
   const loadPage = useCallback(async (page, isLoadMore = false) => {
+    const seq = ++requestSeqRef.current;
     if (isLoadMore && !hasMore) return;
     if (isLoadMore) setLoadingMore(true);
     else setLoading(true);
@@ -72,6 +78,7 @@ export default function Shop() {
       if (debouncedSearch) params.search = debouncedSearch;
 
       const res = await fetchProducts(params);
+      if (seq !== requestSeqRef.current) return; // stale response
       const rows = res?.data || res || [];
       const meta = res?.meta || {};
 
@@ -88,10 +95,13 @@ export default function Shop() {
       }
       setError(false);
     } catch {
+      if (seq !== requestSeqRef.current) return;
       if (page === 1) setError(true);
     } finally {
-      setLoading(false);
-      setLoadingMore(false);
+      if (seq === requestSeqRef.current) {
+        setLoading(false);
+        setLoadingMore(false);
+      }
     }
   }, [category, sort, debouncedSearch, hasMore]);
 

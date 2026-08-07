@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
-import { TrendingUp, ShoppingCart, Receipt, Target, Clock, Package } from 'lucide-react';
+import { TrendingUp, ShoppingCart, Receipt, Target, Clock, Package, Download } from 'lucide-react';
 import { useLocale } from '@/context/LocaleContext.jsx';
-import { fetchAnalytics } from '@/api.js';
+import { fetchAnalytics, fetchAnalyticsTopProducts } from '@/api.js';
 import StatCard from '@/components/admin/StatCard.jsx';
 import Select from '@/components/ui/Select.jsx';
 import { formatPrice } from '@/lib/formatters.js';
+import { downloadCsv } from '@/lib/csv.js';
 import { ORDER_STATUSES } from '@/lib/constants.js';
 
 const STATUS_META = {
@@ -91,6 +92,7 @@ function AnimatedBar({ label, value, max, color, display }) {
 export default function AdminAnalytics() {
   const { t, isAr } = useLocale();
   const [data, setData] = useState(null);
+  const [top, setTop] = useState([]);
   const [loading, setLoading] = useState(true);
   const [days, setDays] = useState('30d');
 
@@ -101,6 +103,9 @@ export default function AdminAnalytics() {
       .then((res) => { if (!cancelled) setData(res); })
       .catch(() => {})
       .finally(() => { if (!cancelled) setLoading(false); });
+    fetchAnalyticsTopProducts(days)
+      .then((res) => { if (!cancelled) setTop(res?.data || []); })
+      .catch(() => { if (!cancelled) setTop([]); });
     return () => { cancelled = true; };
   }, [days]);
 
@@ -213,9 +218,27 @@ export default function AdminAnalytics() {
         className="grid grid-cols-1 lg:grid-cols-2 gap-6"
       >
         <div className="surface-card p-5">
-          <h3 className="font-heading text-body-sm font-bold text-bg-text-primary mb-5">
-            {t('admin:analytics.ordersByStatus')}
-          </h3>
+          <div className="flex items-center justify-between gap-2 mb-5">
+            <h3 className="font-heading text-body-sm font-bold text-bg-text-primary">
+              {t('admin:analytics.ordersByStatus')}
+            </h3>
+            <button
+              type="button"
+              onClick={() =>
+                downloadCsv(`bg-orders-by-status-${days}.csv`, [t('admin:analytics.exportStatus'), t('admin:analytics.exportCount')],
+                  (summary.ordersByStatus || []).map((s) => [
+                    ORDER_STATUSES[s.status] ? (isAr ? ORDER_STATUSES[s.status].ar : ORDER_STATUSES[s.status].en) : s.status,
+                    s.count,
+                  ]))
+              }
+              disabled={!summary.ordersByStatus?.length}
+              className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-caption font-medium text-bg-text-secondary hover:text-bg-primary-500 hover:bg-bg-surface-sunken transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              aria-label={t('admin:analytics.export')}
+            >
+              <Download size={14} />
+              <span className="hidden sm:inline">{t('admin:analytics.export')}</span>
+            </button>
+          </div>
           {summary.ordersByStatus?.length > 0 ? (
             <div className="space-y-1">
               {summary.ordersByStatus.map((s) => {
@@ -241,9 +264,24 @@ export default function AdminAnalytics() {
         </div>
 
         <div className="surface-card p-5">
-          <h3 className="font-heading text-body-sm font-bold text-bg-text-primary mb-5">
-            {t('admin:analytics.ordersByCategory')}
-          </h3>
+          <div className="flex items-center justify-between gap-2 mb-5">
+            <h3 className="font-heading text-body-sm font-bold text-bg-text-primary">
+              {t('admin:analytics.ordersByCategory')}
+            </h3>
+            <button
+              type="button"
+              onClick={() =>
+                downloadCsv(`bg-orders-by-category-${days}.csv`, [t('admin:analytics.exportCategory'), t('admin:analytics.exportCount')],
+                  (summary.ordersByCategory || []).map((c) => [t(`cat.${c.category}`, { defaultValue: c.category }), c.count]))
+              }
+              disabled={!summary.ordersByCategory?.length}
+              className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-caption font-medium text-bg-text-secondary hover:text-bg-primary-500 hover:bg-bg-surface-sunken transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              aria-label={t('admin:analytics.export')}
+            >
+              <Download size={14} />
+              <span className="hidden sm:inline">{t('admin:analytics.export')}</span>
+            </button>
+          </div>
           {summary.ordersByCategory?.length > 0 ? (
             <div className="space-y-1">
               {summary.ordersByCategory.map((c) => (
@@ -260,6 +298,58 @@ export default function AdminAnalytics() {
             <div className="flex flex-col items-center py-10 text-center gap-2">
               <Package size={20} className="text-bg-text-secondary/40" strokeWidth={1.5} />
               <p className="text-body-sm text-bg-text-secondary">{t('admin:analytics.noCatData')}</p>
+            </div>
+          )}
+        </div>
+      </motion.div>
+
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.4, delay: 0.45 }}
+      >
+        <div className="surface-card p-5">
+          <div className="flex items-center justify-between gap-2 mb-4">
+            <h3 className="font-heading text-body-sm font-bold text-bg-text-primary">
+              {t('admin:analytics.topProducts')}
+            </h3>
+            <button
+              type="button"
+              onClick={() =>
+                downloadCsv(`bg-top-products-${days}.csv`, [t('admin:analytics.exportProduct'), t('admin:analytics.exportSold'), t('admin:analytics.exportViews')],
+                  top.map((p) => [isAr ? (p.nameAr || p.nameEn) : (p.nameEn || p.nameAr), Number(p.quantitySold ?? 0), Number(p.viewCount ?? 0)]))
+              }
+              disabled={top.length === 0}
+              className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-caption font-medium text-bg-text-secondary hover:text-bg-primary-500 hover:bg-bg-surface-sunken transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              aria-label={t('admin:analytics.export')}
+            >
+              <Download size={14} />
+              <span className="hidden sm:inline">{t('admin:analytics.export')}</span>
+            </button>
+          </div>
+          {top.length > 0 ? (
+            <div className="divide-y divide-bg-border">
+              {top.map((p) => (
+                <div key={p.productId} className="flex items-center justify-between gap-4 py-2.5">
+                  <span className="text-body-sm font-medium text-bg-text-primary truncate min-w-0">
+                    {isAr ? (p.nameAr || p.nameEn) : p.nameEn}
+                  </span>
+                  <div className="flex items-center gap-6 shrink-0">
+                    <span className="text-caption text-bg-text-secondary ltr-nums" dir="ltr">
+                      {t('admin:analytics.sold')} {Number(p.quantitySold ?? 0).toLocaleString('en-US')}
+                    </span>
+                    <span className="text-caption text-bg-text-secondary ltr-nums" dir="ltr">
+                      {t('admin:analytics.views')} {Number(p.viewCount ?? 0).toLocaleString('en-US')}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="flex flex-col items-center py-10 text-center gap-2">
+              <Package size={20} className="text-bg-text-secondary/40" strokeWidth={1.5} />
+              <p className="text-body-sm text-bg-text-secondary">{t('admin:analytics.noTopData')}</p>
             </div>
           )}
         </div>

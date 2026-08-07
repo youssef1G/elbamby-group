@@ -40,7 +40,14 @@ export default function AdminOrderDetail() {
     let cancelled = false;
     setIsLoading(true);
     fetchOrder(id)
-      .then((res) => { if (!cancelled) setData(res); })
+      .then((res) => {
+        if (!cancelled) {
+          setData(res);
+          // seed the note editor once the order loads (api returns camelCase)
+          const o = res?.data;
+          if (o) setNote(o.adminNote || '');
+        }
+      })
       .catch(() => { if (!cancelled) setData(null); })
       .finally(() => { if (!cancelled) setIsLoading(false); });
     return () => { cancelled = true; };
@@ -104,11 +111,11 @@ export default function AdminOrderDetail() {
   return (
     <div className="max-w-3xl space-y-6">
       <div className="flex items-center gap-4">
-        <button onClick={() => navigate('/admin/orders')} className="btn-ghost !min-h-0 h-8 w-8 flex items-center justify-center text-bg-text-secondary">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+        <button onClick={() => navigate('/admin/orders')} className="btn-ghost !min-h-0 h-8 w-8 flex items-center justify-center text-bg-text-secondary" aria-label={t('admin:common.back')}>
+          <svg className="rtl:-scale-x-100" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
         </button>
         <h1 className="text-h2 font-semibold text-bg-text-primary">
-          {t('admin:orders.detail')} <span className="font-mono ltr-nums" dir="ltr">#{order.order_number}</span>
+          {t('admin:orders.detail')} <span className="font-mono ltr-nums" dir="ltr">#{order.orderNumber}</span>
         </h1>
         <Badge variant={statusBadge[statusKey] || 'info'}>
           {statusLabel ? (isAr ? statusLabel.ar : statusLabel.en) : statusKey}
@@ -119,7 +126,7 @@ export default function AdminOrderDetail() {
         <div className="bg-bg-surface border border-bg-border rounded-md p-5 space-y-3">
           <h2 className="text-body font-semibold text-bg-text-primary">{t('admin:orders.customerInfo')}</h2>
           <div className="space-y-1.5">
-            <p className="text-body-sm text-bg-text-primary">{order.customer_name}</p>
+            <p className="text-body-sm text-bg-text-primary">{order.customerName}</p>
             <p className="text-body-sm text-bg-text-secondary" dir="ltr">{formatPhone(order.phone)}</p>
             {order.email && <p className="text-body-sm text-bg-text-secondary">{order.email}</p>}
           </div>
@@ -128,8 +135,7 @@ export default function AdminOrderDetail() {
         <div className="bg-bg-surface border border-bg-border rounded-md p-5 space-y-3">
           <h2 className="text-body font-semibold text-bg-text-primary">{t('admin:orders.deliveryAddress')}</h2>
           <div className="space-y-1.5">
-            <p className="text-body-sm text-bg-text-primary">{order.delivery_address}</p>
-            <p className="text-body-sm text-bg-text-secondary">{order.governorate}</p>
+            <p className="text-body-sm text-bg-text-primary">{order.addressLine}</p>
           </div>
         </div>
       </div>
@@ -137,25 +143,25 @@ export default function AdminOrderDetail() {
       <div className="bg-bg-surface border border-bg-border rounded-md p-5 space-y-4">
         <h2 className="text-body font-semibold text-bg-text-primary">{t('admin:orders.items')}</h2>
         <div className="divide-y divide-bg-border">
-          {(order.items || []).map((item, i) => (
+          {(order.orderItems || order.items || []).map((item, i) => (
             <div key={i} className="flex items-center gap-4 py-3 first:pt-0 last:pb-0">
               <div className="w-12 h-12 rounded overflow-hidden bg-bg-surface-sunken flex-shrink-0">
-                {item.image_url ? (
-                  <img src={item.image_url} alt="" className="w-full h-full object-cover" />
+                {item.productImageSnapshot ? (
+                  <img src={item.productImageSnapshot} alt="" className="w-full h-full object-cover" />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-caption text-bg-text-secondary">—</div>
                 )}
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-body-sm font-medium text-bg-text-primary truncate">
-                  {isAr ? item.name_ar : item.name_en}
+                  {item.productNameSnapshot}
                 </p>
                 <p className="text-caption text-bg-text-secondary">
-                  {item.quantity} × {formatPrice(item.price)}
+                  {item.quantity} × {formatPrice(item.unitPriceSnapshot)}
                 </p>
               </div>
               <p className="text-body-sm font-medium text-bg-text-primary ltr-nums" dir="ltr">
-                {formatPrice(item.price * item.quantity)}
+                {formatPrice(item.lineTotal ?? (item.unitPriceSnapshot * item.quantity))}
               </p>
             </div>
           ))}
@@ -167,7 +173,7 @@ export default function AdminOrderDetail() {
           </div>
           <div className="flex justify-between text-body-sm text-bg-text-secondary">
             <span>{t('admin:orders.shipping')}</span>
-            <span className="ltr-nums" dir="ltr">{formatPrice(order.shipping_fee)}</span>
+            <span className="ltr-nums" dir="ltr">{formatPrice(order.shippingFee)}</span>
           </div>
           <div className="flex justify-between text-body font-semibold text-bg-text-primary">
             <span>{t('admin:orders.total')}</span>
@@ -230,11 +236,11 @@ export default function AdminOrderDetail() {
 
       <div className="bg-bg-surface border border-bg-border rounded-md p-5 space-y-4">
         <h2 className="text-body font-semibold text-bg-text-primary">{t('admin:orders.statusTimeline')}</h2>
-        {(order.status_history || []).length === 0 ? (
+        {(order.statusHistory || []).length === 0 ? (
           <p className="text-body-sm text-bg-text-secondary">{t('common:common.nothing')}</p>
         ) : (
           <div className="space-y-3">
-            {order.status_history.map((entry, i) => {
+            {order.statusHistory.map((entry, i) => {
               const es = ORDER_STATUSES[entry.status] || { en: entry.status, ar: entry.status };
               return (
                 <div key={i} className="flex items-start gap-3">
@@ -244,7 +250,7 @@ export default function AdminOrderDetail() {
                       {isAr ? es.ar : es.en}
                     </p>
                     <p className="text-caption text-bg-text-secondary ltr-nums" dir="ltr">
-                      {formatDate(entry.created_at)}
+                      {formatDate(entry.createdAt)}
                     </p>
                     {entry.note && (
                       <p className="text-body-sm text-bg-text-secondary mt-0.5">{entry.note}</p>

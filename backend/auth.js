@@ -1,7 +1,17 @@
 import jwt from 'jsonwebtoken';
+import { getAdminSessionById } from './db.js';
 
 const JWT_SECRET = process.env.JWT_SECRET;
 const isProduction = process.env.NODE_ENV === 'production';
+
+const COOKIE_OPTIONS = { httpOnly: true, secure: isProduction, sameSite: 'lax', path: '/' };
+
+function clearAdminCookie(res) {
+  res.clearCookie('bg_admin_token', COOKIE_OPTIONS);
+}
+
+const unauthorized = (res) =>
+  res.status(401).json({ error: { message: 'Invalid or expired session', code: 'UNAUTHORIZED' } });
 
 export function signToken(payload) {
   return jwt.sign(payload, JWT_SECRET, { expiresIn: process.env.JWT_EXPIRES_IN || '7d' });
@@ -22,15 +32,33 @@ export function requireAdmin(req, res, next) {
     // customer token (kind: 'customer', docs/13 §5.1) shares the same JWT
     // secret, so without this check it would slip through as an admin.
     if (decoded?.kind !== 'admin') {
-      res.clearCookie('bg_admin_token', { httpOnly: true, secure: isProduction, sameSite: 'lax', path: '/' });
-      return res.status(401).json({ error: { message: 'Invalid or expired session', code: 'UNAUTHORIZED' } });
+      clearAdminCookie(res);
+      return unauthorized(res);
     }
 
-    req.admin = decoded;
-    next();
+    // Re-read role/is_active from the DB on EVERY request. The JWT role claim
+    // is not the source of truth: a deactivated or demoted admin must lose
+    // access immediately, not at JWT expiry. requireSuperAdmin also benefits —
+    // req.admin.role now always comes from the live row, so a stale token
+    // can never hold a promoted role.
+    getAdminSessionById(decoded.id)
+      .then(({ data: admin, error }) => {
+        if (error || !admin || !admin.is_active) {
+          clearAdminCookie(res);
+          return unauthorized(res);
+        }
+        req.admin = { ...decoded, ...admin };
+        next();
+      })
+      .catch(() => {
+        clearAdminCookie(res);
+        res.status(500).json({
+          error: { message: 'Authentication check failed', code: 'SERVER_ERROR' },
+        });
+      });
   } catch {
-    res.clearCookie('bg_admin_token', { httpOnly: true, secure: isProduction, sameSite: 'lax', path: '/' });
-    res.status(401).json({ error: { message: 'Invalid or expired session', code: 'UNAUTHORIZED' } });
+    clearAdminCookie(res);
+    unauthorized(res);
   }
 }
 

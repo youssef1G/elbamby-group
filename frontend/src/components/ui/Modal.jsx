@@ -12,7 +12,7 @@ const sizes = {
   full: 'max-w-full mx-4',
 };
 
-export default function Modal({ isOpen, onClose, children, size = 'md', className = '' }) {
+export default function Modal({ isOpen, onClose, children, size = 'md', className = '', ariaLabel }) {
   const { t } = useLocale();
   const panelRef = useRef(null);
   useFocusTrap({ isOpen, ref: panelRef, onClose });
@@ -39,6 +39,7 @@ export default function Modal({ isOpen, onClose, children, size = 'md', classNam
             className={`relative w-full ${sizes[size] || sizes.md} max-h-[85vh] overflow-y-auto rounded-xl bg-bg-surface border border-bg-border shadow-xl ${className}`}
             role="dialog"
             aria-modal="true"
+            aria-label={ariaLabel || undefined}
           >
             <button
               onClick={onClose}

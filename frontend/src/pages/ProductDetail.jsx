@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { MessageCircle } from 'lucide-react';
+import { MessageCircle, Share2, Copy, Check } from 'lucide-react';
 import { useLocale } from '@/context/LocaleContext.jsx';
 import { useCart } from '@/context/CartContext.jsx';
+import { useToast } from '@/components/ui/Toast.jsx';
 import ProductCard from '@/components/shop/ProductCard.jsx';
 import ProductGallery from '@/components/shop/ProductGallery.jsx';
 import Badge from '@/components/ui/Badge.jsx';
@@ -14,8 +15,10 @@ import { formatPrice } from '@/lib/formatters.js';
 import { fadeUp, staggerContainer, staggerItem } from '@/lib/animations.js';
 
 function getDiscountPct(price, compareAt) {
-  if (!compareAt || compareAt <= price) return null;
-  return Math.round(((compareAt - price) / compareAt) * 100);
+  const p = Number(price);
+  const c = Number(compareAt);
+  if (!compareAt || !Number.isFinite(p) || !Number.isFinite(c) || c <= p) return null;
+  return Math.round(((c - p) / c) * 100);
 }
 
 export default function ProductDetail() {
@@ -24,7 +27,9 @@ export default function ProductDetail() {
   // addItem now opens the cart drawer itself (CartContext.jsx) — no need to
   // call anything cart-drawer-related here directly.
   const { addItem } = useCart();
+  const { toast } = useToast();
 
+  const [copied, setCopied] = useState(false);
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
 
@@ -91,9 +96,10 @@ export default function ProductDetail() {
 
   const name = isAr ? product.nameAr || product.nameEn : product.nameEn;
   const stock = product.stockQuantity ?? 0;
-  const outOfStock = stock === 0;
-  const lowStock = stock > 0 && stock <= 5;
-  const maxQty = stock;
+  const unlimitedStock = Boolean(product.unlimitedStock);
+  const outOfStock = !unlimitedStock && stock === 0;
+  const lowStock = !unlimitedStock && stock > 0 && stock <= 5;
+  const maxQty = unlimitedStock ? 999 : stock;
   const images = product.productImages || [];
   const discountPct = getDiscountPct(product.price, product.compareAtPrice);
 
@@ -115,14 +121,55 @@ export default function ProductDetail() {
     : [];
 
   const whatsappLink = whatsappNumber
-    ? `https://wa.me/${whatsappNumber.replace(/\D/g, '')}?text=${encodeURIComponent(`السلام عليكم، عندي سؤال عن: ${name}`)}`
+    ? `https://wa.me/${whatsappNumber.replace(/\D/g, '')}?text=${encodeURIComponent((isAr ? `السلام عليكم، عندي سؤال عن: ${name}` : `Hi, I have a question about: ${name}`))}`
     : null;
+
+  const pageUrl = `${window.location.origin}${window.location.pathname}`;
+  const primaryImage = images[0]?.imageUrl || null;
+  const productJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name: isAr ? product.nameAr || name : product.nameEn,
+    image: primaryImage || undefined,
+    url: pageUrl,
+    description: (isAr ? product.descriptionAr : product.descriptionEn) || undefined,
+    sku: product.sku || undefined,
+    offers: {
+      '@type': 'Offer',
+      priceCurrency: 'EGP',
+      price: Number(product.price).toFixed(2),
+      availability: outOfStock ? 'https://schema.org/OutOfStock' : product.compareAtPrice
+        ? 'https://schema.org/InStock'
+        : 'https://schema.org/InStock',
+      url: pageUrl,
+    },
+  };
+
+  const handleShare = (e) => {
+    e.preventDefault();
+    const text = `${t('shop:product.shareText')}: ${name}`;
+    const url = `https://wa.me/?text=${encodeURIComponent(`${text} ${pageUrl}`)}`;
+    window.open(url, '_blank', 'noopener,noreferrer');
+  };
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(pageUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      toast(t('common:common.error'), 'error');
+    }
+  };
 
   return (
     <div className="max-w-7xl mx-auto px-5 sm:px-8 py-10 sm:py-14">
       <SEO
         title={name}
-        description={product.descriptionAr || product.descriptionEn || ''}
+        description={isAr ? product.descriptionAr || product.descriptionEn : product.descriptionEn || ''}
+        canonical={pageUrl}
+        ogImage={primaryImage}
+        jsonLd={productJsonLd}
       />
 
       <motion.nav
@@ -171,7 +218,7 @@ export default function ProductDetail() {
           <h1 className="text-display text-bg-text-primary break-words">{name}</h1>
           <div className="flex items-baseline gap-2 mt-3">
             <span className="text-2xl font-bold text-bg-text-primary ltr-nums">{formatPrice(product.price)}</span>
-            {product.compareAtPrice && product.compareAtPrice > product.price && (
+            {Number(product.compareAtPrice) > Number(product.price) && (
               <span className="text-sm text-bg-error line-through ltr-nums">
                 {formatPrice(product.compareAtPrice)}
               </span>
@@ -241,10 +288,31 @@ export default function ProductDetail() {
               rel="noopener noreferrer"
               className="mt-3 inline-flex items-center justify-center gap-2 w-full rounded-full border border-bg-border text-bg-text-primary font-medium py-2.5 text-sm hover:bg-bg-neutral-100 transition-colors"
             >
-              <MessageCircle size={18} className="text-green-600" />
+              <MessageCircle size={18} className="text-bg-success" />
               {t('shop:product.askAbout')}
             </a>
           )}
+
+          <div className="mt-2 flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleShare}
+              className="flex-1 inline-flex items-center justify-center gap-2 rounded-full border border-bg-border text-bg-text-secondary font-medium py-2.5 text-sm hover:bg-bg-neutral-100 transition-colors"
+              aria-label={t('shop:product.share')}
+            >
+              <Share2 size={16} />
+              {t('shop:product.share')}
+            </button>
+            <button
+              type="button"
+              onClick={handleCopy}
+              className="flex-1 inline-flex items-center justify-center gap-2 rounded-full border border-bg-border text-bg-text-secondary font-medium py-2.5 text-sm hover:bg-bg-neutral-100 transition-colors"
+              aria-label={t('shop:product.copyLink')}
+            >
+              {copied ? <Check size={16} className="text-bg-success" /> : <Copy size={16} />}
+              {copied ? t('shop:product.linkCopied') : t('shop:product.copyLink')}
+            </button>
+          </div>
         </motion.div>
       </div>
 

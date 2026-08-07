@@ -36,6 +36,8 @@ const AdminProducts = lazy(() => import('@/pages/admin/AdminProducts.jsx'));
 const ProductForm = lazy(() => import('@/pages/admin/ProductForm.jsx'));
 const AdminCategories = lazy(() => import('@/pages/admin/AdminCategories.jsx'));
 const AdminOrders = lazy(() => import('@/pages/admin/AdminOrders.jsx'));
+const AdminOrderDetail = lazy(() => import('@/pages/admin/AdminOrderDetail.jsx'));
+
 const AdminSettings = lazy(() => import('@/pages/admin/AdminSettings.jsx'));
 const AdminManage = lazy(() => import('@/pages/admin/AdminManage.jsx'));
 const AdminSupport = lazy(() => import('@/pages/admin/AdminSupport.jsx'));
@@ -120,6 +122,10 @@ export default function App() {
             <Route path="orders" element={
               <Suspense fallback={spinner}><AdminOrders /></Suspense>
             } />
+            <Route path="orders/:id" element={
+              <Suspense fallback={spinner}><AdminOrderDetail /></Suspense>
+            } />
+            
             <Route path="customers" element={
               <Suspense fallback={spinner}><AdminCustomers /></Suspense>
             } />

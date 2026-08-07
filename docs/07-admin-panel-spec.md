@@ -73,6 +73,7 @@ All admin routes live under `/admin/*`, protected by `AdminRoute.jsx` (checks `A
 ## AdminAnalytics (optional module)
 
 - Sales over time chart (line/bar, `period` selector 7d/30d/90d), top products by quantity sold table. Nice-to-have, not a blocker for launch — build after core admin CRUD is complete and stable.
+- **CSV export** (per data section, honors the active `period`): each analytics card (orders by status, orders by category, top products) has an Export button that downloads that section as a UTF-8 BOM CSV (Arabic-safe in Excel). Generated **client-side** from already-loaded data via `lib/csv.js` — no dedicated backend route; button disabled when the section is empty.
 
 ## Cross-Cutting Admin Rules
 

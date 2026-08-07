@@ -11,7 +11,7 @@ import { normalizePhone } from '@/lib/formatters.js';
 import Button from '@/components/ui/Button.jsx';
 import SEO from '@/components/common/SEO.jsx';
 
-const phoneRegex = /^01[0-2,5]\d{8}$/;
+const phoneRegex = /^01[0-25]\d{8}$/;
 
 const registerSchema = z.object({
   name: z.string().min(1, 'auth:validation.required'),
@@ -52,7 +52,13 @@ export default function Register() {
         setIsConflict(true);
         setError(t('auth:register.conflict'));
       } else {
-        setError(err.message || t('errors.generic'));
+        setError(
+          err.code === 'RATE_LIMITED'
+            ? t('auth:errors.rateLimited')
+            : err.code === 'VALIDATION_ERROR'
+              ? t('auth:errors.validationFailed')
+              : err.message || t('errors.generic'),
+        );
       }
     }
   };

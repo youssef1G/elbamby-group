@@ -3,7 +3,7 @@ import { useLocale } from "@/context/LocaleContext.jsx";
 import { useNavigate } from "react-router-dom";
 import { motion } from "motion/react";
 import { Plus, Search, ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react";
-import { fetchAdminProducts, fetchAdminCategories, deleteProduct, updateProduct } from "@/api.js";
+import { fetchAdminProducts, fetchAdminCategories, deleteProduct, updateProduct, toggleProduct } from "@/api.js";
 import Select from "@/components/ui/Select.jsx";
 import Badge from "@/components/ui/Badge.jsx";
 import Skeleton from "@/components/ui/Skeleton.jsx";
@@ -47,7 +47,16 @@ export default function AdminProducts() {
   if (categoryFilter !== "all") params.category = categoryFilter;
   if (stockFilter === "low") params.low_stock = "true";
   if (stockFilter === "out") params.out_of_stock = "true";
-  if (sortKey === "price") params.sort = sortDir === "asc" ? "price_asc" : "price_desc";
+  // Server-side sort so name/category/stock order across every page; the sort
+  // column follows the UI locale for name/category.
+  if (sortKey) {
+    const col =
+      sortKey === "price" ? "price"
+      : sortKey === "stock_quantity" ? "stock"
+      : sortKey === "name" ? `name_${isAr ? "ar" : "en"}`
+      : `category_${isAr ? "ar" : "en"}`;
+    params.sort = `${col}_${sortDir}`;
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -89,15 +98,19 @@ export default function AdminProducts() {
     return (isAr ? cat.nameAr : cat.nameEn) || cat.nameEn || cat.nameAr;
   };
 
-  const sorted = useMemo(() => {
-    if (!sortKey || sortKey === "price") return products;
-    const rows = [...products];
-    const collator = new Intl.Collator(isAr ? "ar" : "en");
-    if (sortKey === "name") rows.sort((a, b) => collator.compare(productName(a), productName(b)));
-    else if (sortKey === "category") rows.sort((a, b) => collator.compare(categoryName(a), categoryName(b)));
-    else if (sortKey === "stock_quantity") rows.sort((a, b) => (a.stockQuantity ?? 0) - (b.stockQuantity ?? 0));
-    return sortDir === "desc" ? rows.reverse() : rows;
-  }, [products, sortKey, sortDir, isAr, catMap]);
+  const handleToggle = async (row, field) => {
+    const value = field === "is_featured" ? !row.isFeatured : !row.isNewArrival;
+    try {
+      const updated = await toggleProduct(row.id, field, value);
+      setData((prev) =>
+        prev && Array.isArray(prev.data)
+          ? { ...prev, data: prev.data.map((p) => (p.id === row.id ? { ...p, ...updated } : p)) }
+          : prev
+      );
+    } catch (err) {
+      toast(err.message || t("common:common.error"), "error");
+    }
+  };
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
@@ -191,9 +204,31 @@ export default function AdminProducts() {
           </div>
           <div className="min-w-0">
             <span className="font-semibold text-bg-text-primary truncate block">{productName(row)}</span>
-            <span className="flex items-center gap-1.5 mt-0.5">
-              {row.isFeatured && <span className="text-caption font-semibold text-bg-primary-500">{t("admin:products.isFeatured")}</span>}
-              {row.isNewArrival && <span className="text-caption font-semibold text-bg-primary-500">{t("admin:products.isNewArrival")}</span>}
+            <span className="flex items-center gap-2 mt-0.5">
+              <button
+                type="button"
+                onClick={() => handleToggle(row, "is_featured")}
+                aria-pressed={row.isFeatured}
+                className={`text-caption font-semibold rounded-full border px-2 py-0.5 transition-colors ${
+                  row.isFeatured
+                    ? "bg-bg-primary-500/10 text-bg-primary-500 border-bg-primary-500/40"
+                    : "text-bg-text-secondary border-bg-border hover:border-bg-primary-500 hover:text-bg-text-primary"
+                }`}
+              >
+                {t("admin:products.isFeatured")}
+              </button>
+              <button
+                type="button"
+                onClick={() => handleToggle(row, "is_new_arrival")}
+                aria-pressed={row.isNewArrival}
+                className={`text-caption font-semibold rounded-full border px-2 py-0.5 transition-colors ${
+                  row.isNewArrival
+                    ? "bg-bg-primary-500/10 text-bg-primary-500 border-bg-primary-500/40"
+                    : "text-bg-text-secondary border-bg-border hover:border-bg-primary-500 hover:text-bg-text-primary"
+                }`}
+              >
+                {t("admin:products.isNewArrival")}
+              </button>
             </span>
           </div>
         </div>
@@ -293,7 +328,7 @@ export default function AdminProducts() {
             </table>
           </div>
         </div>
-      ) : sorted.length === 0 ? (
+      ) : products.length === 0 ? (
         <div className="surface-card">
           <EmptyState
             message={hasFilters ? t("admin:products.noFilter") : t("admin:products.noProducts")}
@@ -305,7 +340,7 @@ export default function AdminProducts() {
           <div className="overflow-x-auto">
             <table className="w-full">{tableHead}
               <tbody>
-                {sorted.map((row, idx) => (
+                {products.map((row, idx) => (
                   <motion.tr key={row.id} initial={{ opacity: 0, y: 8 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.3, delay: idx * 0.04 }} className="border-t border-bg-border hover:bg-bg-surface-sunken/30 transition-colors">
                     {columns.map((col) => (
                       <td key={col.key} className="px-4 py-3 text-body-sm whitespace-nowrap">{col.render(row)}</td>

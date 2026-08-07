@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { motion } from 'motion/react';
 import { useLocale } from '@/context/LocaleContext.jsx';
+import { useAuth } from '@/context/AuthContext.jsx';
 import { useToast } from '@/components/ui/Toast.jsx';
 import { fetchAdmins, createAdmin, updateAdmin, deleteAdmin } from '@/api.js';
 import { formatDate } from '@/lib/formatters.js';
@@ -9,6 +10,7 @@ import Skeleton from '@/components/ui/Skeleton.jsx';
 export default function AdminManage() {
   const { t } = useLocale();
   const { toast } = useToast();
+  const { admin: authAdmin } = useAuth();
 
   const [admins, setAdmins] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -26,11 +28,12 @@ export default function AdminManage() {
   const newPasswordRef = useRef();
 
   useEffect(() => {
+    if (authAdmin?.role !== 'super_admin') return;
     fetchAdmins()
       .then((res) => setAdmins(res?.data || []))
       .catch(() => toast(t('common:common.error'), 'error'))
       .finally(() => setLoading(false));
-  }, []);
+  }, [authAdmin]);
 
   const emailOk = (v) => /^\S+@\S+\.\S+$/.test(v.trim());
 
@@ -78,6 +81,23 @@ export default function AdminManage() {
 
   const inputCls =
     'w-full rounded-xl border border-bg-border px-4 py-3 text-sm bg-bg-surface text-bg-text-primary placeholder:text-bg-text-secondary/50 focus:outline-none focus:ring-2 focus:ring-bg-primary-500/40 transition-colors';
+
+  if (authAdmin?.role !== 'super_admin') {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.4 }}
+        className="max-w-md"
+      >
+        <div className="surface-card p-8 text-center space-y-3">
+          <p className="font-heading text-lg font-bold text-bg-text-primary">{t('admin:manage.superOnlyTitle')}</p>
+          <p className="text-body-sm text-bg-text-secondary">{t('admin:manage.superOnlyDesc')}</p>
+        </div>
+      </motion.div>
+    );
+  }
 
   return (
     <motion.div

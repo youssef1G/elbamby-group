@@ -23,8 +23,8 @@ SUPABASE_SERVICE_ROLE_KEY=
 JWT_SECRET=
 JWT_EXPIRES_IN=7d
 
-RESEND_API_KEY=
-RESEND_FROM_EMAIL=orders@bg-store.com
+GMAIL_EMAIL=
+GMAIL_APP_PASSWORD=
 
 FRONTEND_URL=http://localhost:5173
 
@@ -39,13 +39,13 @@ VITE_CLOUDINARY_CLOUD_NAME=
 VITE_CLOUDINARY_UPLOAD_PRESET=
 ```
 
-**Rule:** the Supabase service role key, JWT secret, and Resend API key exist **only** in `backend/.env` — they must never appear in any `frontend/` file, `VITE_`-prefixed variable, or client-side bundle (Vite exposes all `VITE_`-prefixed vars to the client by design — this is a hard boundary, not a style preference).
+**Rule:** the Supabase service role key, JWT secret, and Gmail app password exist **only** in `backend/.env` — they must never appear in any `frontend/` file, `VITE_`-prefixed variable, or client-side bundle (Vite exposes all `VITE_`-prefixed vars to the client by design — this is a hard boundary, not a style preference).
 
 ## Third-Party Setup Checklist
 
 1. **Supabase:** create project, run schema migrations from `backend/migrations/`, enable RLS per `04-database-schema.md`, copy `SUPABASE_URL` + `service_role` key (backend only — never the `anon` key is needed since the frontend never talks to Supabase directly).
 2. **Cloudinary:** create account, create an **unsigned upload preset** scoped to an `bg-store/` folder, note cloud name + preset name for `VITE_CLOUDINARY_*` vars. Configure allowed formats and a max file size on the preset itself (defense against abuse since it's unsigned).
-3. **Resend:** create account, verify sending domain, generate API key for `RESEND_API_KEY`.
+3. **Gmail SMTP:** enable 2-Step Verification on the Gmail account, create an **App Password** (Google Account → Security → 2-Step Verification → App passwords), set it as `GMAIL_APP_PASSWORD` and the account address as `GMAIL_EMAIL`. No domain or DNS changes needed.
 4. **Vercel:** two projects (or one monorepo with two build configs) — `frontend` (static build, output `dist/`) and `backend` (serverless functions per `vercel.json`), both pointed at the same repo. Set all env vars above per project in the Vercel dashboard (never commit real values).
 
 ## Build & Deploy

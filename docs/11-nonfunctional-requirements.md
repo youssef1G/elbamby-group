@@ -20,7 +20,7 @@
 ## SEO
 
 - Server-renderable meta per page via `SEO.jsx` (title, description, canonical URL, Open Graph tags, `hreflang` alternates for `en`/`ar`) — since this is a client-rendered SPA, verify the hosting setup (Vercel) is configured so crawlers can still get meaningful content (prerendering or at minimum correct meta tags injected client-side before first paint where possible).
-- `sitemap.xml` generated from active products + categories + static pages, regenerated on build or via a scheduled job.
+- `sitemap.xml` generated from active products + categories + static pages, regenerated on build or via a scheduled job (see `backend/scripts/generate-sitemap.js` — re-run after catalog changes).
 - `robots.txt` allowing crawl of storefront, disallowing `/admin/*`.
 - Structured data: `Product` JSON-LD on `ProductDetail` (name, image, price, availability, currency), `Organization` JSON-LD on `Home`/`About` with BG's name in both languages, logo, contact info.
 - Clean, human-readable URLs: `/product/<slug>`, `/category/<slug>` — no ID-only URLs for anything customer-facing.
@@ -32,7 +32,7 @@
 - Rate limiting on auth, order submission, and support forms per `05-backend-api-spec.md` — mitigates brute-force login attempts and order/complaint spam.
 - All user input validated with Zod on the **backend**, even though the frontend also validates — frontend validation is a UX convenience, never the security boundary.
 - `helmet()` for standard security headers (CSP, X-Frame-Options, etc.); CORS restricted to known frontend origin(s), not `*`.
-- No secrets (Supabase service key, JWT secret, Resend key, Cloudinary secret) ever shipped to the frontend bundle — anything the frontend needs (Cloudinary unsigned upload preset name, public API base URL) is explicitly public-safe by design.
+- No secrets (Supabase service key, JWT secret, Gmail app password, Cloudinary secret) ever shipped to the frontend bundle — anything the frontend needs (Cloudinary unsigned upload preset name, public API base URL) is explicitly public-safe by design.
 - SQL injection: not applicable directly (Supabase client uses parameterized queries), but any raw/dynamic query construction must still be reviewed for injection risk.
 - Order/complaint/return public endpoints validate that referenced `order_number`/`phone` actually match before returning any data — prevents enumeration of other customers' orders.
 

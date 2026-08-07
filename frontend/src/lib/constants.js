@@ -29,35 +29,3 @@ export const DEFAULT_LOW_STOCK_THRESHOLD = 5;
 // re-fetched while the page is open — no reload needed. Pauses when the tab
 // is hidden.
 export const AUTO_REFRESH_MS = 30000;
-
-export const EGYPT_GOVERNORATES = [
-  'Cairo',
-  'Alexandria',
-  'Giza',
-  'Qalyubia',
-  'Port Said',
-  'Suez',
-  'Luxor',
-  'Aswan',
-  'Asyut',
-  'Beheira',
-  'Beni Suef',
-  'Dakahlia',
-  'Damietta',
-  'Fayoum',
-  'Gharbia',
-  'Ismailia',
-  'Kafr El Sheikh',
-  'Matruh',
-  'Minya',
-  'Monufia',
-  'New Valley',
-  'North Sinai',
-  'Qena',
-  'Red Sea',
-  'Sharqia',
-  'Sohag',
-  'South Sinai',
-  '6 October',
-  'Helwan',
-];

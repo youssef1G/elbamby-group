@@ -30,7 +30,7 @@ If a task doesn't map cleanly to a doc, or the doc doesn't answer your question,
 4. **RTL is not optional or a later pass.** Every component you build must work correctly in Arabic/RTL the first time, per `08-i18n-rtl.md` — logical Tailwind properties only (`ms-`/`me-`/`ps-`/`pe-`/`text-start`/`text-end`), never `ml-`/`mr-`/`pl-`/`pr-`/`text-left`/`text-right`.
 5. **Both languages, always.** No page, form, admin screen, or error message ships in only one language.
 6. **Server-side validation is mandatory even when client-side exists.** Never trust the frontend as the security boundary (see `11-nonfunctional-requirements.md`).
-7. **Secrets never reach the frontend.** Supabase service role key, JWT secret, Resend key stay in `backend/.env` only — never a `VITE_`-prefixed variable.
+7. **Secrets never reach the frontend.** Supabase service role key, JWT secret, Gmail app password stay in `backend/.env` only — never a `VITE_`-prefixed variable.
 8. **Follow `10-coding-conventions.md` exactly** — naming, file placement, component/controller patterns. Consistency across ~25+ pages and ~15+ forms matters more than any individual file being "clever."
 
 ## Working Process
@@ -50,7 +50,7 @@ For small, obviously-scoped tasks (fix a typo, adjust a spacing value already de
 - Backend: Node.js + Express, JWT (httpOnly cookie) auth, Supabase (service role) as the data layer
 - DB: Supabase/PostgreSQL — see `04-database-schema.md`
 - Images: Cloudinary, unsigned upload from frontend
-- Email: Resend
+- Email: Gmail SMTP (nodemailer)
 - Hosting: Vercel (frontend SPA + backend serverless)
 - Payment: Cash on Delivery only — never add a payment gateway without explicit new instruction
 - Default language: Arabic (RTL), English secondary

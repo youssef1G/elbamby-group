@@ -1,9 +1,9 @@
 import { useEffect, useState, useMemo } from 'react';
 import { motion } from 'motion/react';
 import { Link } from 'react-router-dom';
-import { DollarSign, ShoppingBag, Clock, Package } from 'lucide-react';
+import { DollarSign, ShoppingBag, Clock, Package, AlertTriangle } from 'lucide-react';
 import { useLocale } from '@/context/LocaleContext.jsx';
-import { fetchAnalyticsOverview, fetchOrders } from '@/api.js';
+import { fetchAnalyticsOverview, fetchOrders, fetchAdminProducts } from '@/api.js';
 import { formatPrice } from '@/lib/formatters.js';
 import { ORDER_STATUSES } from '@/lib/constants.js';
 
@@ -22,11 +22,11 @@ function StatCard({ label, value, icon: Icon, accent }) {
 }
 
 const STATUS_BADGE = {
-  pending: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800',
-  confirmed: 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800',
-  shipped: 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-900/20 dark:text-purple-400 dark:border-purple-800',
-  delivered: 'bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800',
-  cancelled: 'bg-gray-50 text-gray-500 border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700',
+  pending: 'bg-bg-warning/10 text-bg-warning border-bg-warning/25',
+  confirmed: 'bg-bg-info/10 text-bg-info border-bg-info/25',
+  shipped: 'bg-bg-primary-500/10 text-bg-primary-500 border-bg-primary-500/25',
+  delivered: 'bg-bg-success/10 text-bg-success border-bg-success/25',
+  cancelled: 'bg-bg-neutral-100 text-bg-text-secondary border-bg-border',
 };
 
 function RecentOrderRow({ order, t, isAr }) {
@@ -36,7 +36,7 @@ function RecentOrderRow({ order, t, isAr }) {
     <tr className="border-t border-bg-border hover:bg-bg-surface-sunken/30 transition-colors">
       <td className="px-4 py-3 font-mono text-caption text-bg-text-secondary ltr-nums max-w-[120px] truncate" dir="ltr">
         <Link
-          to={`/admin/orders?id=${order.id}`}
+          to={`/admin/orders/${order.id}`}
           className="font-mono text-caption font-medium text-bg-text-primary hover:text-bg-primary-500 ltr-nums block truncate"
           dir="ltr"
         >#{order.orderNumber}</Link>
@@ -57,15 +57,21 @@ export default function AdminDashboard() {
 
   const [ov, setOv] = useState(null);
   const [recentOrders, setRecentOrders] = useState([]);
+  const [lowStock, setLowStock] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
-    Promise.all([fetchAnalyticsOverview(), fetchOrders({ page: 1, limit: 5 })])
-      .then(([overview, orders]) => {
+    Promise.all([
+      fetchAnalyticsOverview(),
+      fetchOrders({ page: 1, limit: 5 }),
+      fetchAdminProducts({ low_stock: 'true', limit: 5 }),
+    ])
+      .then(([overview, orders, low]) => {
         if (!cancelled) {
           setOv(overview || {});
           setRecentOrders(orders?.data || []);
+          setLowStock(low?.data || []);
         }
       })
       .catch((err) => console.error('Dashboard load failed:', err))
@@ -75,13 +81,13 @@ export default function AdminDashboard() {
     return () => { cancelled = true; };
   }, []);
 
-  const stats = useMemo(() => {
+const stats = useMemo(() => {
     if (!ov) return [];
     return [
-      { label: t('admin:dashboard.revenue'), value: ov.total_revenue != null ? formatPrice(ov.total_revenue) : '—', icon: DollarSign, accent: 'text-bg-primary-500' },
-      { label: t('admin:dashboard.totalOrders'), value: ov.total_orders ?? 0, icon: ShoppingBag, accent: '' },
-      { label: t('admin:dashboard.pending'), value: ov.pending_orders ?? 0, icon: Clock, accent: ov.pending_orders > 0 ? 'text-bg-warning' : 'text-bg-text-primary' },
-      { label: t('admin:dashboard.products'), value: ov.total_products ?? 0, icon: Package, accent: '' },
+      { label: t('admin:dashboard.revenue'), value: ov.totalRevenue != null ? formatPrice(ov.totalRevenue) : '—', icon: DollarSign, accent: 'text-bg-primary-500' },
+      { label: t('admin:dashboard.totalOrders'), value: ov.totalOrders ?? 0, icon: ShoppingBag, accent: '' },
+      { label: t('admin:dashboard.pending'), value: ov.pendingOrders ?? 0, icon: Clock, accent: ov.pendingOrders > 0 ? 'text-bg-warning' : 'text-bg-text-primary' },
+      { label: t('admin:dashboard.products'), value: ov.totalProducts ?? 0, icon: Package, accent: '' },
     ];
   }, [ov, t]);
 
@@ -164,9 +170,30 @@ export default function AdminDashboard() {
                   {t('admin:dashboard.manageStock')}
                 </Link>
               </div>
-              <div className="text-body-sm text-bg-text-secondary py-8 text-center">
-                {t('admin:dashboard.wellStocked')}
-              </div>
+              {lowStock.length === 0 ? (
+                <div className="text-body-sm text-bg-text-secondary py-8 text-center">
+                  {t('admin:dashboard.wellStocked')}
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {lowStock.map((p) => {
+                    const name = (isAr ? p.nameAr : p.nameEn) || p.nameEn || p.nameAr || '—';
+                    return (
+                      <div key={p.id} className="flex items-center justify-between gap-3">
+                        <Link
+                          to={`/admin/products/${p.id}/edit`}
+                          className="text-body-sm font-medium text-bg-text-primary hover:text-bg-primary-500 truncate min-w-0"
+                        >
+                          {name}
+                        </Link>
+                        <span className="text-[11px] px-2.5 py-0.5 rounded-full font-semibold border whitespace-nowrap bg-bg-warning/10 text-bg-warning border-bg-warning/25 ltr-nums">
+                          {t('admin:products.leftStock', { count: p.stockQuantity })}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </motion.div>
         </>

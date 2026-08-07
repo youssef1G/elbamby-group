@@ -4,10 +4,12 @@ import { Trash2, Minus, Plus } from 'lucide-react';
 import { useCart } from '@/context/CartContext.jsx';
 import { formatPrice } from '@/lib/formatters.js';
 
-export default function CartItem({ item, compact }) {
+export default function CartItem({ item }) {
   const { t, isAr } = useLocale();
   const { updateQuantity, removeItem } = useCart();
   const name = isAr ? item.nameAr : item.nameEn;
+  const available = item.unlimitedStock ? Infinity : (item.stock || 0);
+  const hasStock = available > 0;
 
   return (
     <AnimatePresence mode="popLayout">
@@ -16,9 +18,9 @@ export default function CartItem({ item, compact }) {
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, x: 20 }}
-        className={`flex gap-3 ${compact ? 'py-2' : 'py-4'} border-b border-bg-border last:border-b-0`}
+        className="flex gap-3 py-4 border-b border-bg-border last:border-b-0"
       >
-        <div className={`shrink-0 ${compact ? 'w-14 h-14' : 'w-20 h-20'} rounded-md bg-bg-surface-sunken overflow-hidden`}>
+        <div className="shrink-0 w-20 h-20 rounded-md bg-bg-surface-sunken overflow-hidden">
           {item.image ? (
             <img src={item.image} alt={name} className="w-full h-full object-cover" loading="lazy" />
           ) : (
@@ -36,7 +38,7 @@ export default function CartItem({ item, compact }) {
               className="shrink-0 text-bg-text-secondary opacity-60 hover:text-bg-error transition-colors p-0.5"
               aria-label={t('common.remove')}
             >
-              <Trash2 size={compact ? 14 : 16} strokeWidth={1.5} />
+              <Trash2 size={16} strokeWidth={1.5} />
             </button>
           </div>
 
@@ -45,7 +47,7 @@ export default function CartItem({ item, compact }) {
               {formatPrice(item.price)}
             </span>
 
-            {item.stock > 0 ? (
+            {hasStock ? (
               <div className="flex items-center gap-1">
                 <button
                   onClick={() => updateQuantity(item.productId, item.quantity - 1)}
@@ -60,7 +62,7 @@ export default function CartItem({ item, compact }) {
                 </span>
                 <button
                   onClick={() => updateQuantity(item.productId, item.quantity + 1)}
-                  disabled={item.quantity >= item.stock}
+                  disabled={item.quantity >= available}
                   className="w-6 h-6 flex items-center justify-center rounded border border-bg-border text-bg-text-secondary hover:text-bg-text-primary disabled:opacity-40 disabled:cursor-not-allowed transition"
                   aria-label={t('common.increase')}
                 >
@@ -73,13 +75,11 @@ export default function CartItem({ item, compact }) {
           </div>
         </div>
 
-        {!compact && (
-          <div className="shrink-0 flex flex-col justify-end text-end">
-            <span className="ltr-nums text-body-sm font-semibold text-bg-text-primary">
-              {formatPrice(item.price * item.quantity)}
-            </span>
-          </div>
-        )}
+        <div className="shrink-0 flex flex-col justify-end text-end">
+          <span className="ltr-nums text-body-sm font-semibold text-bg-text-primary">
+            {formatPrice(item.price * item.quantity)}
+          </span>
+        </div>
       </motion.div>
     </AnimatePresence>
   );

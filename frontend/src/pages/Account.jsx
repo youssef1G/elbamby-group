@@ -251,6 +251,10 @@ export default function Account() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { customer, isLoading: authLoading, logout, refreshProfile } = useCustomerAuth();
 
+  // Set right before logout so the `!customer → <Navigate to="/login">` guard
+  // doesn't race the imperative navigate('/') and strand the user on /login.
+  const [justLoggedOut, setJustLoggedOut] = useState(false);
+
   const TABS = ['overview', 'orders', 'settings'];
   const tabParam = searchParams.get('tab');
   const [tab, setTab] = useState(() => (TABS.includes(tabParam) ? tabParam : 'overview'));
@@ -334,15 +338,16 @@ export default function Account() {
     );
   }
 
-  if (!customer) return <Navigate to="/login" replace />;
+  if (!customer && !justLoggedOut) return <Navigate to="/login" replace />;
 
   const rows = history?.data || [];
   const meta = history?.meta || {};
   const typeLabel = (type) => t(TYPE_KEYS[type] || 'admin:customerDetail.typeEarn');
 
   const handleLogout = async () => {
+    setJustLoggedOut(true);
     await logout();
-    navigate('/');
+    navigate('/', { replace: true });
   };
 
   const tabs = [

@@ -2,15 +2,18 @@ import { motion } from 'motion/react';
 import ProductCard from '@/components/shop/ProductCard.jsx';
 import { SkeletonGrid } from '@/components/ui/Skeleton.jsx';
 import EmptyState from '@/components/ui/EmptyState.jsx';
+import { useLocale } from '@/context/LocaleContext.jsx';
 
 export default function ProductGrid({ products, isLoading, isError, error, onRetry, emptyMessage }) {
+  const { t } = useLocale();
+
   if (isLoading) return <SkeletonGrid count={4} cols={4} />;
 
   if (isError) {
     return (
       <EmptyState
-        message={error?.message || 'Failed to load products'}
-        action={{ label: 'Try Again', onClick: onRetry }}
+        message={error?.message || t('shop:loadFailed')}
+        action={{ label: t('common:common.retry'), onClick: onRetry }}
       />
     );
   }

@@ -22,6 +22,14 @@ export default function ProductGallery({ images = [], name }) {
     setActive(idx);
   }, []);
 
+  // New product → reset the carousel to the first slide. Without this,
+  // navigating product→product keeps showing a stale slide.
+  useEffect(() => {
+    activeRef.current = 0;
+    setActive(0);
+    setDragX(0);
+  }, [name]);
+
   const next = useCallback(() => go((activeRef.current + 1) % gallery.length), [gallery.length, go]);
   const prev = useCallback(() => go((activeRef.current - 1 + gallery.length) % gallery.length), [gallery.length, go]);
 

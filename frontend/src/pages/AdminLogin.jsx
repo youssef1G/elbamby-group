@@ -11,8 +11,8 @@ import Button from '@/components/ui/Button.jsx';
 import { Lock, User, Cpu } from 'lucide-react';
 
 const loginSchema = z.object({
-  username: z.string().min(1, 'Required'),
-  password: z.string().min(1, 'Required'),
+  username: z.string().min(1, 'username'),
+  password: z.string().min(1, 'password'),
 });
 
 export default function AdminLogin() {
@@ -80,12 +80,12 @@ export default function AdminLogin() {
                   type="text"
                   {...register('username')}
                   autoComplete="username"
-                  placeholder="superadmin"
+                  placeholder={t('admin:login.placeholderUsername')}
                   className="input-base w-full ps-9 pe-3 h-10 text-body-sm bg-bg-surface text-bg-text-primary placeholder:text-bg-text-secondary/40"
                 />
               </div>
               {errors.username?.message && (
-                <p className="text-body-sm text-bg-error mt-1">{errors.username.message}</p>
+                <p className="text-body-sm text-bg-error mt-1">{t('admin:login.required')}</p>
               )}
             </div>
 
@@ -107,7 +107,7 @@ export default function AdminLogin() {
                 />
               </div>
               {errors.password?.message && (
-                <p className="text-body-sm text-bg-error mt-1">{errors.password.message}</p>
+                <p className="text-body-sm text-bg-error mt-1">{t('admin:login.required')}</p>
               )}
             </div>
 

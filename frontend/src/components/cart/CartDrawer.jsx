@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useLocale } from '@/context/LocaleContext.jsx';
 import { X, Trash2 } from 'lucide-react';
@@ -10,6 +10,14 @@ export default function CartDrawer() {
   const { t, isAr } = useLocale();
   const { items, updateQuantity, removeItem, isCartOpen: isOpen, closeCart } = useCart();
   const subtotal = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
+
+  // Lock background scroll while the drawer is open.
+  useEffect(() => {
+    if (!isOpen) return undefined;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = prev; };
+  }, [isOpen]);
 
   const panelRef = useRef(null);
   // Pass the real closer (a function that calls setIsCartOpen(false)), not
@@ -74,6 +82,7 @@ export default function CartDrawer() {
             <ul className="space-y-5">
               {items.map((item) => {
                 const name = isAr ? item.nameAr || item.nameEn : item.nameEn;
+                const available = item.unlimitedStock ? Infinity : (item.stock || 0);
                 return (
                   <li key={item.productId} className="flex gap-4">
                     <img
@@ -103,7 +112,7 @@ export default function CartDrawer() {
                           </span>
                           <button
                             onClick={() => updateQuantity(item.productId, item.quantity + 1)}
-                            disabled={item.stock && item.quantity >= item.stock}
+                            disabled={available > 0 && item.quantity >= available}
                             className="h-8 w-8 flex items-center justify-center text-bg-text-primary hover:bg-bg-neutral-100 rounded-e-full transition-colors text-sm disabled:opacity-30 disabled:cursor-not-allowed"
                             aria-label={t('common:common.increase')}
                           >

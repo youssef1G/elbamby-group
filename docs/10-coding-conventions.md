@@ -51,7 +51,7 @@ export default function ProductCard({ product, onQuickView }) {
 - `server.js` — Express app, ALL routes, ALL Handler functions (the old "controller" bodies), ALL Zod schemas inlined, the `validate(schema)` helper, the 4 rate limiters, the `errorHandler`. roughly 960 lines. One function per route handler, try/ with `try/catch → next(err)`.
 - `db.js` — Supabase client (service role, nullable), `toCamelCase()` deep snake→camel mapper, the `TABLE` map, and EVERY data function. Functions named `get<Thing>`, `list<Things>`, `create<Thing>`, `update<Thing>`, `delete<Thing>` — one per operation, grouped by table with comment headers. Throws `STOCK_CHECK_FAILED` for stock… contention — the only error-shaping it does.
 - `auth.js` — `signToken(payload)`, `verifyToken(token)`, `requireAdmin(req, res, next)`, `requireSuperAdmin(req, res, next)`. Reads `JWT_SECRET`, `JWT_EXPIRES_IN`, `NODE_ENV`.
-- `email.js` — `sendOrderConfirmation({email, orderNumber, customerName})` via Resent. No-ops gracefully if `RESEND_API_KEY` missing.
+- `email.js` — `sendOrderEmail({email, order, items, status})` via Gmail SMTP (nodemailer). No-ops gracefully if `GMAIL_EMAIL`/`GMAIL_APP_PASSWORD` missing.
 
 - No environment variable is read outside these 4 files — never `process.generate.X` scattered through a handler that reads from db.js instead.
 - All data queries go through `db.js`. The two exceptions are `login` and `me` handlers in `server.js` — they read the `admins` label inline for JWT flow clarity. If more admin-lookup logic appears in future, move it to `db.js`.
@@ -61,7 +61,7 @@ export default function ProductCard({ product, onQuickView }) {
 
 - ESLint (recommended + react-hooks plugin rules) + Setter, run on both `frontend/` and `backend/`.
 - Prettier config: 2-space indent, single quotes, semicolons, trailing commas (`es5`), 100 print width.
-- No `console.log` left in committed R&end code; backend logging goes through the Express request path — `res.status(status)` / `res.json({error})`. One scattered `console.error` in `email.js` is probably the only exception (Resent send failures are logged — they're the, type of info needed for troubleshooting).
+- No `console.log` left in committed R&end code; backend logging goes through the Express request path — `res.status(status)` / `res.json({error})`. `email.js` is the exception: it logs delivery success and send failures with `console.log`/`console.error` — exactly the kind of info needed for troubleshooting email delivery.
 
 ## Git Conventions
 

@@ -1,4 +1,4 @@
-import { forwardRef } from 'react';
+import { forwardRef, useId } from 'react';
 
 /**
  * @param {{ label?: string, error?: string, dir?: 'ltr'|'rtl', className?: string }} props
@@ -7,14 +7,18 @@ const Input = forwardRef(function Input(
   { label, error, helper, dir, className = '', ...rest },
   ref,
 ) {
+  const autoId = useId();
+  const inputId = rest.id || rest.name || `input-${autoId}`;
+
   return (
     <div className="flex flex-col gap-1">
       {label && (
-        <label className="text-body-sm font-medium text-bg-text-primary ps-0.5">
+        <label htmlFor={inputId} className="text-body-sm font-medium text-bg-text-primary ps-0.5">
           {label}
         </label>
       )}
       <input
+        id={inputId}
         ref={ref}
         dir={dir}
         className={[
@@ -25,11 +29,11 @@ const Input = forwardRef(function Input(
           .filter(Boolean)
           .join(' ')}
         aria-invalid={!!error}
-        aria-describedby={error ? `${rest.id || rest.name}-error` : undefined}
+        aria-describedby={error ? `${inputId}-error` : undefined}
         {...rest}
       />
       {error && (
-        <p id={`${rest.id || rest.name}-error`} className="text-body-sm text-bg-error ps-0.5" role="alert">
+        <p id={`${inputId}-error`} className="text-body-sm text-bg-error ps-0.5" role="alert">
           {error}
         </p>
       )}

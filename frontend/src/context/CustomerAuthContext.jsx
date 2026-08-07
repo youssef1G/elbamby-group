@@ -44,8 +44,14 @@ export function CustomerAuthProvider({ children }) {
     try {
       const data = await getCustomerMe();
       setCustomer(normalize(data));
-    } catch {
-      // transient errors keep the last known customer
+    } catch (err) {
+      // A 401 means the session is actually gone (expired/logged out
+      // elsewhere) — treat it as logged-out instead of keeping a ghost
+      // customer that can never redeem points. Anything else (network
+      // blip, 5xx) is transient and keeps the last known customer.
+      if (err?.status === 401 || err?.code === 'UNAUTHORIZED') {
+        setCustomer(null);
+      }
     }
   }, []);
 

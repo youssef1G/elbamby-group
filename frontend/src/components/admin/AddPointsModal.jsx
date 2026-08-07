@@ -11,7 +11,9 @@ import Input from '@/components/ui/Input.jsx';
 import { Search, UserPlus, Sparkles } from 'lucide-react';
 import { normalizePhone } from '@/lib/formatters.js';
 
-const PHONE_REGEX = /^(01[0-2,5]\d{8}|\+201[0-2,5]\d{8})$/;
+// normalizePhone() rewrites +20… → 0… first, so the +201 form never reaches
+// here (and in [0-2,5] used to let a literal comma pass). Local 11-digit only.
+const PHONE_REGEX = /^01[0-25]\d{8}$/;
 
 /**
  * In-store points flow (docs/13-points-system.md §6).

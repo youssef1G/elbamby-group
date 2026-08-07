@@ -21,16 +21,31 @@ export default function Cart() {
   useEffect(() => {
     let cancelled = false;
     setStockLoading(true);
-    fetchProducts()
-      .then((res) => {
-        if (cancelled) return;
-        const rows = res?.data || res || [];
-        const map = {};
-        rows.forEach((p) => { map[p.id] = p.stockQuantity ?? 0; });
-        setStockMap(map);
-      })
-      .catch(() => {})
-      .finally(() => { if (!cancelled) setStockLoading(false); });
+    (async () => {
+      const map = {};
+      const limit = 100;
+      try {
+        let page = 1;
+        for (;;) {
+          const res = await fetchProducts({ page, limit });
+          if (cancelled) return;
+          const rows = res?.data || res || [];
+          rows.forEach((p) => {
+            map[p.id] = p.unlimitedStock ? Infinity : (p.stockQuantity ?? 0);
+          });
+          // Progressive update: cart head-updates as each page lands.
+          setStockMap({ ...map });
+          const total = res?.meta?.total;
+          if (!total || rows.length === 0 || rows.length < limit) break;
+          if (page >= Math.ceil(total / limit)) break;
+          page += 1;
+        }
+      } catch {
+        // keep whatever already landed
+      } finally {
+        if (!cancelled) setStockLoading(false);
+      }
+    })();
     return () => { cancelled = true; };
   }, []);
 
@@ -64,7 +79,7 @@ export default function Cart() {
 
       {stockExceeded && (
         <motion.div
-          className="mb-6 p-3 rounded-lg border border-amber-200 bg-amber-50 text-amber-700 text-sm"
+          className="mb-6 p-3 rounded-lg border border-bg-warning/25 bg-bg-warning/10 text-bg-warning text-sm"
           {...fadeUp}
         >
           {t('cart.stockChanged')}
@@ -73,7 +88,7 @@ export default function Cart() {
 
       <div className="flex flex-col gap-0">
         {itemsWithLiveStock.map((item) => (
-          <CartItem key={item.productId} item={item} compact={false} />
+          <CartItem key={item.productId} item={item} />
         ))}
       </div>
 

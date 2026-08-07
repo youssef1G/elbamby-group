@@ -98,14 +98,13 @@ Separate table (not a JSON array column) so images have stable ordering, individ
 | Column | Type | Notes |
 |---|---|---|
 | id | uuid, PK | |
-| order_number | text, unique, not null | human-readable, e.g. `BG-20260729-0001`, generated server-side |
+| order_number | text, unique, not null | human-readable, e.g. `order-885010500412` (random 12-digit, tictoc-style), generated server-side |
 | customer_name | text, not null | |
 | phone | text, not null | primary contact + lookup key for `MyOrders`/tracking |
 | alt_phone | text, nullable | |
-| email | text, nullable | for optional Resend confirmation |
+| email | text, nullable | for optional email confirmation |
 | address_line | text, not null | |
 | city | text, not null | |
-| governorate | text, not null | |
 | notes | text, nullable | customer-provided delivery notes |
 | subtotal | numeric(10,2), not null | |
 | shipping_fee | numeric(10,2), not null | snapshot from settings at order time |
@@ -130,6 +129,11 @@ Separate table (not a JSON array column) so images have stable ordering, individ
 | line_total | numeric(10,2), not null | unit_price_snapshot × quantity |
 
 **Rule:** order line items always snapshot name/price/image at time of purchase. Never join live to `products` for historical order display — only for admin convenience links ("view current product").
+
+### Orders — stock lifecycle (RPCs)
+
+- **`decrement_stock(order_items jsonb[, p_customer_id uuid, p_points_to_redeem int])`** (migrations 013/017) — atomic checkout step: decrements `stock_quantity` for non-`unlimited_stock` items and, when a logged-in customer redeems, debits the points ledger in the same transaction. Called from `db.createOrder`.
+- **`cancel_order_and_restock(p_order_id uuid, p_status text, p_changed_by uuid, p_note text)`** (migration 020) — atomic cancel/return. In ONE transaction it restocks the order's non-`unlimited_stock` items (mirroring the `decrement_stock` guard), flips `orders.status` (`cancelled`/`returned`) and inserts the `order_status_history` row. Idempotent: an already-terminal order returns `{ ok: true, already_cancelled: true }` and touches nothing, so a retried/double-tapped transition can never double-restock. Called from `PATCH /api/orders/:id/cancel` and `PATCH /api/admin/orders/:id/status` (only for `cancelled`/`returned`). The points ledger side (refund `refund_reversal` / `manual_deduct`) is still the app's job, guarded by its own ledger-row idempotency checks (see `13-points-system.md` §3.3).
 
 ### `banners`
 

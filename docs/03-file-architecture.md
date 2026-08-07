@@ -17,7 +17,7 @@ bg-store/
 │   ├── server.js                        # Express app: ALL routes + handlers, zod schemas, rate limiters, validate middleware, error handler (inline)
 │   ├── db.js                            # Supabase client (service role) + toCamelCase + ALL data functions, grouped by table
 │   ├── auth.js                          # JWT sign/verify + requireAdmin / requireSuperAdmin middleware
-│   ├── email.js                         # Resend — sendOrderConfirmation (no-op without RESEND_API_KEY)
+│   ├── email.js                         # Gmail SMTP via nodemailer — sendOrderEmail (no-op without GMAIL_EMAIL + GMAIL_APP_PASSWORD)
 │   ├── migrations/                      # 000…013 SQL — schema Bootstrap (KEPT; see 04-database-schema.md)
 │   └── scripts/
 │       └── hash-password.js             # CLI bcrypt utility for creating admins
@@ -140,7 +140,7 @@ The docs originally specified a heavier stack (TanStack Query, Zustand, i18next 
 | `i18n/index.js` + `i18n/{en,ar}/*.json` namespaced | `i18n/en.js` + `i18n/ar.js` flat plain-JS dicts, consumed by `LocaleContext` | One flat file per language; `t()` resolves raw key → `common.<key>` fallback → English dict → last segment |
 | `i18next` + `react-i18next` + `i18next-browser-languagedetector` deps | none | i18next removed entirely |
 | `@tanstack/react-query`, `zustand` deps | none | Removed; `package.json` slimmed accordingly, vite manualChunks trimmed to `react`/`motion`/`vendor` |
-| backend: `routes/` → `controllers/` → `services/db.js` + `middleware/` + `schemas/` + `config/` + `lib/caseMapper.js` (≈28 files) | backend: `server.js` (routes + handlers + schemas + limiters + error handler inline) + `db.js` (supabase client + toCamelCase + all data functions) + `auth.js` (JWT) + `email.js` (Resend) — **4 files** | tictoc-xpoint convention: the whole app is small enough to live in four files; an agent finds "where do I add order status logic" by searching `server.js` for `/api/admin/orders` |
+| backend: `routes/` → `controllers/` → `services/db.js` + `middleware/` + `schemas/` + `config/` + `lib/caseMapper.js` (≈28 files) | backend: `server.js` (routes + handlers + schemas + limiters + error handler inline) + `db.js` (supabase client + toCamelCase + all data functions) + `auth.js` (JWT) + `email.js` (Gmail SMTP) — **4 files** | tictoc-xpoint convention: the whole app is small enough to live in four files; an agent finds "where do I add order status logic" by searching `server.js` for `/api/admin/orders` |
 | `schemas/` mirrored on BOTH frontend and backend | frontend `schemas/` = **form-only** Zod schemas (checkout, contact, etc.); backend Zod schemas are **inlined in `server.js`** (login, createAdmin, banner, category, order, product, return, complaint, settings) | Backend schemas are only used by `server.js`, so inlining removes a folder + import indirection. Frontend form schemas stay because React Hook Form + Zod run in the browser |
 
 ## Folder Placement Rules (for the agent)
@@ -160,7 +160,7 @@ The docs originally specified a heavier stack (TanStack Query, Zustand, i18next 
 | `server.js` | Express app bootstrap, ALL routes, all handler functions (controller bodies inline), all zod schemas, the `validate(schema)` middleware, the 4 rate limiters, the `errorHandler`. ~70 handlers across auth/products/categories/orders/banners/settings/support/admins/analytics. | No direct Supabase queries except `login`/`me` admin lookups. Re-exports `app` for test harnesses. |
 | `db.js` | `supabase` client (service role, nullable if env missing), `toCamelCase()` deep snake→camel mapper, `TABLE` map, and every data function (admins, categories, products + images, orders + items + status history, banners, settings, complaints, return requests, analytics aggregates). | No Express, no routes, no req/res. Throwing `STOCK_CHECK_FAILED` errors is the only error-shaping it does. |
 | `auth.js` | `signToken`, `verifyToken`, `requireAdmin`, `requireSuperAdmin` middleware. Reads `JWT_SECRET`, `JWT_EXPIRES_IN`, `NODE_ENV`. | No login handler (that's in `server.js`), no bcrypt (that's in `server.js`). |
-| `email.js` | `sendOrderConfirmation({email, orderNumber, customerName})` via Resend. No-ops gracefully if `RESEND_API_KEY` missing. | No other email types yet (status-change emails reuse the same function — see `server.js` `adminUpdateOrderStatus`). |
+| `email.js` | `sendOrderEmail({email, order, items, status})` via Gmail SMTP (nodemailer). No-ops gracefully if `GMAIL_EMAIL`/`GMAIL_APP_PASSWORD` missing. Logs delivery success and send failures. | No other email types yet (status-change emails reuse the same function — see `server.js` `adminUpdateOrderStatus`). |
 
 ## Frontend Data-Access Convention
 

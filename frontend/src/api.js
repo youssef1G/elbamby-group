@@ -95,26 +95,15 @@ export function updateOrderStatus(id, data) {
   return apiClient(`/admin/orders/${id}/status`, { method: 'PATCH', body: JSON.stringify(data) });
 }
 export function updateOrderNote(id, note) {
-  return apiClient(`/admin/orders/${id}/note`, { method: 'PATCH', body: JSON.stringify({ note }) });
+  // server's adminUpdateOrderNote validates a required `admin_note` key; the
+  // old `{ note }` payload failed that check silently, so notes never saved.
+  return apiClient(`/admin/orders/${id}/note`, { method: 'PATCH', body: JSON.stringify({ admin_note: note }) });
 }
 
 // ─── Banners ─────────────────────────────────────────────────────────────────
 export function fetchBanners(params = {}) {
   const qs = new URLSearchParams(params).toString();
   return apiClient(`/banners${qs ? `?${qs}` : ''}`);
-}
-export function fetchAdminBanners(params = {}) {
-  const qs = new URLSearchParams(params).toString();
-  return apiClient(`/admin/banners${qs ? `?${qs}` : ''}`);
-}
-export function createBanner(data) {
-  return apiClient('/admin/banners', { method: 'POST', body: JSON.stringify(data) });
-}
-export function updateBanner(id, data) {
-  return apiClient(`/admin/banners/${id}`, { method: 'PUT', body: JSON.stringify(data) });
-}
-export function deleteBanner(id) {
-  return apiClient(`/admin/banners/${id}`, { method: 'DELETE' });
 }
 
 // ─── Settings ────────────────────────────────────────────────────────────────

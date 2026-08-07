@@ -6,6 +6,7 @@ import cookieParser from 'cookie-parser';
 import rateLimit from 'express-rate-limit';
 import bcrypt from 'bcryptjs';
 import { z } from 'zod';
+import { randomInt } from 'crypto';
 
 import {
   supabase,
@@ -36,6 +37,7 @@ import {
   deleteProductImagesByProductId,
   getProductsWithImagesByIds,
   createOrder,
+  cancelOrderAndRestock,
   listOrders,
   getOrderById,
   getOrderByNumberAndPhone,
@@ -43,7 +45,6 @@ import {
   updateOrderStatus,
   updateOrderAdminNote,
   createStatusHistoryEntry,
-  getTodayOrderCount,
   getOrderCount,
   getDeliveredOrderTotals,
   getActiveProducts,
@@ -53,10 +54,6 @@ import {
   getItemsWithOrdersSince,
   getProductsByIds,
   listBanners,
-  getBannerById,
-  createBanner,
-  updateBanner,
-  deleteBanner,
   getSettings,
   upsertSettings,
   createComplaint,
@@ -141,22 +138,9 @@ function requireDb(req, res) {
   return true;
 }
 
-function pad4(n) {
-  return String(n).padStart(4, '0');
-}
-
 async function generateOrderNumber() {
-  const now = new Date();
-  const yyyy = now.getUTCFullYear();
-  const mm = String(now.getUTCMonth() + 1).padStart(2, '0');
-  const dd = String(now.getUTCDate()).padStart(2, '0');
-  const datePrefix = `${yyyy}${mm}${dd}`;
-
-  const { count, error } = await getTodayOrderCount();
-  if (error) throw error;
-
-  const seq = (count || 0) + 1;
-  return `BG-${datePrefix}-${pad4(seq)}`;
+  const n = randomInt(0, 10 ** 12);
+  return `order-${String(n).padStart(12, '0')}`;
 }
 
 function mapPeriod(p) {
@@ -175,8 +159,14 @@ function daysForPeriod(p) {
 const windowMs = parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000', 10);
 
 const authLimiter = rateLimit({ windowMs, max: 5, standardHeaders: true, legacyHeaders: false, message: { error: { message: 'Too many login attempts, try again later', code: 'RATE_LIMITED' } } });
+// Customer-facing auth (register/login) is a separate bucket so failed
+// customer logins can never lock the admin panel out (they used to share the
+// same limiter as /api/auth/login).
+const customerAuthLimiter = rateLimit({ windowMs, max: 5, standardHeaders: true, legacyHeaders: false, message: { error: { message: 'Too many login attempts, try again later', code: 'RATE_LIMITED' } } });
 const orderLimiter = rateLimit({ windowMs, max: 10, standardHeaders: true, legacyHeaders: false, message: { error: { message: 'Too many requests, please wait', code: 'RATE_LIMITED' } } });
-const trackingLimiter = rateLimit({ windowMs, max: 20, standardHeaders: true, legacyHeaders: false, message: { error: { message: 'Too many requests, please wait', code: 'RATE_LIMITED' } } });
+// Tracking/support endpoints: MyOrders + Account silently re-poll every 30s
+// (~2 req/min = 30 req/15min), so 20 was too tight and 429'd active users.
+const trackingLimiter = rateLimit({ windowMs, max: 60, standardHeaders: true, legacyHeaders: false, message: { error: { message: 'Too many requests, please wait', code: 'RATE_LIMITED' } } });
 const publicGetLimiter = () =>
   rateLimit({ windowMs, max: 100, standardHeaders: true, legacyHeaders: false, message: { error: { message: 'Too many requests, please wait', code: 'RATE_LIMITED' } } });
 
@@ -203,7 +193,7 @@ function validate(schema) {
 // Accepts local (01XXXXXXXXX), international (+201XXXXXXXXX), and spaced/dashed
 // variants; normalizePhone() runs BEFORE the regex so all forms pass and every
 // validated value is stored in local form.
-const phoneRegex = /^01[0-2,5]\d{8}$/;
+const phoneRegex = /^01[0-25]\d{8}$/;
 
 function normalizePhone(value) {
   if (typeof value !== 'string') return value;
@@ -246,18 +236,6 @@ const updateAdminSchema = z.object({
   is_active: z.boolean().optional(),
 });
 
-const bannerSchema = z.object({
-  image_url: z.string().url('Image URL is required'),
-  title_en: z.string().optional(),
-  title_ar: z.string().optional(),
-  subtitle_en: z.string().optional(),
-  subtitle_ar: z.string().optional(),
-  link_url: z.string().optional(),
-  position: z.enum(['home_hero', 'home_secondary', 'shop_top']).default('home_hero'),
-  sort_order: z.number().int().default(0),
-  is_active: z.boolean().default(true),
-});
-
 const categorySchema = z.object({
   name_en: z.string().min(1, 'Name (English) is required'),
   name_ar: z.string().min(1, 'Name (Arabic) is required'),
@@ -289,7 +267,6 @@ const createOrderSchema = z.object({
   email: z.string().email('Invalid email').optional(),
   address_line: z.string().min(1, 'Address is required'),
   city: z.string().min(1, 'City is required'),
-  governorate: z.string().min(1, 'Governorate is required'),
   notes: z.string().optional(),
   items: z.array(
     z.object({
@@ -333,9 +310,13 @@ const createProductSchema = z.object({
 const updateProductSchema = createProductSchema.partial();
 
 const returnRequestSchema = z.object({
-  order_number: z.string().min(1, 'Order number is required'),
-  phone: z.string().min(1, 'Phone is required'),
-  reason: z.string().min(1, 'Reason is required'),
+  order_number: z.string().trim().min(1, 'Order number is required'),
+  // phoneField normalizes (+201012345678 / 01012345678 → 01012345678) to the
+  // same local form orders are stored in; the old `z.string()` started with a
+  // length check against the raw input, so return lookups by an untracked
+  // order silently got 404 with +20-prefixed or whitespace-padded phones.
+  phone: phoneField,
+  reason: z.string().trim().min(1, 'Reason is required'),
 });
 
 const updateReturnRequestSchema = z.object({
@@ -442,6 +423,15 @@ function errorHandler(err, _req, res, _next) {
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+
+// Production (Vercel) routes all traffic through its edge proxy. Without
+// trust proxy, `req.ip` is the proxy's address for every visitor, so every
+// rate-limit bucket is shared → one client can exhaust the global quota
+// (and bursty traffic can lock everyone out). Trust exactly ONE hop (the
+// Vercel edge) and read the client IP from the X-Forwarded-For it appends.
+if (isProduction) {
+  app.set('trust proxy', 1);
+}
 
 app.use(helmet());
 const frontendUrls = (process.env.FRONTEND_URL || 'http://localhost:5173,http://localhost:5174')
@@ -651,33 +641,53 @@ async function adminListProducts(req, res, next) {
       page: Math.max(1, parseInt(page, 10) || 1),
       limit: Math.min(100, Math.max(1, parseInt(limit, 10) || 20)),
       sort: req.query.sort || 'newest',
+      embedCategory: true,
     };
 
-    let { data: rows, error, count } = await listProducts(filters);
+    // PostgREST can't compare `stock_quantity` to the per-product
+    // `low_stock_threshold` column (it 500s on the column-reference value), so
+    // low-stock / out-of-stock are filtered HERE, in JS, over the complete
+    // filtered set (fetched in page-sized chunks), and only then paginated.
+    // `unlimited_stock` products never count as low/out of stock.
+    const isLowStock = low_stock === 'true';
+    const isOutOfStock = out_of_stock === 'true';
 
-    if (error) return next(error);
+    let all = [];
+    let totalBeforeStock = 0;
+    if (isLowStock || isOutOfStock) {
+      const pageSlice = 100;
+      for (let p = 1; ; p += 1) {
+        const { data, error, count } = await listProducts({ ...filters, page: p, limit: pageSlice });
+        if (error) return next(error);
+        totalBeforeStock = count || 0;
+        all.push(...(data || []));
+        if ((data || []).length < pageSlice || p * pageSlice >= 2000) break; // safety cap
+      }
+      const matchesLow = (r) => !r.unlimited_stock && r.stock_quantity > 0 && r.stock_quantity <= r.low_stock_threshold;
+      const matchesOos = (r) => !r.unlimited_stock && r.stock_quantity === 0;
+      all = all.filter((r) => {
+        if (isLowStock && !matchesLow(r)) return false;
+        if (isOutOfStock && !matchesOos(r)) return false;
+        return true;
+      });
+    } else {
+      const { data, error, count } = await listProducts(filters);
+      if (error) return next(error);
+      all = data || [];
+      totalBeforeStock = count || 0;
+    }
 
-    rows = rows || [];
-
-    if (low_stock === 'true') {
-      rows = rows.filter(
-        (p) => !p.unlimited_stock && p.stock_quantity > 0 && p.stock_quantity <= p.low_stock_threshold,
-      );
-    }
-    if (out_of_stock === 'true') {
-      rows = rows.filter((p) => !p.unlimited_stock && p.stock_quantity === 0);
-    }
-    if (low_stock === 'true' || out_of_stock === 'true') {
-      count = rows.length;
-    }
+    const offset = (filters.page - 1) * filters.limit;
+    const pageRows = all.slice(offset, offset + filters.limit);
+    const total = isLowStock || isOutOfStock ? all.length : totalBeforeStock;
 
     res.json({
-      data: rows.map((r) => toCamelCase(r)),
+      data: pageRows.map((r) => toCamelCase(r)),
       meta: {
         page: filters.page,
         limit: filters.limit,
-        total: count || 0,
-        totalPages: Math.ceil((count || 0) / filters.limit),
+        total,
+        totalPages: Math.ceil(total / filters.limit),
       },
     });
   } catch (err) {
@@ -1080,6 +1090,7 @@ async function submitOrder(req, res, next) {
 
     const orderParams = {
       orderNumber,
+      generateOrderNumber,
       ...customerFields,
       subtotal,
       shipping_fee: shippingFee,
@@ -1232,6 +1243,14 @@ async function cancelOrder(req, res, next) {
       return res.status(403).json({ error: { message: 'Phone does not match this order', code: 'FORBIDDEN' } });
     }
 
+    if (order.status === 'cancelled' || order.status === 'returned') {
+      // Idempotent success: the order is already cancelled (race, double-tap,
+      // or a refresh after an earlier success). The old 409 here was the
+      // confusing `Order cannot be cancelled in status "cancelled"` error.
+      const { admin_note, ...alreadyCancelled } = order;
+      return res.json(toCamelCase(alreadyCancelled));
+    }
+
     if (order.status !== 'pending') {
       return res.status(409).json({
         error: {
@@ -1241,8 +1260,21 @@ async function cancelOrder(req, res, next) {
       });
     }
 
-    const { data: updated, error: updateError } = await updateOrderStatus(id, 'cancelled');
-    if (updateError) return next(updateError);
+    // Atomic restock + status flip + history entry (migration 020). Because
+    // the restock happens in the SAME transaction as the status flip inside
+    // the RPC, the two can never drift apart.
+    const { data: rpcResult, error: rpcError } = await cancelOrderAndRestock({
+      orderId: id,
+      status: 'cancelled',
+      changedBy: null,
+      note: 'Cancelled by customer',
+    });
+
+    if (rpcError || !rpcResult?.ok) {
+      return next(rpcError || new Error(rpcResult?.error || 'Failed to cancel order'));
+    }
+
+    const updated = rpcResult.order;
 
     // Points: a pending order can have points_redeemed (redeemed at checkout)
     // but never points_earned (earned only on delivery), so only the
@@ -1251,14 +1283,10 @@ async function cancelOrder(req, res, next) {
       await refundOrderRedeemedPoints(order, 'cancelled');
     }
 
-    await createStatusHistoryEntry({
-      order_id: id,
-      status: 'cancelled',
-      changed_by: null,
-      note: 'Cancelled by customer',
-    });
+    // Customer-facing response: never echo the internal admin note back.
+    const { admin_note, ...publicUpdated } = updated;
 
-    res.json(toCamelCase(updated));
+    res.json(toCamelCase(publicUpdated));
   } catch (err) {
     next(err);
   }
@@ -1340,20 +1368,48 @@ async function adminUpdateOrderStatus(req, res, next) {
       return res.status(404).json({ error: { message: 'Order not found', code: 'NOT_FOUND' } });
     }
 
-    const { data: updated, error } = await updateOrderStatus(
-      id,
-      status,
-      estimated_delivery === '' ? null : estimated_delivery,
-    );
-    if (error) return next(error);
+    // ── status flip ─────────────────────────────────────────────────────────
+    // cancels/returns go through the atomic cancel_order_and_restock RPC
+    // (migration 020): it restocks the order's items, flips the status AND
+    // records the history entry in ONE transaction, and is idempotent
+    // (already-cancelled → no-op, safe to retry). The plain updateOrderStatus
+    // path NEVER restocks — using it here was the "cancelled but not
+    // restocked" bug.
+    let updated;
+    let transitioned = true;
+    if (status === 'cancelled' || status === 'returned') {
+      const { data: rpcResult, error: rpcError } = await cancelOrderAndRestock({
+        orderId: id,
+        status,
+        changedBy: req.admin.id,
+        note: note || null,
+      });
+
+      if (rpcError || !rpcResult?.ok) {
+        return next(rpcError || new Error(rpcResult?.error || 'Failed to cancel order'));
+      }
+
+      updated = rpcResult.order;
+      transitioned = rpcResult.already_cancelled === false;
+    } else {
+      const { data: result, error: updateError } = await updateOrderStatus(
+        id,
+        status,
+        estimated_delivery === '' ? null : estimated_delivery,
+      );
+      if (updateError) return next(updateError);
+      updated = result;
+    }
 
     // ── points lifecycle (docs/13-points-system.md §3) ──────────────────────
-    // Earning: credited ONLY on a transition INTO delivered (not when an
-    // already-delivered order is re-saved as delivered — that's a no-op
-    // transition, and re-applying delivered shouldn't re-credit). The
-    // `creditOrderEarnedPoints` helper additionally guards on
-    // orders.points_earned = 0 for belt-and-braces idempotency.
-    if (existing.status !== 'delivered' && status === 'delivered') {
+    // Earning: fires on any transition INTO delivered. Idempotency lives in
+    // the helper (atomic claim on points_earned = 0 + ledger-existence
+    // check), because gating on `existing.status !== 'delivered'` was unsafe:
+    // if the ledger insert failed after a delivered transition, retrying
+    // delivered re-fetched an already-delivered row and skipped the hook —
+    // the customer's points then stayed lost forever. The helper now self-heals
+    // a stamped-but-unledgered order instead of skipping.
+    if (status === 'delivered') {
       await creditOrderEarnedPoints(existing);
     }
 
@@ -1365,23 +1421,27 @@ async function adminUpdateOrderStatus(req, res, next) {
     //      in adminUpdateOrderStatus), so per the user's decision on
     //      docs/13 §3.3 open item #2 we DO reverse earned points via a
     //      negative manual_deduct-style ledger entry.
+    // The RPC already made the cancel idempotent; side-effects below only run
+    // on an actual transition (no double refunds / duplicate emails on retry).
     if (status === 'cancelled' || status === 'returned') {
-      if (existing.customer_id && Number(existing.points_redeemed || 0) > 0) {
-        await refundOrderRedeemedPoints(existing, status);
+      if (transitioned) {
+        if (existing.customer_id && Number(existing.points_redeemed || 0) > 0) {
+          await refundOrderRedeemedPoints(existing, status);
+        }
+        if (existing.customer_id && Number(existing.points_earned || 0) > 0) {
+          await reverseOrderEarnedPoints(existing, status);
+        }
       }
-      if (existing.customer_id && Number(existing.points_earned || 0) > 0) {
-        await reverseOrderEarnedPoints(existing, status);
-      }
+    } else {
+      await createStatusHistoryEntry({
+        order_id: id,
+        status,
+        changed_by: req.admin.id,
+        note: note || null,
+      });
     }
 
-    await createStatusHistoryEntry({
-      order_id: id,
-      status,
-      changed_by: req.admin.id,
-      note: note || null,
-    });
-
-    if (CANCEL_EMAIL_STATUSES.includes(status) && updated.email) {
+    if (CANCEL_EMAIL_STATUSES.includes(status) && transitioned && updated.email) {
       const { data: orderItems } = await getOrderById(id);
       sendOrderEmail({
         email: updated.email,
@@ -1810,8 +1870,8 @@ async function customerChangePassword(req, res, next) {
   }
 }
 
-app.post('/api/customers/register', authLimiter, validate(customerRegisterSchema), customerRegister);
-app.post('/api/customers/login', authLimiter, validate(customerLoginSchema), customerLogin);
+app.post('/api/customers/register', customerAuthLimiter, validate(customerRegisterSchema), customerRegister);
+app.post('/api/customers/login', customerAuthLimiter, validate(customerLoginSchema), customerLogin);
 app.post('/api/customers/logout', customerLogout);
 app.get('/api/customers/me', requireCustomer, customerMe);
 app.get('/api/customers/me/points-history', requireCustomer, customerPointsHistory);
@@ -1839,88 +1899,8 @@ async function listPublicBanners(req, res, next) {
   }
 }
 
-async function adminListBanners(req, res, next) {
-  try {
-    const { position, is_active } = req.query;
-    const filters = { position: position || undefined };
-    if (is_active === 'true') filters.is_active = true;
-    else if (is_active === 'false') filters.is_active = false;
-
-    const { data: rows, error } = await listBanners(filters);
-
-    if (error) return next(error);
-
-    res.json({ data: (rows || []).map((r) => toCamelCase(r)) });
-  } catch (err) {
-    next(err);
-  }
-}
-
-async function adminGetBanner(req, res, next) {
-  try {
-    const { id } = req.params;
-    const { data: banner, error } = await getBannerById(id);
-
-    if (error || !banner) {
-      return res.status(404).json({ error: { message: 'Banner not found', code: 'NOT_FOUND' } });
-    }
-
-    res.json(toCamelCase(banner));
-  } catch (err) {
-    next(err);
-  }
-}
-
-async function adminCreateBanner(req, res, next) {
-  try {
-    const { data: banner, error } = await createBanner(req.validatedBody);
-
-    if (error) return next(error);
-
-    res.status(201).json(toCamelCase(banner));
-  } catch (err) {
-    next(err);
-  }
-}
-
-async function adminUpdateBanner(req, res, next) {
-  try {
-    const { id } = req.params;
-    const { data: banner, error } = await updateBanner(id, req.validatedBody);
-
-    if (error) return next(error);
-    if (!banner) {
-      return res.status(404).json({ error: { message: 'Banner not found', code: 'NOT_FOUND' } });
-    }
-
-    res.json(toCamelCase(banner));
-  } catch (err) {
-    next(err);
-  }
-}
-
-async function adminDeleteBanner(req, res, next) {
-  try {
-    const { id } = req.params;
-    const { error } = await deleteBanner(id);
-
-    if (error) return next(error);
-
-    res.json({ message: 'Banner deleted' });
-  } catch (err) {
-    next(err);
-  }
-}
-
 app.use('/api/banners', publicGetLimiter());
 app.get('/api/banners', listPublicBanners);
-
-app.use('/api/admin/banners', requireAdmin);
-app.get('/api/admin/banners', adminListBanners);
-app.get('/api/admin/banners/:id', adminGetBanner);
-app.post('/api/admin/banners', validate(bannerSchema), adminCreateBanner);
-app.put('/api/admin/banners/:id', validate(bannerSchema.partial()), adminUpdateBanner);
-app.delete('/api/admin/banners/:id', adminDeleteBanner);
 
 // ──────────────────────────────────────────────
 //  SETTINGS
@@ -2297,6 +2277,37 @@ async function updateAdminUser(req, res, next) {
   try {
     const { id } = req.params;
     const body = { ...req.validatedBody };
+    const isSelf = req.admin.id === id;
+
+    // Self-protection: an admin can never lock their own account or rewrite
+    // their own role. (Password changes are fine — handled below.)
+    if (isSelf && body.is_active === false) {
+      return res.status(409).json({
+        error: { message: 'You cannot deactivate your own account', code: 'CONFLICT' },
+      });
+    }
+    const { data: target, error: fetchErr } = await getAdminById(id);
+    if (fetchErr || !target) {
+      return res.status(404).json({ error: { message: 'Admin not found', code: 'NOT_FOUND' } });
+    }
+    if (isSelf && body.role && body.role !== target.role) {
+      return res.status(403).json({
+        error: { message: 'You cannot change your own role', code: 'FORBIDDEN' },
+      });
+    }
+
+    // Last-super-admin protection: demoting or deactivating the only reachable
+    // super-admin locks everyone out of manage strictly worse than the role
+    // without change, so block it regardless of who is being edited (self or
+    // another admin).
+    if (target.role === 'super_admin' && (body.role && body.role !== 'super_admin' || body.is_active === false)) {
+      const { count, error: cntErr } = await countActiveSuperAdmins();
+      if (!cntErr && count <= 1) {
+        return res.status(409).json({
+          error: { message: 'Cannot demote/deactivate the last active super_admin', code: 'CONFLICT' },
+        });
+      }
+    }
 
     if (body.password) {
       body.password_hash = await bcrypt.hash(body.password, BCRYPT_ROUNDS);
@@ -2332,10 +2343,12 @@ async function deleteAdminUser(req, res, next) {
     }
 
     if (target.role === 'super_admin' && target.is_active) {
-      const { data: rows } = await listAdmins({});
-      const activeSuperAdmins = (rows || []).filter((a) => a.role === 'super_admin' && a.is_active);
+      // Head-only count of ACTIVE super admins instead of listAdmins({}),
+      // which loads the full admin table and silently changed this from a
+      // count into a paginated (possibly truncated) fetch.
+      const { count, error: cntErr } = await countActiveSuperAdmins();
 
-      if (activeSuperAdmins.length <= 1) {
+      if (!cntErr && count <= 1) {
         return res.status(409).json({
           error: {
             message: 'Cannot delete the last active super_admin',
@@ -2389,13 +2402,16 @@ async function getOverview(_req, res, next) {
       (p) => !p.unlimited_stock && p.stock_quantity === 0,
     ).length;
 
+    // camelCase on the wire — the frontend reads these as camelCase and other
+    // admin endpoints (orders/customers/etc.) are returned camelCase, so the
+    // old snake_case here forced AdminDashboard to `?? 0` every stat.
     res.json({
-      total_orders: orders.count || 0,
-      total_revenue: revenueTotal,
-      pending_orders: pending.count || 0,
-      total_products: products.count || 0,
-      low_stock_count: lowStockCount,
-      out_of_stock_count: outOfStockCount,
+      totalOrders: orders.count || 0,
+      totalRevenue: revenueTotal,
+      pendingOrders: pending.count || 0,
+      totalProducts: products.count || 0,
+      lowStockCount: lowStockCount,
+      outOfStockCount: outOfStockCount,
     });
   } catch (err) {
     next(err);
@@ -2487,13 +2503,14 @@ async function getTopProducts(req, res, next) {
         .map((t) => t.productId)
         .filter((id) => id !== 'unknown');
       if (productIds.length > 0) {
-        const { data: products } = await getProductsByIds(productIds, 'id, name_en, name_ar, slug');
+        const { data: products } = await getProductsByIds(productIds, 'id, name_en, name_ar, slug, view_count');
         const pmap = new Map((products || []).map((p) => [p.id, p]));
         for (const t of top) {
           const p = pmap.get(t.productId);
           t.nameEn = p?.name_en;
           t.nameAr = p?.name_ar;
           t.slug = p?.slug;
+          t.viewCount = p?.view_count ?? 0;
         }
       }
     }

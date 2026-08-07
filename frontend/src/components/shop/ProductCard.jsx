@@ -12,7 +12,8 @@ export default function ProductCard({ product }) {
   const image = (product.productImages?.[0]?.imageUrl) || '';
   const imgAlt = product.productImages?.[0]?.altText || product.nameEn || '';
   const stock = product.stockQuantity ?? 0;
-  const outOfStock = stock === 0;
+  const unlimitedStock = Boolean(product.unlimitedStock);
+  const outOfStock = !unlimitedStock && stock === 0;
   const isFeatured = product.isFeatured;
   const isNew = product.isNewArrival;
 

@@ -31,16 +31,17 @@ export function CartProvider({ children }) {
     setItems((prev) => {
       const existing = prev.find((i) => i.productId === product.id);
       const image = product.productImages?.[0]?.imageUrl || '';
+      const unlimitedStock = Boolean(product.unlimitedStock);
       const stock = product.stockQuantity || 0;
-      const qty = Math.min(quantity, stock);
+      const qty = unlimitedStock ? quantity : Math.min(quantity, stock);
       if (existing) {
         return prev.map((i) =>
           i.productId === product.id
-            ? { ...i, quantity: Math.min(i.quantity + qty, stock) }
+            ? { ...i, quantity: Math.min(i.quantity + qty, unlimitedStock ? Infinity : stock) }
             : i,
         );
       }
-      return [...prev, { productId: product.id, nameEn: product.nameEn || '', nameAr: product.nameAr || '', image, price: product.price, quantity: qty, stock }];
+      return [...prev, { productId: product.id, nameEn: product.nameEn || '', nameAr: product.nameAr || '', image, price: product.price, quantity: qty, stock, unlimitedStock }];
     });
     // Every add opens the drawer — single source of truth, all callers
     // (ProductCard quick-add, ProductDetail) get this for free.
@@ -56,7 +57,7 @@ export function CartProvider({ children }) {
       const item = prev.find((i) => i.productId === productId);
       if (!item) return prev;
       if (quantity <= 0) return prev.filter((i) => i.productId !== productId);
-      const cap = item.stock ?? Infinity;
+      const cap = item.unlimitedStock ? Infinity : (item.stock ?? Infinity);
       return prev.map((i) =>
         i.productId === productId ? { ...i, quantity: Math.min(quantity, cap) } : i,
       );
@@ -64,6 +65,38 @@ export function CartProvider({ children }) {
   }, []);
 
   const clearCart = useCallback(() => setItems([]), []);
+
+  // Reorder: bulk-insert cart-shaped item objects (built by the caller from
+  // past-order snapshots + live stock). Items with exhausted stock are simply
+  // skipped; returns how many were actually added so the caller can toast
+  // "some items unavailable".
+  const reorderItems = useCallback((itemsToAdd) => {
+    let added = 0;
+    let next = [...items];
+    for (const item of itemsToAdd) {
+      if (item.skip) continue;
+      const existing = next.find((i) => i.productId === item.productId);
+      if (existing) {
+        const cap = existing.unlimitedStock ? Infinity : (existing.stock ?? Infinity);
+        const cap2 = item.unlimitedStock ? Infinity : (item.stock ?? 0);
+        const finalCap = Math.min(cap, cap2);
+        if (finalCap <= 0) continue;
+        next = next.map((i) =>
+          i.productId === item.productId
+            ? { ...i, quantity: Math.min(i.quantity + item.quantity, finalCap) }
+            : i,
+        );
+        added += 1;
+      } else {
+        if ((item.unlimitedStock ? Infinity : (item.stock ?? 0)) <= 0) continue;
+        next = [...next, { ...item }];
+        added += 1;
+      }
+    }
+    setItems(next);
+    if (added > 0) setIsCartOpen(true);
+    return added;
+  }, [items]);
 
   // Explicit boolean-only setter for consumers that need to open/close the
   // drawer directly (e.g. CartDrawer's close button/backdrop). Prevents the
@@ -78,7 +111,7 @@ export function CartProvider({ children }) {
   const value = {
     items, isCartOpen, setIsCartOpen, closeCart, openCartDrawer,
     isMobileNavOpen, setIsMobileNavOpen,
-    addItem, removeItem, updateQuantity, clearCart,
+    addItem, removeItem, updateQuantity, clearCart, reorderItems,
   };
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

@@ -39,6 +39,7 @@ Every decision that would normally require "creative judgment" — colors, file 
 | 10 | `10-coding-conventions.md` | Naming, structure, patterns, lint/format rules |
 | 11 | `11-nonfunctional-requirements.md` | Performance, accessibility, SEO, security checklists |
 | 12 | `12-deployment-env.md` | Environments, env vars, deploy targets, third-party setup |
+| 14 | `14-features-roadmap.md` | Planned next features (priorities, WhatsApp free-channel rule, out-of-scope) |
 
 ## Project Snapshot
 
@@ -46,7 +47,7 @@ Every decision that would normally require "creative judgment" — colors, file 
 - **Backend:** Node.js + Express, JWT auth, Supabase (service role) as data layer
 - **Database:** Supabase (PostgreSQL)
 - **Images:** Cloudinary (unsigned uploads from frontend, URLs stored in Supabase)
-- **Email:** Resend (order confirmations)
+- **Email:** Gmail SMTP via nodemailer (order confirmations)
 - **Hosting:** Vercel (frontend SPA + backend as serverless functions)
 - **Payment:** Cash on Delivery only — no payment gateway, ever, in v1
 - **Languages:** Arabic (default, RTL) + English (LTR)

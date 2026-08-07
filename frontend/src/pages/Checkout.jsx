@@ -9,10 +9,9 @@ import { useCustomerAuth } from '@/context/CustomerAuthContext.jsx';
 import { createOrder, getSettings } from '@/api.js';
 import { formatPrice } from '@/lib/formatters.js';
 import { checkoutSchema } from '@/schemas/checkout.schema.js';
-import { EGYPT_GOVERNORATES, DEFAULT_SHIPPING_FEE } from '@/lib/constants.js';
+import { DEFAULT_SHIPPING_FEE } from '@/lib/constants.js';
 import SEO from '@/components/common/SEO.jsx';
 import { Banknote } from 'lucide-react';
-import Select from '@/components/ui/Select.jsx';
 import Input from '@/components/ui/Input.jsx';
 
 export default function Checkout() {
@@ -27,8 +26,6 @@ export default function Checkout() {
     handleSubmit,
     formState: { errors, isSubmitting },
     setError,
-    setValue,
-    watch,
   } = useForm({
     resolver: zodResolver(checkoutSchema),
     defaultValues: {
@@ -37,12 +34,27 @@ export default function Checkout() {
       email: '',
       address_line: '',
       city: '',
-      governorate: '',
       notes: '',
     },
   });
 
-  const governorate = watch('governorate');
+  // zodResolver stores the schema's (English) message strings on
+  // errors.<field>.message; those are validated-side artifacts, so they're
+  // mapped to i18n keys before rendering instead of leaking English into the
+  // Arabic UI. Any message without a mapping falls through verbatim.
+  const CHECKOUT_VALIDATION_KEYS = {
+    'Name is required': 'checkout:validation.name',
+    'Invalid Egyptian phone number': 'checkout:validation.phone',
+    'Invalid email': 'checkout:validation.email',
+    'Address is required': 'checkout:validation.address',
+    'City is required': 'checkout:validation.city',
+  };
+  const errMsg = (field) => {
+    const msg = errors[field]?.message;
+    if (!msg) return undefined;
+    const key = CHECKOUT_VALIDATION_KEYS[msg];
+    return key ? t(key) : msg;
+  };
 
   const [settings, setSettings] = useState(null);
   const [settingsLoaded, setSettingsLoaded] = useState(false);
@@ -96,7 +108,6 @@ export default function Checkout() {
         email: data.email || undefined,
         address_line: data.address_line,
         city: data.city,
-        governorate: data.governorate,
         notes: data.notes || undefined,
         points_to_redeem: customer ? effectiveRedeem : undefined,
       });
@@ -114,11 +125,19 @@ export default function Checkout() {
       navigate(`/checkout/success?${qs.toString()}`);
     } catch (err) {
       if (err.code === 'STOCK_CONFLICT' && err.items?.length) {
-        err.items.forEach((item) => {
-          const productName = items.find((i) => i.productId === item.productId)?.nameEn || item.productId;
-          setError('root.stockConflict', {
-            message: `${item.error}: ${productName} (available: ${item.available}, requested: ${item.requested})`,
+        const lines = err.items.map((item) => {
+          const found = items.find((i) => i.productId === item.productId);
+          const name = found
+            ? (isAr ? found.nameAr || found.nameEn : found.nameEn || found.nameAr)
+            : item.productId;
+          return t('checkout:errors.stockConflictItem', {
+            name,
+            available: item.available,
+            requested: item.requested,
           });
+        });
+        setError('root.stockConflict', {
+          message: `${t('checkout:errors.stockConflict')}\n${lines.join('\n')}`,
         });
       } else if (err.code === 'INSUFFICIENT_POINTS') {
         setError('root.serverError', { message: t('checkout:errors.insufficientPoints') });
@@ -160,6 +179,7 @@ export default function Checkout() {
 
       <div className="grid lg:grid-cols-5 gap-10">
         <motion.form
+          id="checkout-form"
           onSubmit={handleSubmit(onSubmit)}
           className="lg:col-span-3 space-y-8"
           noValidate
@@ -173,14 +193,14 @@ export default function Checkout() {
               <Input
                 label={t('checkout:form.nameLabel')}
                 {...register('customer_name')}
-                error={errors.customer_name?.message}
+                error={errMsg('customer_name')}
                 id="checkout-name"
               />
               <div className="grid sm:grid-cols-2 gap-4">
                 <Input
                   label={t('checkout:form.phoneLabel')}
                   {...register('phone')}
-                  error={errors.phone?.message}
+                  error={errMsg('phone')}
                   id="checkout-phone"
                   dir="ltr"
                   placeholder="010xxxxxxxx"
@@ -189,7 +209,7 @@ export default function Checkout() {
               <Input
                 label={t('checkout:form.emailLabel')}
                 {...register('email')}
-                error={errors.email?.message}
+                error={errMsg('email')}
                 id="checkout-email"
                 type="email"
               />
@@ -202,30 +222,15 @@ export default function Checkout() {
               <Input
                 label={t('checkout:form.addressLabel')}
                 {...register('address_line')}
-                error={errors.address_line?.message}
+                error={errMsg('address_line')}
                 id="checkout-address"
               />
-              <div className="grid sm:grid-cols-2 gap-4">
-                <Input
-                  label={t('checkout:form.cityLabel')}
-                  {...register('city')}
-                  error={errors.city?.message}
-                  id="checkout-city"
-                />
-                <div className="flex flex-col gap-1">
-                  <label htmlFor="checkout-governorate" className="text-body-sm font-medium text-bg-text-primary ps-0.5">{t('checkout:form.governorateLabel')}</label>
-                  <Select
-                    value={governorate}
-                    onChange={(v) => setValue('governorate', v, { shouldValidate: true })}
-                    options={EGYPT_GOVERNORATES.map((g) => ({ value: g, label: g }))}
-                    placeholder={t('checkout:form.governorateLabel')}
-                  />
-                  <input type="hidden" {...register('governorate')} />
-                  {errors.governorate?.message && (
-                    <p className="text-body-sm text-bg-error ps-0.5">{errors.governorate.message}</p>
-                  )}
-                </div>
-              </div>
+              <Input
+                label={t('checkout:form.cityLabel')}
+                {...register('city')}
+                error={errMsg('city')}
+                id="checkout-city"
+              />
               <Input
                 label={t('checkout:form.notesLabel')}
                 {...register('notes')}
@@ -254,10 +259,6 @@ export default function Checkout() {
               {errors.root.stockConflict.message}
             </p>
           )}
-
-          <button type="submit" disabled={isSubmitting} className="btn-primary w-full py-3.5 text-sm disabled:opacity-50">
-            {isSubmitting ? t('checkout:form.placingOrder') : t('checkout:form.submit')}
-          </button>
         </motion.form>
 
         <motion.div
@@ -343,7 +344,7 @@ export default function Checkout() {
                 </span>
               </div>
               {settingsLoaded && freeThreshold && shipping > 0 && (
-                <p className="text-[11px] text-amber-600">
+                <p className="text-[11px] text-bg-warning">
                   {t('checkout:summary.freeShippingHint', { amount: formatPrice(freeThreshold - subtotal) })}
                 </p>
               )}
@@ -358,6 +359,15 @@ export default function Checkout() {
                 <span className="font-bold text-lg ltr-nums">{formatPrice(totalAfterDiscount)}</span>
               </div>
             </div>
+
+            <button
+              type="submit"
+              form="checkout-form"
+              disabled={isSubmitting}
+              className="btn-primary w-full py-3.5 text-sm disabled:opacity-50 mt-5"
+            >
+              {isSubmitting ? t('checkout:form.placingOrder') : t('checkout:form.submit')}
+            </button>
           </div>
         </motion.div>
       </div>

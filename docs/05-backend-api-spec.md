@@ -53,13 +53,13 @@ Middleware `auth.js` exports `requireAdmin` (any active admin) and `requireSuper
 
 | Method | Path | Auth | Notes |
 |---|---|---|---|
-| POST | `/api/orders` | none, rate-limited | Public checkout submission. Validates stock availability at submit time, decrements `stock_quantity`, generates `order_number`, snapshots line items, sends Resend confirmation if email provided, writes `order_status_history` row (`pending`) |
+| POST | `/api/orders` | none, rate-limited | Public checkout submission. Validates stock availability at submit time, decrements `stock_quantity`, generates `order_number`, snapshots line items, sends an email confirmation (Gmail SMTP) if email provided, writes `order_status_history` row (`pending`) |
 | GET | `/api/orders/track` | none, rate-limited | Query: `order_number`, `phone` — both required, must match, returns order + items + status history (public order tracking, no auth) |
 | GET | `/api/orders/lookup` | none, rate-limited | Query: `phone` — returns list of orders for that phone (MyOrders page) |
-| PATCH | `/api/orders/:id/cancel` | none, rate-limited | Public — customer can cancel only while status is `pending`; requires matching `phone` in body |
+| PATCH | `/api/orders/:id/cancel` | none, rate-limited | Public — customer can cancel only while status is `pending`; requires matching `phone` in body. Atomically restocks the order's items (`cancel_order_and_restock`, migration 020); idempotent — a retry on an already-cancelled order returns success instead of an error |
 | GET | `/api/admin/orders` | admin | Filters: `status`, `date_from`, `date_to`, `search` (name/phone/order_number) |
 | GET | `/api/admin/orders/:id` | admin | Full detail incl. items, status history, admin_note |
-| PATCH | `/api/admin/orders/:id/status` | admin | Body: `{ status, note? }` — writes `order_status_history`, triggers email if status is customer-relevant (`confirmed`, `shipped`, `delivered`, `cancelled`) |
+| PATCH | `/api/admin/orders/:id/status` | admin | Body: `{ status, note? }` — writes `order_status_history`, triggers email if status is customer-relevant (`confirmed`, `shipped`, `delivered`, `cancelled`). Cancel/return also restocks the order's items atomically (`cancel_order_and_restock`, migration 020) |
 | PATCH | `/api/admin/orders/:id/note` | admin | Internal note only, no customer notification |
 
 ## Banners
@@ -67,10 +67,8 @@ Middleware `auth.js` exports `requireAdmin` (any active admin) and `requireSuper
 | Method | Path | Auth | Notes |
 |---|---|---|---|
 | GET | `/api/banners` | none | Query: `position`, active only, ordered |
-| GET | `/api/admin/banners` | admin | All |
-| POST | `/api/admin/banners` | admin | |
-| PUT | `/api/admin/banners/:id` | admin | |
-| DELETE | `/api/admin/banners/:id` | admin | Hard delete (no order/relational dependency) |
+
+The admin CRUD (`/api/admin/banners`*) was removed — the storefront still reads hero/secondary banners, but there is no admin editor for them (banners are managed directly in the database until the editor is rebuilt).
 
 ## Settings
 

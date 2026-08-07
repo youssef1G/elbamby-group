@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { useLocale } from '@/context/LocaleContext.jsx';
 import { fetchOrders, updateOrderStatus } from '@/api.js';
@@ -9,31 +10,67 @@ import { formatDate, formatPrice } from '@/lib/formatters.js';
 import { ORDER_STATUSES } from '@/lib/constants.js';
 
 const STATUS_BADGE = {
-  pending: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800',
-  confirmed: 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800',
-  shipped: 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-900/20 dark:text-purple-400 dark:border-purple-800',
-  delivered: 'bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800',
-  cancelled: 'bg-gray-50 text-gray-500 border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700',
+  pending: 'bg-bg-warning/10 text-bg-warning border-bg-warning/30',
+  confirmed: 'bg-bg-info/10 text-bg-info border-bg-info/30',
+  shipped: 'bg-bg-info/10 text-bg-info border-bg-info/30',
+  delivered: 'bg-bg-success/10 text-bg-success border-bg-success/30',
+  cancelled: 'bg-bg-neutral-100 dark:bg-bg-neutral-800 text-bg-text-secondary border-bg-border',
+  processing: 'bg-bg-info/10 text-bg-info border-bg-info/30',
+  returned: 'bg-bg-error/10 text-bg-error border-bg-error/30',
 };
+
+const PAGE_SIZE = 20;
 
 export default function AdminOrders() {
   const { t, isAr } = useLocale();
   const { toast } = useToast();
 
   const [orders, setOrders] = useState([]);
+  const [meta, setMeta] = useState({ page: 1, total: 0, totalPages: 0 });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState({});
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [page, setPage] = useState(1);
+  const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
-  const [filter, setFilter] = useState('all');
+
+  // Latest per-order status chosen via the Select, tracked locally so a
+  // delivery-date save that fires right after a status flip never re-sends a
+  // stale status value (the old code captured `sk` from a possibly-outdated
+  // closure).
+  const [liveStatus, setLiveStatus] = useState({});
+
+  // Debounce the search box so we don't fire a request per keystroke.
+  const debounceRef = useRef(null);
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      setSearch(searchInput.trim());
+      setPage(1);
+    }, 300);
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+  }, [searchInput]);
 
   useEffect(() => {
     let cancelled = false;
-    fetchOrders()
-      .then((res) => { if (!cancelled) setOrders(res?.data || []); })
-      .catch(() => {})
+    setLoading(true);
+    const params = { page, limit: PAGE_SIZE };
+    if (statusFilter !== 'all') params.status = statusFilter;
+    if (search) params.search = search;
+    fetchOrders(params)
+      .then((res) => {
+        if (cancelled) return;
+        setOrders(res?.data || []);
+        setMeta(res?.meta || { page, total: 0, totalPages: 0 });
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setOrders([]);
+        setMeta((m) => ({ ...m, total: 0, totalPages: 0 }));
+      })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
-  }, []);
+  }, [page, statusFilter, search]);
 
   async function handleUpdate(id, fields) {
     setSaving((s) => ({ ...s, [id]: true }));
@@ -53,21 +90,7 @@ export default function AdminOrders() {
     }
   }
 
-  const counts = orders.reduce((acc, o) => {
-    acc[o.status] = (acc[o.status] || 0) + 1;
-    return acc;
-  }, {});
-
-  const filtered = orders.filter(
-    (o) =>
-      (filter === 'all' || o.status === filter) &&
-      (!search ||
-        (o.orderNumber || '').toLowerCase().includes(search.toLowerCase()) ||
-        (o.customerName || '').toLowerCase().includes(search.toLowerCase()) ||
-        (o.phone || '').toLowerCase().includes(search.toLowerCase()))
-  );
-
-  if (loading) {
+  if (loading && page === 1 && orders.length === 0) {
     return (
       <div className="space-y-5">
         <div>
@@ -112,19 +135,7 @@ export default function AdminOrders() {
     );
   }
 
-  if (!orders.length && filter === 'all' && !search) {
-    return (
-      <div className="space-y-6">
-        <div>
-          <h1 className="font-heading text-xl font-bold text-bg-text-primary">{t('admin:orders.title')}</h1>
-          <p className="text-xs text-bg-text-secondary mt-1">{t('admin:orders.subtitle')}</p>
-        </div>
-        <div className="surface-card p-12 text-center">
-          <p className="text-body-sm text-bg-text-secondary">{t('admin:orders.noOrders')}</p>
-        </div>
-      </div>
-    );
-  }
+  const empty = !loading && !orders.length;
 
   return (
     <motion.div
@@ -147,28 +158,28 @@ export default function AdminOrders() {
         className="flex flex-wrap gap-2"
       >
         <button
-          onClick={() => setFilter('all')}
+          onClick={() => { setStatusFilter('all'); setPage(1); }}
           className={`text-caption font-semibold border rounded-full px-3 py-1 transition-colors ${
-            filter === 'all'
+            statusFilter === 'all'
               ? 'bg-bg-primary-500 text-white border-bg-primary-500'
               : 'text-bg-text-secondary border-bg-border hover:border-bg-primary-500'
           }`}
         >
-          {t('admin:orders.allOrders')} · {orders.length}
+          {t('admin:orders.allOrders')} · {meta.total}
         </button>
-        {Object.entries(counts).map(([status, count]) => {
+        {Object.keys(ORDER_STATUSES).map((status) => {
           const sl = ORDER_STATUSES[status];
           return (
             <button
               key={status}
-              onClick={() => setFilter(filter === status ? 'all' : status)}
+              onClick={() => { setStatusFilter(statusFilter === status ? 'all' : status); setPage(1); }}
               className={`text-caption font-semibold border rounded-full px-3 py-1 transition-colors ${
-                filter === status
+                statusFilter === status
                   ? 'bg-bg-primary-500 text-white border-bg-primary-500'
                   : STATUS_BADGE[status] || 'text-bg-text-secondary border-bg-border'
               }`}
             >
-              {sl ? (isAr ? sl.ar : sl.en) : status} · {count}
+              {sl ? (isAr ? sl.ar : sl.en) : status}
             </button>
           );
         })}
@@ -183,8 +194,8 @@ export default function AdminOrders() {
       >
         <input
           type="text"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          value={searchInput}
+          onChange={(e) => setSearchInput(e.target.value)}
           placeholder={t('admin:orders.searchPlaceholder')}
           className="w-full text-body-sm surface-card h-9 px-4 text-bg-text-primary placeholder:text-bg-text-secondary/50 focus:outline-none focus:border-bg-primary-500"
         />
@@ -197,14 +208,22 @@ export default function AdminOrders() {
         transition={{ duration: 0.3, delay: 0.1 }}
         className="text-caption text-bg-text-secondary"
       >
-        {t('admin:orders.showing', { filtered: filtered.length, total: orders.length, s: orders.length !== 1 ? 's' : '' })}
+        {t('admin:orders.showing', { filtered: orders.length, total: meta.total, s: meta.total !== 1 ? 's' : '' })}
       </motion.p>
 
-      {filtered.length === 0 ? (
+      {loading ? (
+        <div className="space-y-5">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="surface-card overflow-hidden">
+              <Skeleton className="h-20 w-full" />
+            </div>
+          ))}
+        </div>
+      ) : empty ? (
         <p className="text-body-sm text-bg-text-secondary text-center py-10">{t('admin:orders.noMatch')}</p>
       ) : (
-        filtered.map((order, idx) => {
-          const sk = order.status || 'pending';
+        orders.map((order, idx) => {
+          const sk = liveStatus[order.id] || order.status || 'pending';
           const sl = ORDER_STATUSES[sk];
           return (
             <motion.div
@@ -225,6 +244,12 @@ export default function AdminOrders() {
                   </span>
                 </div>
                 <div className="flex items-center gap-3">
+                  <Link
+                    to={`/admin/orders/${order.id}`}
+                    className="text-caption font-semibold text-bg-primary-500 hover:underline"
+                  >
+                    {t('admin:orders.viewDetails')}
+                  </Link>
                   <span className="text-body-sm font-semibold text-bg-text-primary ltr-nums" dir="ltr">
                     {formatPrice(order.total ?? 0)}
                   </span>
@@ -271,7 +296,11 @@ export default function AdminOrders() {
                     </label>
                     <Select
                       value={sk}
-                      onChange={(val) => { if (val !== sk) handleUpdate(order.id, { status: val }); }}
+                      onChange={(val) => {
+                        if (val === sk) return;
+                        setLiveStatus((prev) => ({ ...prev, [order.id]: val }));
+                        handleUpdate(order.id, { status: val });
+                      }}
                       options={Object.keys(ORDER_STATUSES).map((k) => {
                         const l = ORDER_STATUSES[k];
                         return { value: k, label: l ? (isAr ? l.ar : l.en) : k };
@@ -290,8 +319,11 @@ export default function AdminOrders() {
                       onKeyDown={(e) => { if (e.key === 'Enter') e.target.blur(); }}
                       onBlur={(e) => {
                         const value = e.target.value || null;
-                        if (value !== (order.estimatedDelivery || null))
+                        if (value !== (order.estimatedDelivery || null)) {
+                          // Send the latest status (may differ from `order.status`
+                          // if a status flip is still in flight).
                           handleUpdate(order.id, { status: sk, estimated_delivery: value });
+                        }
                       }}
                       className="w-full rounded-lg border border-bg-border px-3.5 h-10 text-body-sm bg-bg-surface text-bg-text-primary focus:outline-none focus:border-bg-primary-500 focus:ring-1 focus:ring-bg-primary-500"
                     />
@@ -312,6 +344,28 @@ export default function AdminOrders() {
             </motion.div>
           );
         })
+      )}
+
+      {meta.totalPages > 1 && (
+        <div className="flex items-center justify-center gap-2">
+          <button
+            disabled={page <= 1}
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            className="btn-ghost !min-h-0 h-8 px-3 text-body-sm disabled:opacity-30"
+          >
+            {t('admin:common.prev')}
+          </button>
+          <span className="text-body-sm text-bg-text-secondary">
+            {t('admin:common.page')} {meta.page} {t('admin:common.of')} {meta.totalPages}
+          </span>
+          <button
+            disabled={page >= meta.totalPages}
+            onClick={() => setPage((p) => p + 1)}
+            className="btn-ghost !min-h-0 h-8 px-3 text-body-sm disabled:opacity-30"
+          >
+            {t('admin:common.next')}
+          </button>
+        </div>
       )}
     </motion.div>
   );
