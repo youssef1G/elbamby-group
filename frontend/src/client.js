@@ -1,7 +1,7 @@
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 export async function apiClient(endpoint, options = {}) {
-  const url = `${API_BASE}${endpoint}`;
+  const url = `${API_BASE.replace(/\/$/, '')}/api${endpoint}`;
   const config = {
     headers: { 'Content-Type': 'application/json', ...options.headers },
     credentials: 'include',
