@@ -186,6 +186,19 @@ const PRODUCT_SELECT = `
   product_images (id, image_url, sort_order)
 `;
 
+/**
+ * Sanitizes free-text search before it is interpolated into a PostgREST
+ * `or(ilike)` filter string. The Supabase client parameterizes values, but
+ * the OR-filter is built as a string, so characters that carry PostgREST
+ * filter grammar (, : ( ) and) would let a crafted query alter the filter
+ * structure (not SQL — PostgREST never concatenates these into SQL — but
+ * enough to tamper with which rows a query returns). Strip them out.
+ */
+function sanitizeSearch(value) {
+  if (typeof value !== 'string') return value;
+  return value.replace(/[,():]/g, ' ');
+}
+
 export async function listProducts({
   category_id,
   search,
@@ -210,7 +223,8 @@ export async function listProducts({
   if (is_new_arrival !== undefined) q = q.eq('is_new_arrival', is_new_arrival);
 
   if (search) {
-    q = q.or(`name_en.ilike.%${search}%,name_ar.ilike.%${search}%`);
+    const needle = sanitizeSearch(search);
+    q = q.or(`name_en.ilike.%${needle}%,name_ar.ilike.%${needle}%`);
   }
 
   // NOTE: low_stock/out_of_stock are intentionally NOT pushed down into SQL
@@ -359,8 +373,9 @@ export async function listOrders({
   if (date_to) q = q.lte('created_at', date_to);
 
   if (search) {
+    const needle = sanitizeSearch(search);
     q = q.or(
-      `customer_name.ilike.%${search}%,phone.ilike.%${search}%,order_number.ilike.%${search}%`
+      `customer_name.ilike.%${needle}%,phone.ilike.%${needle}%,order_number.ilike.%${needle}%`
     );
   }
 

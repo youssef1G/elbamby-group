@@ -407,7 +407,7 @@ const pointsSettingsSchema = z.object({
 // ──────────────────────────────────────────────
 
 function errorHandler(err, _req, res, _next) {
-  const prod = process.env.NODE_ENV === 'production';
+  const prod = isProduction;
   const status = err.status || 500;
 
   res.status(status).json({
