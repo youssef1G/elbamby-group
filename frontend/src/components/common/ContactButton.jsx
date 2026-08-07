@@ -29,7 +29,7 @@ export default function ContactButton() {
           </svg>
         </a>
         <a
-          href="https://wa.me/201554219464"
+          href="https://wa.me/201020999911"
           target="_blank"
           rel="noopener noreferrer"
           aria-label={t('common:contact.whatsapp')}

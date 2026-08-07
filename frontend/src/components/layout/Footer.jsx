@@ -8,7 +8,7 @@ import { fadeIn } from '@/lib/animations.js';
 const STORE_LOCATION = 'https://maps.app.goo.gl/mRyFtdVdDC7E6w3h8';
 
 const SOCIALS = [
-  { label: 'WhatsApp', href: 'https://wa.me/201554219464', Icon: MessageCircle },
+  { label: 'WhatsApp', href: 'https://wa.me/201020999911', Icon: MessageCircle },
   { label: 'Telegram', href: 'https://t.me/elbambygroupBG', Icon: Send },
   { label: 'Instagram', href: 'https://www.instagram.com/hassanelbamby', Icon: Instagram },
   { label: 'Facebook', href: 'https://www.facebook.com/elbambygroupBG', Icon: Facebook },
