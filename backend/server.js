@@ -2534,9 +2534,11 @@ app.get('/api/admin/analytics/top-products', getTopProducts);
 
 app.use(errorHandler);
 
-app.listen(PORT, () => {
-  console.log(`Backend running on http://localhost:${PORT}`);
-});
+if (process.env.NODE_ENV !== 'production') {
+  app.listen(PORT, () => {
+    console.log(`Backend running on http://localhost:${PORT}`);
+  });
+}
 
 export default app;
 
