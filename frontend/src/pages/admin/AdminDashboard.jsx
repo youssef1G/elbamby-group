@@ -9,13 +9,13 @@ import { ORDER_STATUSES } from '@/lib/constants.js';
 
 function StatCard({ label, value, icon: Icon, accent }) {
   return (
-    <div className="surface-card p-5 flex items-center gap-4">
-      <div className="w-10 h-10 rounded-xl bg-bg-primary-500/10 flex items-center justify-center text-lg shrink-0">
+    <div className="surface-card p-4 sm:p-5 flex items-center gap-3 sm:gap-4">
+      <div className="hidden sm:flex w-10 h-10 rounded-xl bg-bg-primary-500/10 items-center justify-center text-lg shrink-0">
         <Icon size={20} strokeWidth={1.5} />
       </div>
       <div className="min-w-0">
         <p className="text-sm font-semibold uppercase tracking-[0.05em] text-bg-text-secondary">{label}</p>
-        <p className={`font-heading text-xl font-bold break-words leading-tight ${accent || 'text-bg-text-primary'}`}>{value}</p>
+        <p className={`font-heading text-lg sm:text-xl font-bold whitespace-nowrap ${accent || 'text-bg-text-primary'}`}>{value}</p>
       </div>
     </div>
   );

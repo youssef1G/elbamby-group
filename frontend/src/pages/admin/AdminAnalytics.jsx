@@ -203,7 +203,7 @@ export default function AdminAnalytics() {
                 label={t(cfg.labelKey)}
                 value={formatStatValue(cfg.format, summary[cfg.valueKey])}
                 icon={Icon}
-                valueClass="text-xl sm:text-2xl tracking-tight"
+                valueClass="text-lg sm:text-2xl tracking-tight"
               />
             </motion.div>
           );
