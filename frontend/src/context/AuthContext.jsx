@@ -1,10 +1,12 @@
 import { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import { setOnAdminSessionExpired } from '@/client.js';
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [admin, setAdmin] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [sessionExpired, setSessionExpired] = useState(false);
 
   const isAuthenticated = !!admin;
 
@@ -17,6 +19,7 @@ export function AuthProvider({ children }) {
       if (res.ok) {
         const data = await res.json();
         setAdmin(data);
+        setSessionExpired(false);
       } else {
         setAdmin(null);
       }
@@ -31,7 +34,18 @@ export function AuthProvider({ children }) {
     checkAuth();
   }, [checkAuth]);
 
-  const value = { admin, isLoading, isAuthenticated, checkAuth, setAdmin };
+  // Mid-session expiry: the cookie is httpOnly, so the only signal is admin
+  // API calls starting to 401. Drop the session — AdminRoute then redirects
+  // to /admin/login (with the session-expired notice) instead of leaving the
+  // panel mounted with every list blank.
+  useEffect(() => {
+    setOnAdminSessionExpired(() => {
+      setAdmin(null);
+      setSessionExpired(true);
+    });
+  }, []);
+
+  const value = { admin, isLoading, isAuthenticated, sessionExpired, checkAuth, setAdmin };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

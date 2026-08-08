@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useLocale } from '@/context/LocaleContext.jsx';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -18,9 +18,11 @@ const loginSchema = z.object({
 export default function AdminLogin() {
   const { t } = useLocale();
   const navigate = useNavigate();
+  const location = useLocation();
   const { setAdmin } = useAuth();
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const sessionExpired = location.state?.reason === 'session-expired';
 
   const {
     register,
@@ -64,6 +66,12 @@ export default function AdminLogin() {
           </h1>
           <p className="text-caption text-bg-text-secondary mt-1">{t('admin:login.subtitle')}</p>
         </div>
+
+        {sessionExpired && (
+          <div className="mb-4 bg-bg-warning/10 border border-bg-warning/25 text-bg-warning rounded-md px-4 py-3 text-body-sm" role="status">
+            {t('admin:login.sessionExpired')}
+          </div>
+        )}
 
         <div className="bg-bg-surface border border-bg-border rounded-lg p-6 sm:p-8 shadow-card">
           <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">

@@ -2,7 +2,7 @@ import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext.jsx';
 
 export default function AdminRoute({ children }) {
-  const { admin, isLoading, isAuthenticated } = useAuth();
+  const { admin, isLoading, isAuthenticated, sessionExpired } = useAuth();
 
   if (isLoading) {
     return (
@@ -13,7 +13,13 @@ export default function AdminRoute({ children }) {
   }
 
   if (!isAuthenticated) {
-    return <Navigate to="/admin/login" replace />;
+    return (
+      <Navigate
+        to="/admin/login"
+        replace
+        state={sessionExpired ? { reason: 'session-expired' } : undefined}
+      />
+    );
   }
 
   return children;
