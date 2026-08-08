@@ -1,6 +1,6 @@
 export default {
-  "common.brand.name": "El Bamb Group BG",
-  "common.brand.fullName": "El Bamb Group BG",
+  "common.brand.name": "El Bamby Group BG",
+  "common.brand.fullName": "El Bamby Group BG",
   "common.brand.subName": "House of Memory",
   "common.nav.home": "Home",
   "common.nav.shop": "Products",
@@ -36,7 +36,7 @@ export default {
   "common.footer.returns": "Returns",
   "common.footer.connect": "Follow us",
   "common.footer.location": "Store location",
-  "common.footer.copyright": "© {{year}} El Bamb Group BG. All rights reserved.",
+  "common.footer.copyright": "© {{year}} El Bamby Group BG. All rights reserved.",
   "common.footer.developedBy": "Developed by",
   "common.footer.cod": "Cash on Delivery",
   "common.footer.register": "Create Account",
