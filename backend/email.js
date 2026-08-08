@@ -2,8 +2,16 @@ import nodemailer from 'nodemailer';
 import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 
+// SMTP sender — any provider that speaks SMTP over TLS. Zoho Mail is the
+// default recommendation for a custom domain (free tier); Gmail via app
+// password is the fallback when the SMTP_* vars aren't set.
 const GMAIL_EMAIL = process.env.GMAIL_EMAIL || null;
 const GMAIL_APP_PASSWORD = process.env.GMAIL_APP_PASSWORD || null;
+const SMTP_HOST = process.env.SMTP_HOST || null;
+const SMTP_PORT = parseInt(process.env.SMTP_PORT || '465', 10);
+const SMTP_SECURE = process.env.SMTP_SECURE !== 'false';
+const SMTP_USER = process.env.SMTP_USER || GMAIL_EMAIL;
+const SMTP_PASS = process.env.SMTP_PASS || GMAIL_APP_PASSWORD;
 
 const LOGO_CID = 'bg-logo';
 const LOGO_PATH = fileURLToPath(new URL('../frontend/public/logo.jpg', import.meta.url));
@@ -15,16 +23,29 @@ try {
   LOGO_ATTACHMENT = null;
 }
 
+// No SMTP_HOST → classic Gmail transport (service: 'gmail'). SMTP_HOST set →
+// explicit host/port/secure (Zoho: smtp.zoho.eu / smtp.zoho.com, 465, true).
 const transporter =
-  GMAIL_EMAIL && GMAIL_APP_PASSWORD
-    ? nodemailer.createTransport({
-        service: 'gmail',
-        auth: { user: GMAIL_EMAIL, pass: GMAIL_APP_PASSWORD },
-      })
+  SMTP_USER && SMTP_PASS
+    ? SMTP_HOST
+      ? nodemailer.createTransport({
+          host: SMTP_HOST,
+          port: SMTP_PORT,
+          secure: SMTP_SECURE,
+          auth: { user: SMTP_USER, pass: SMTP_PASS },
+        })
+      : nodemailer.createTransport({
+          service: 'gmail',
+          auth: { user: SMTP_USER, pass: SMTP_PASS },
+        })
     : null;
 
+// "From" address = the authenticated mailbox, so with Zoho the customer sees
+// e.g. orders@elbambygroup.com as the sender.
+const SENDER_EMAIL = SMTP_USER || GMAIL_EMAIL;
+
 const BRAND = {
-  name: 'El Bamb Group BG',
+  name: 'El Bamby Group BG',
   shortName: 'BG',
   subtitle: 'بيت الميموري — House of Memory',
   developedBy: 'Youssef Gamal',
@@ -334,7 +355,7 @@ export async function sendOrderEmail({ email, order, items = [], status = 'pendi
   const meta = STATUS_META[status] || STATUS_META.pending;
   try {
     const info = await transporter.sendMail({
-      from: `"${BRAND.name}" <${GMAIL_EMAIL}>`,
+      from: `"${BRAND.name}" <${SENDER_EMAIL}>`,
       to: email,
       subject: `${meta.subject || meta.label} — ${order.order_number}`,
       html: invoiceHtml({ order, items, status }),
