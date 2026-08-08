@@ -22,7 +22,9 @@ import { useToast } from '@/components/ui/Toast.jsx';
 import { formatDate } from '@/lib/formatters.js';
 import { AUTO_REFRESH_MS } from '@/lib/constants.js';
 import { OrderCard } from './MyOrders.jsx';
-import { Plus, Minus, LogOut, LayoutGrid, Package, Settings as SettingsIcon, Trash2 } from 'lucide-react';
+import { Plus, Minus, LogOut, LayoutGrid, Package, Settings as SettingsIcon, Trash2, Gift } from 'lucide-react';
+
+const WELCOME_BONUS_KEY = 'bg_welcome_bonus';
 
 const TYPE_KEYS = {
   earn: 'admin:customerDetail.typeEarn',
@@ -285,6 +287,26 @@ export default function Account() {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const { toast } = useToast();
+
+  // Welcome-bonus popup: Register.jsx stores the granted amount in
+  // sessionStorage before navigating here. Reading it on mount (instead of
+  // after register inline) means the popup survives a refresh AND can never
+  // be pre-empted by the customer-redirect — it's shown from the page the
+  // user actually lands on.
+  const [welcomeBonus, setWelcomeBonus] = useState(() => {
+    try {
+      return Number(sessionStorage.getItem(WELCOME_BONUS_KEY) ?? 0);
+    } catch {
+      return 0;
+    }
+  });
+
+  const dismissWelcome = () => {
+    setWelcomeBonus(0);
+    try {
+      sessionStorage.removeItem(WELCOME_BONUS_KEY);
+    } catch {}
+  };
 
   const loadHistory = useCallback((p) => {
     fetchMyPointsHistory({ page: p, limit: 15 })
@@ -685,6 +707,28 @@ export default function Account() {
               {deleting ? t('account.settings.deleting') : t('account.settings.deleteAccount')}
             </Button>
           </div>
+        </div>
+      </Modal>
+
+      <Modal isOpen={welcomeBonus > 0} onClose={dismissWelcome} size="sm" ariaLabel={t('auth:register.welcomeTitle')}>
+        <div className="p-8 text-center">
+          <motion.div
+            initial={{ scale: 0, rotate: -30 }}
+            animate={{ scale: 1, rotate: 0 }}
+            transition={{ type: 'spring', stiffness: 260, damping: 18 }}
+            className="w-16 h-16 rounded-full bg-bg-success/15 text-bg-success flex items-center justify-center mx-auto mb-4"
+          >
+            <Gift size={32} aria-hidden="true" />
+          </motion.div>
+          <h2 className="font-heading font-bold text-xl text-bg-text-primary leading-snug">
+            {t('auth:register.welcomeTitle')}
+          </h2>
+          <p className="text-body-sm text-bg-text-secondary mt-3">
+            {t('auth:register.welcomeBody', { points: welcomeBonus })}
+          </p>
+          <Button variant="primary" className="w-full mt-6 h-11" onClick={dismissWelcome}>
+            {t('auth:register.welcomeNext')}
+          </Button>
         </div>
       </Modal>
     </motion.div>

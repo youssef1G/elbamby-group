@@ -4,13 +4,14 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { User, Lock, Mail, Phone, Gift } from 'lucide-react';
+import { User, Lock, Mail, Phone } from 'lucide-react';
 import { useLocale } from '@/context/LocaleContext.jsx';
 import { useCustomerAuth } from '@/context/CustomerAuthContext.jsx';
 import { normalizePhone } from '@/lib/formatters.js';
 import Button from '@/components/ui/Button.jsx';
-import Modal from '@/components/ui/Modal.jsx';
 import SEO from '@/components/common/SEO.jsx';
+
+const WELCOME_BONUS_KEY = 'bg_welcome_bonus';
 
 const phoneRegex = /^01[0-25]\d{8}$/;
 
@@ -27,7 +28,6 @@ export default function Register() {
   const { customer, isLoading: authLoading, register } = useCustomerAuth();
   const [error, setError] = useState('');
   const [isConflict, setIsConflict] = useState(false);
-  const [welcomeBonus, setWelcomeBonus] = useState(null);
 
   const {
     register: registerField,
@@ -36,7 +36,7 @@ export default function Register() {
   } = useForm({ resolver: zodResolver(registerSchema) });
 
   if (authLoading) return null;
-  if (customer && welcomeBonus === null) return <Navigate to="/account" replace />;
+  if (customer) return <Navigate to="/account" replace />;
 
   const onSubmit = async (data) => {
     setError('');
@@ -50,10 +50,14 @@ export default function Register() {
       });
       const bonus = Number(res?.signup_bonus ?? 0);
       if (bonus > 0) {
-        setWelcomeBonus(bonus);
-      } else {
-        navigate('/account');
+        // The welcome popup lives on /account (it needs the customer row
+        // loaded to show a correct balance). Persist the bonus in
+        // sessionStorage here, then hand off — /account reads and clears it.
+        try {
+          sessionStorage.setItem(WELCOME_BONUS_KEY, String(bonus));
+        } catch {}
       }
+      navigate('/account');
     } catch (err) {
       if (err.code === 'CONFLICT') {
         setIsConflict(true);
@@ -85,37 +89,7 @@ export default function Register() {
           <p className="text-caption text-bg-text-secondary mt-2">{t('auth:register.subtitle')}</p>
         </div>
 
-        {welcomeBonus > 0 && (
-          <Modal
-            isOpen={welcomeBonus > 0}
-            onClose={() => navigate('/account')}
-            size="sm"
-            ariaLabel={t('auth:register.welcomeTitle')}
-          >
-            <div className="p-8 text-center">
-              <motion.div
-                initial={{ scale: 0, rotate: -30 }}
-                animate={{ scale: 1, rotate: 0 }}
-                transition={{ type: 'spring', stiffness: 260, damping: 18 }}
-                className="w-16 h-16 rounded-full bg-bg-success/15 text-bg-success flex items-center justify-center mx-auto mb-4"
-              >
-                <Gift size={32} aria-hidden="true" />
-              </motion.div>
-              <h2 className="font-heading font-bold text-xl text-bg-text-primary leading-snug">
-                {t('auth:register.welcomeTitle')}
-              </h2>
-              <p className="text-body-sm text-bg-text-secondary mt-3">
-                {t('auth:register.welcomeBody', { points: welcomeBonus })}
-              </p>
-              <Button variant="primary" className="w-full mt-6 h-11" onClick={() => navigate('/account')}>
-                {t('auth:register.welcomeNext')}
-              </Button>
-            </div>
-          </Modal>
-        )}
-
-        {welcomeBonus === null && (
-          <>
+        <>
             <div className="surface-card p-6 sm:p-8">
           <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
             <div>
@@ -238,8 +212,7 @@ export default function Register() {
               {t('auth:register.loginLink')}
             </Link>
           </p>
-          </>
-        )}
+        </>
       </motion.div>
     </div>
   );
