@@ -99,7 +99,7 @@ import {
 const isProduction = process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'production';
 const COOKIE_NAME = 'bg_admin_token';
 // SameSite=None + Secure for split-domain deployments (see auth.js).
-const ADMIN_COOKIE_OPTIONS = { httpOnly: true, secure: true, sameSite: 'none', path: '/', maxAge: 7 * 24 * 60 * 60 * 1000 };
+const ADMIN_COOKIE_OPTIONS = { httpOnly: true, secure: true, sameSite: 'none', path: '/', maxAge: 24 * 60 * 60 * 1000 };
 const BCRYPT_ROUNDS = 12;
 const CANCEL_EMAIL_STATUSES = ['confirmed', 'shipped', 'delivered', 'cancelled'];
 const COMPLAINT_STATUSES = ['open', 'in_progress', 'resolved', 'closed'];
@@ -160,11 +160,11 @@ function daysForPeriod(p) {
 
 const windowMs = parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000', 10);
 
-const authLimiter = rateLimit({ windowMs, max: 5, standardHeaders: true, legacyHeaders: false, message: { error: { message: 'Too many login attempts, try again later', code: 'RATE_LIMITED' } } });
+const authLimiter = rateLimit({ windowMs, max: 10, standardHeaders: true, legacyHeaders: false, message: { error: { message: 'Too many login attempts, try again later', code: 'RATE_LIMITED' } } });
 // Customer-facing auth (register/login) is a separate bucket so failed
 // customer logins can never lock the admin panel out (they used to share the
 // same limiter as /api/auth/login).
-const customerAuthLimiter = rateLimit({ windowMs, max: 5, standardHeaders: true, legacyHeaders: false, message: { error: { message: 'Too many login attempts, try again later', code: 'RATE_LIMITED' } } });
+const customerAuthLimiter = rateLimit({ windowMs, max: 10, standardHeaders: true, legacyHeaders: false, message: { error: { message: 'Too many login attempts, try again later', code: 'RATE_LIMITED' } } });
 const orderLimiter = rateLimit({ windowMs, max: 10, standardHeaders: true, legacyHeaders: false, message: { error: { message: 'Too many requests, please wait', code: 'RATE_LIMITED' } } });
 // Tracking/support endpoints: MyOrders + Account silently re-poll every 30s
 // (~2 req/min = 30 req/15min), so 20 was too tight and 429'd active users.
@@ -483,7 +483,7 @@ async function login(req, res, next) {
       return res.status(401).json({ error: { message: 'Invalid username or password', code: 'AUTH_FAILED' } });
     }
 
-    const token = signToken({ id: admin.id, username: admin.username, role: admin.role, kind: 'admin' });
+    const token = signToken({ id: admin.id, username: admin.username, role: admin.role, kind: 'admin' }, '24h');
 
     res.cookie(COOKIE_NAME, token, ADMIN_COOKIE_OPTIONS);
 
@@ -1685,7 +1685,7 @@ async function customerRegister(req, res, next) {
       const { data: claimed, error: claimErr } = await setCustomerPasswordByPhone(phone, passwordHash);
       if (claimErr) return next(claimErr);
 
-      const token = signToken({ id: claimed.id, kind: 'customer' });
+      const token = signToken({ id: claimed.id, kind: 'customer' }, '24h');
       res.cookie(CUSTOMER_COOKIE, token, CUSTOMER_COOKIE_OPTIONS);
       return res.status(201).json({
         id: claimed.id,
@@ -1706,7 +1706,7 @@ async function customerRegister(req, res, next) {
 
     if (createErr) return next(createErr);
 
-    const token = signToken({ id: customer.id, kind: 'customer' });
+    const token = signToken({ id: customer.id, kind: 'customer' }, '24h');
     res.cookie(CUSTOMER_COOKIE, token, CUSTOMER_COOKIE_OPTIONS);
 
     res.status(201).json({
@@ -1736,7 +1736,7 @@ async function customerLogin(req, res, next) {
       return res.status(401).json({ error: { message: 'Invalid phone or password', code: 'AUTH_FAILED' } });
     }
 
-    const token = signToken({ id: customer.id, kind: 'customer' });
+    const token = signToken({ id: customer.id, kind: 'customer' }, '24h');
     res.cookie(CUSTOMER_COOKIE, token, CUSTOMER_COOKIE_OPTIONS);
 
     res.json({
@@ -1758,6 +1758,11 @@ function customerLogout(_req, res) {
 
 async function customerMe(req, res, next) {
   try {
+    // Guests legitimately probe this endpoint on every page load to learn
+    // whether a session exists — an unauthenticated visitor is a 200 with a
+    // null body, NOT a 401 (a 401 flashes as a console error on every page).
+    if (!req.customer) return res.json({ customer: null });
+
     const { data: customer, error } = await getCustomerById(req.customer.id);
 
     if (error || !customer) {
@@ -1869,7 +1874,7 @@ async function customerChangePassword(req, res, next) {
 app.post('/api/customers/register', customerAuthLimiter, validate(customerRegisterSchema), customerRegister);
 app.post('/api/customers/login', customerAuthLimiter, validate(customerLoginSchema), customerLogin);
 app.post('/api/customers/logout', customerLogout);
-app.get('/api/customers/me', requireCustomer, customerMe);
+app.get('/api/customers/me', optionalCustomer, customerMe);
 app.get('/api/customers/me/points-history', requireCustomer, customerPointsHistory);
 app.get('/api/customers/me/orders', requireCustomer, customerOrders);
 app.patch('/api/customers/me', requireCustomer, validate(customerProfileUpdateSchema), customerUpdateProfile);
@@ -2223,6 +2228,15 @@ app.delete('/api/admin/support/returns/:id', adminDeleteReturnRequest);
 //  ADMINS (super admin only)
 // ──────────────────────────────────────────────
 
+//  ADMINS (super admin only)
+// ──────────────────────────────────────────────
+
+// Reserved username of the main admin account — seeded directly into the DB,
+// never visible/editable/deletable via any admin endpoint. Any request that
+// learns its id (e.g. via auth/me for the seeded account itself) still cannot
+// read, modify or delete it through the admin routes.
+const MAIN_ADMIN_USERNAME = 'admin';
+
 async function listAdminUsers(req, res, next) {
   try {
     const { page = '1', limit = '20' } = req.query;
@@ -2244,7 +2258,7 @@ async function getAdminUser(req, res, next) {
     const { id } = req.params;
     const { data: admin, error } = await getAdminById(id);
 
-    if (error || !admin) {
+    if (error || !admin || admin.username === MAIN_ADMIN_USERNAME) {
       return res.status(404).json({ error: { message: 'Admin not found', code: 'NOT_FOUND' } });
     }
 
@@ -2257,6 +2271,13 @@ async function getAdminUser(req, res, next) {
 async function createAdminUser(req, res, next) {
   try {
     const { password, ...rest } = req.validatedBody;
+
+    if (rest.username === MAIN_ADMIN_USERNAME) {
+      return res.status(409).json({
+        error: { message: 'This username is reserved', code: 'RESERVED_USERNAME' },
+      });
+    }
+
     const password_hash = await bcrypt.hash(password, BCRYPT_ROUNDS);
 
     const { data: admin, error } = await createAdmin({ ...rest, password_hash });
@@ -2284,6 +2305,9 @@ async function updateAdminUser(req, res, next) {
     }
     const { data: target, error: fetchErr } = await getAdminById(id);
     if (fetchErr || !target) {
+      return res.status(404).json({ error: { message: 'Admin not found', code: 'NOT_FOUND' } });
+    }
+    if (target.username === MAIN_ADMIN_USERNAME) {
       return res.status(404).json({ error: { message: 'Admin not found', code: 'NOT_FOUND' } });
     }
     if (isSelf && body.role && body.role !== target.role) {
@@ -2335,6 +2359,10 @@ async function deleteAdminUser(req, res, next) {
 
     const { data: target, error: fetchErr } = await getAdminById(id);
     if (fetchErr || !target) {
+      return res.status(404).json({ error: { message: 'Admin not found', code: 'NOT_FOUND' } });
+    }
+
+    if (target.username === MAIN_ADMIN_USERNAME) {
       return res.status(404).json({ error: { message: 'Admin not found', code: 'NOT_FOUND' } });
     }
 

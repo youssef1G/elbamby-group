@@ -44,8 +44,7 @@ export default function AdminOrderDetail() {
         if (!cancelled) {
           setData(res);
           // seed the note editor once the order loads (api returns camelCase)
-          const o = res?.data;
-          if (o) setNote(o.adminNote || '');
+          if (res) setNote(res.adminNote || '');
         }
       })
       .catch(() => { if (!cancelled) setData(null); })
@@ -53,7 +52,7 @@ export default function AdminOrderDetail() {
     return () => { cancelled = true; };
   }, [id, reload]);
 
-  const order = data?.data;
+  const order = data;
 
   if (isLoading) {
     return (
@@ -107,6 +106,7 @@ export default function AdminOrderDetail() {
 
   const statusKey = order.status || 'pending';
   const statusLabel = ORDER_STATUSES[statusKey];
+  const statusHistory = order.orderStatusHistory || order.statusHistory || [];
 
   return (
     <div className="max-w-3xl space-y-6">
@@ -236,11 +236,11 @@ export default function AdminOrderDetail() {
 
       <div className="bg-bg-surface border border-bg-border rounded-md p-5 space-y-4">
         <h2 className="text-body font-semibold text-bg-text-primary">{t('admin:orders.statusTimeline')}</h2>
-        {(order.statusHistory || []).length === 0 ? (
+        {statusHistory.length === 0 ? (
           <p className="text-body-sm text-bg-text-secondary">{t('common:common.nothing')}</p>
         ) : (
           <div className="space-y-3">
-            {order.statusHistory.map((entry, i) => {
+            {statusHistory.map((entry, i) => {
               const es = ORDER_STATUSES[entry.status] || { en: entry.status, ar: entry.status };
               return (
                 <div key={i} className="flex items-start gap-3">

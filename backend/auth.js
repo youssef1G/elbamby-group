@@ -17,8 +17,8 @@ function clearAdminCookie(res) {
 const unauthorized = (res) =>
   res.status(401).json({ error: { message: 'Invalid or expired session', code: 'UNAUTHORIZED' } });
 
-export function signToken(payload) {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: process.env.JWT_EXPIRES_IN || '7d' });
+export function signToken(payload, expiresIn) {
+  return jwt.sign(payload, JWT_SECRET, { expiresIn: expiresIn || process.env.JWT_EXPIRES_IN || '7d' });
 }
 
 export function verifyToken(token) {

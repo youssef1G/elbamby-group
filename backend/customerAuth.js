@@ -21,7 +21,7 @@ export const CUSTOMER_COOKIE_OPTIONS = {
   secure: true,
   sameSite: 'none',
   path: '/',
-  maxAge: 7 * 24 * 60 * 60 * 1000,
+  maxAge: 24 * 60 * 60 * 1000,
 };
 
 export function requireCustomer(req, res, next) {

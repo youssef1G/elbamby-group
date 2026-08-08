@@ -5,7 +5,8 @@ import { AUTO_REFRESH_MS } from '@/lib/constants.js';
 const CustomerAuthContext = createContext(null);
 
 function normalize(d) {
-  if (!d) return null;
+  const c = d?.customer ?? d;
+  if (!c) return null;
   return {
     id: d.id,
     name: d.name ?? '',

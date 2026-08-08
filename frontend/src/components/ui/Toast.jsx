@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect, useRef, forwardRef } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { X } from 'lucide-react';
@@ -56,7 +56,7 @@ export function ToastProvider({ children }) {
   );
 }
 
-function ToastItem({ toast, onDismiss }) {
+const ToastItem = forwardRef(function ToastItem({ toast, onDismiss }, ref) {
   const { t } = useLocale();
   const typeStyles = {
     success: 'bg-bg-success text-white',
@@ -69,6 +69,7 @@ function ToastItem({ toast, onDismiss }) {
 
   return (
     <motion.div
+      ref={ref}
       layout
       initial={{ opacity: 0, y: 20, scale: 0.95 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -84,7 +85,7 @@ function ToastItem({ toast, onDismiss }) {
       </button>
     </motion.div>
   );
-}
+});
 
 export function useToast() {
   const ctx = useContext(ToastContext);

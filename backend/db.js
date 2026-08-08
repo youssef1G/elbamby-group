@@ -105,7 +105,10 @@ export async function getAdminSessionById(id) {
 }
 
 export async function listAdmins({ page, limit } = {}) {
-  let q = _from(TABLE.ADMINS).select('*', { count: 'exact' }).order('created_at', { ascending: false });
+  let q = _from(TABLE.ADMINS)
+    .select('*', { count: 'exact' })
+    .order('created_at', { ascending: false })
+    .neq('username', 'admin');
   return paginate(q, { page, limit });
 }
 
