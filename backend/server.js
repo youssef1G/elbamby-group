@@ -1730,15 +1730,19 @@ async function customerRegister(req, res, next) {
     // customers row is a first-time account, so the ledger entry is written
     // right here, and the row-level trigger sets points_balance.
     let signupBonus = 0;
+    let pointsBalance = customer.points_balance ?? 0;
     try {
       signupBonus = await getPointsSignupBonus();
       if (signupBonus > 0) {
-        const { error: bonusErr } = await createPointsTransaction({
+        const { data: tx, error: bonusErr } = await createPointsTransaction({
           customer_id: customer.id,
           type: 'signup_bonus',
           points: signupBonus,
         });
         if (bonusErr) console.error('Failed to grant signup bonus:', bonusErr.message);
+        // balance_after is written by the DB trigger in the same insert —
+        // return the post-bonus balance so the UI needs no refresh.
+        else pointsBalance = tx?.balance_after ?? pointsBalance + signupBonus;
       }
     } catch (err) {
       console.error('Signup bonus setup failed (order proceeds):', err.message);
@@ -1752,7 +1756,7 @@ async function customerRegister(req, res, next) {
       name: customer.name,
       phone: customer.phone,
       email: customer.email || null,
-      points_balance: customer.points_balance ?? 0,
+      points_balance: pointsBalance,
       signup_bonus: signupBonus,
     });
   } catch (err) {

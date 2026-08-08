@@ -9,6 +9,7 @@ import { useLocale } from '@/context/LocaleContext.jsx';
 import { useCustomerAuth } from '@/context/CustomerAuthContext.jsx';
 import { normalizePhone } from '@/lib/formatters.js';
 import Button from '@/components/ui/Button.jsx';
+import Modal from '@/components/ui/Modal.jsx';
 import SEO from '@/components/common/SEO.jsx';
 
 const phoneRegex = /^01[0-25]\d{8}$/;
@@ -85,29 +86,32 @@ export default function Register() {
         </div>
 
         {welcomeBonus > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.35 }}
-            className="surface-card p-6 mb-4 border-bg-success/30"
+          <Modal
+            isOpen={welcomeBonus > 0}
+            onClose={() => navigate('/account')}
+            size="sm"
+            ariaLabel={t('auth:register.welcomeTitle')}
           >
-            <div className="flex items-start gap-4">
-              <div className="w-11 h-11 rounded-full bg-bg-success/15 text-bg-success flex items-center justify-center shrink-0">
-                <Gift size={22} aria-hidden="true" />
-              </div>
-              <div className="space-y-2">
-                <p className="font-heading font-bold text-lg text-bg-text-primary leading-snug">
-                  {t('auth:register.welcomeTitle')}
-                </p>
-                <p className="text-body-sm text-bg-text-secondary">
-                  {t('auth:register.welcomeBody', { points: welcomeBonus })}
-                </p>
-              </div>
+            <div className="p-8 text-center">
+              <motion.div
+                initial={{ scale: 0, rotate: -30 }}
+                animate={{ scale: 1, rotate: 0 }}
+                transition={{ type: 'spring', stiffness: 260, damping: 18 }}
+                className="w-16 h-16 rounded-full bg-bg-success/15 text-bg-success flex items-center justify-center mx-auto mb-4"
+              >
+                <Gift size={32} aria-hidden="true" />
+              </motion.div>
+              <h2 className="font-heading font-bold text-xl text-bg-text-primary leading-snug">
+                {t('auth:register.welcomeTitle')}
+              </h2>
+              <p className="text-body-sm text-bg-text-secondary mt-3">
+                {t('auth:register.welcomeBody', { points: welcomeBonus })}
+              </p>
+              <Button variant="primary" className="w-full mt-6 h-11" onClick={() => navigate('/account')}>
+                {t('auth:register.welcomeNext')}
+              </Button>
             </div>
-            <Button variant="primary" className="w-full mt-5 h-11" onClick={() => navigate('/account')}>
-              {t('auth:register.welcomeNext')}
-            </Button>
-          </motion.div>
+          </Modal>
         )}
 
         {welcomeBonus === null && (
