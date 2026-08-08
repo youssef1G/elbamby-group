@@ -80,6 +80,7 @@ import {
   createPointsTransaction,
   getPointsEarnRate,
   getPointsSignupBonus,
+  deleteCustomer,
   creditOrderEarnedPoints,
   refundOrderRedeemedPoints,
   reverseOrderEarnedPoints,
