@@ -224,7 +224,6 @@ const loginSchema = z.object({
 
 const createAdminSchema = z.object({
   username: z.string().min(1, 'Username is required'),
-  email: z.string().email('Invalid email'),
   password: z.string().min(8, 'Password must be at least 8 characters'),
   role: z.enum(['super_admin', 'admin']).default('admin'),
   is_active: z.boolean().default(true),
@@ -232,7 +231,6 @@ const createAdminSchema = z.object({
 
 const updateAdminSchema = z.object({
   username: z.string().min(1).optional(),
-  email: z.string().email().optional(),
   password: z.string().min(8, 'Password must be at least 8 characters').optional(),
   role: z.enum(['super_admin', 'admin']).optional(),
   is_active: z.boolean().optional(),
@@ -466,7 +464,7 @@ async function login(req, res, next) {
 
     const { data: admin, error } = await supabase
       .from('admins')
-      .select('id, username, email, password_hash, role, is_active')
+      .select('id, username, password_hash, role, is_active')
       .eq('username', username)
       .single();
 
@@ -512,7 +510,7 @@ async function me(req, res, next) {
     const decoded = verifyToken(token);
     const { data: admin } = await supabase
       .from('admins')
-      .select('id, username, email, role, is_active')
+      .select('id, username, role, is_active')
       .eq('id', decoded.id)
       .single();
 

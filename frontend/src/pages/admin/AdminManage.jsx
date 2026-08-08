@@ -15,7 +15,6 @@ export default function AdminManage() {
   const [admins, setAdmins] = useState([]);
   const [loading, setLoading] = useState(true);
   const [newUsername, setNewUsername] = useState('');
-  const [newEmail, setNewEmail] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState('');
@@ -35,20 +34,17 @@ export default function AdminManage() {
       .finally(() => setLoading(false));
   }, [authAdmin]);
 
-  const emailOk = (v) => /^\S+@\S+\.\S+$/.test(v.trim());
-
   async function handleCreate(e) {
     e.preventDefault();
     setCreateError('');
     if (newUsername.trim().length < 3) { setCreateError(t('admin:manage.usernameError')); return; }
-    if (!emailOk(newEmail)) { setCreateError(t('admin:manage.emailError')); return; }
     if (newPassword.length < 8) { setCreateError(t('admin:manage.passwordError')); return; }
     setCreating(true);
     try {
-      const admin = await createAdmin({ username: newUsername.trim(), email: newEmail.trim(), password: newPassword });
+      const admin = await createAdmin({ username: newUsername.trim(), password: newPassword });
       setAdmins((prev) => [...prev, admin]);
       toast(t('admin:manage.created'), 'success');
-      setNewUsername(''); setNewEmail(''); setNewPassword('');
+      setNewUsername(''); setNewPassword('');
     } catch (err) { setCreateError(err.message || t('admin:manage.createError')); }
     finally { setCreating(false); }
   }
@@ -121,11 +117,6 @@ export default function AdminManage() {
               <input type="text" value={newUsername} onChange={(e) => setNewUsername(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); newPasswordRef.current?.focus(); } }}
                 placeholder={t('admin:manage.usernamePlaceholder')} className={inputCls} />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-bg-text-primary mb-1.5">{t('admin:manage.email')}</label>
-              <input type="email" dir="ltr" value={newEmail} onChange={(e) => setNewEmail(e.target.value)}
-                placeholder={t('admin:manage.emailPlaceholder')} className={inputCls} />
             </div>
           </div>
           <div>

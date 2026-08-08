@@ -18,7 +18,6 @@ import { formatDate } from '@/lib/formatters.js';
 
 const adminSchema = z.object({
   username: z.string().min(3, 'Min 3 chars'),
-  email: z.string().email().optional().or(z.literal('')),
   password: z.string().min(6, 'Min 6 chars').optional().or(z.literal('')),
   role: z.string().min(1, 'Required'),
 });
@@ -62,13 +61,13 @@ export default function AdminAdmins() {
 
   const openCreate = () => {
     setEditing(null);
-    reset({ username: '', email: '', password: '', role: 'admin' });
+    reset({ username: '', password: '', role: 'admin' });
     setModalOpen(true);
   };
 
   const openEdit = (a) => {
     setEditing(a);
-    reset({ username: a.username || '', email: a.email || '', password: '', role: a.role || 'admin' });
+    reset({ username: a.username || '', password: '', role: a.role || 'admin' });
     setModalOpen(true);
   };
 
@@ -125,11 +124,6 @@ export default function AdminAdmins() {
           {row.id === currentAdmin?.id && <span className="text-caption text-bg-text-secondary ms-2">(you)</span>}
         </span>
       ),
-    },
-    {
-      key: 'email',
-      label: t('admin:admins.email'),
-      render: (row) => <span className="text-bg-text-secondary">{row.email || '—'}</span>,
     },
     {
       key: 'role',
@@ -200,7 +194,6 @@ export default function AdminAdmins() {
           </h3>
 
           <Input label={t('admin:admins.username')} {...register('username')} error={errors.username?.message} />
-          <Input label={t('admin:admins.email')} {...register('email')} error={errors.email?.message} type="email" />
 
           <Input
             label={editing ? `${t('admin:admins.password')} (leave blank to keep)` : t('admin:admins.password')}

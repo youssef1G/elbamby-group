@@ -99,7 +99,7 @@ export async function getAdminById(id) {
  */
 export async function getAdminSessionById(id) {
   return _from(TABLE.ADMINS)
-    .select('id, username, email, role, is_active')
+    .select('id, username, role, is_active')
     .eq('id', id)
     .single();
 }
