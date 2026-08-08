@@ -36,7 +36,7 @@ export default function Register() {
   } = useForm({ resolver: zodResolver(registerSchema) });
 
   if (authLoading) return null;
-  if (customer) return <Navigate to="/account" replace />;
+  if (customer && welcomeBonus === null) return <Navigate to="/account" replace />;
 
   const onSubmit = async (data) => {
     setError('');
