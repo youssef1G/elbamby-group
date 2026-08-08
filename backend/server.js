@@ -79,6 +79,7 @@ import {
   listPointsTransactionsByCustomer,
   createPointsTransaction,
   getPointsEarnRate,
+  getPointsSignupBonus,
   creditOrderEarnedPoints,
   refundOrderRedeemedPoints,
   reverseOrderEarnedPoints,
@@ -396,8 +397,9 @@ const pointsAdjustSchema = z.object({
 });
 
 const pointsSettingsSchema = z.object({
-  points_earn_rate: z.number().min(0),
-  points_redeem_rate: z.number().min(0),
+  points_earn_rate: z.number().min(0).optional(),
+  points_redeem_rate: z.number().min(0).optional(),
+  points_signup_bonus: z.number().int().min(0).optional(),
 });
 
 // ──────────────────────────────────────────────
@@ -1704,6 +1706,26 @@ async function customerRegister(req, res, next) {
 
     if (createErr) return next(createErr);
 
+    // Welcome bonus (migration 024): FIRST online registration only. In-store
+    // customers (admin-created, password_hash NULL) and claim registrations
+    // above already exist — they don't get a second bonus. Only a brand-new
+    // customers row is a first-time account, so the ledger entry is written
+    // right here, and the row-level trigger sets points_balance.
+    let signupBonus = 0;
+    try {
+      signupBonus = await getPointsSignupBonus();
+      if (signupBonus > 0) {
+        const { error: bonusErr } = await createPointsTransaction({
+          customer_id: customer.id,
+          type: 'signup_bonus',
+          points: signupBonus,
+        });
+        if (bonusErr) console.error('Failed to grant signup bonus:', bonusErr.message);
+      }
+    } catch (err) {
+      console.error('Signup bonus setup failed (order proceeds):', err.message);
+    }
+
     const token = signToken({ id: customer.id, kind: 'customer' }, '24h');
     res.cookie(CUSTOMER_COOKIE, token, CUSTOMER_COOKIE_OPTIONS);
 
@@ -1713,6 +1735,7 @@ async function customerRegister(req, res, next) {
       phone: customer.phone,
       email: customer.email || null,
       points_balance: customer.points_balance ?? 0,
+      signup_bonus: signupBonus,
     });
   } catch (err) {
     next(err);

@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { User, Lock, Mail, Phone } from 'lucide-react';
+import { User, Lock, Mail, Phone, Gift } from 'lucide-react';
 import { useLocale } from '@/context/LocaleContext.jsx';
 import { useCustomerAuth } from '@/context/CustomerAuthContext.jsx';
 import { normalizePhone } from '@/lib/formatters.js';
@@ -26,6 +26,7 @@ export default function Register() {
   const { customer, isLoading: authLoading, register } = useCustomerAuth();
   const [error, setError] = useState('');
   const [isConflict, setIsConflict] = useState(false);
+  const [welcomeBonus, setWelcomeBonus] = useState(null);
 
   const {
     register: registerField,
@@ -40,13 +41,18 @@ export default function Register() {
     setError('');
     setIsConflict(false);
     try {
-      await register({
+      const res = await register({
         name: data.name,
         phone: data.phone,
         password: data.password,
         email: data.email || undefined,
       });
-      navigate('/account');
+      const bonus = Number(res?.signup_bonus ?? 0);
+      if (bonus > 0) {
+        setWelcomeBonus(bonus);
+      } else {
+        navigate('/account');
+      }
     } catch (err) {
       if (err.code === 'CONFLICT') {
         setIsConflict(true);
@@ -78,7 +84,35 @@ export default function Register() {
           <p className="text-caption text-bg-text-secondary mt-2">{t('auth:register.subtitle')}</p>
         </div>
 
-        <div className="surface-card p-6 sm:p-8">
+        {welcomeBonus > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.35 }}
+            className="surface-card p-6 mb-4 border-bg-success/30"
+          >
+            <div className="flex items-start gap-4">
+              <div className="w-11 h-11 rounded-full bg-bg-success/15 text-bg-success flex items-center justify-center shrink-0">
+                <Gift size={22} aria-hidden="true" />
+              </div>
+              <div className="space-y-2">
+                <p className="font-heading font-bold text-lg text-bg-text-primary leading-snug">
+                  {t('auth:register.welcomeTitle')}
+                </p>
+                <p className="text-body-sm text-bg-text-secondary">
+                  {t('auth:register.welcomeBody', { points: welcomeBonus })}
+                </p>
+              </div>
+            </div>
+            <Button variant="primary" className="w-full mt-5 h-11" onClick={() => navigate('/account')}>
+              {t('auth:register.welcomeNext')}
+            </Button>
+          </motion.div>
+        )}
+
+        {welcomeBonus === null && (
+          <>
+            <div className="surface-card p-6 sm:p-8">
           <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
             <div>
               <label className="block text-caption font-semibold text-bg-text-secondary mb-1.5 uppercase tracking-[0.08em]">
@@ -192,14 +226,16 @@ export default function Register() {
               {t('auth:register.submit')}
             </Button>
           </form>
-        </div>
+          </div>
 
-        <p className="text-center text-body-sm text-bg-text-secondary mt-6">
-          {t('auth:register.haveAccount')}{' '}
-          <Link to="/login" className="font-semibold text-bg-primary-500 hover:text-bg-primary-600 transition-colors">
-            {t('auth:register.loginLink')}
-          </Link>
-        </p>
+          <p className="text-center text-body-sm text-bg-text-secondary mt-6">
+            {t('auth:register.haveAccount')}{' '}
+            <Link to="/login" className="font-semibold text-bg-primary-500 hover:text-bg-primary-600 transition-colors">
+              {t('auth:register.loginLink')}
+            </Link>
+          </p>
+          </>
+        )}
       </motion.div>
     </div>
   );

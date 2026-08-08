@@ -1196,6 +1196,15 @@ export async function getPointsEarnRate() {
   return Number(data?.points_earn_rate ?? 1);
 }
 
+/**
+ * Welcome bonus granted to a customer on FIRST registration
+ * (settings.points_signup_bonus, migration 024). 0 = feature off.
+ */
+export async function getPointsSignupBonus() {
+  const { data } = await _from(TABLE.SETTINGS).select('points_signup_bonus').eq('id', 1).single();
+  return Math.max(0, Math.floor(Number(data?.points_signup_bonus ?? 0)));
+}
+
 // ──────────────────────────────────────────────
 //  ORDER STATUS HISTORY
 // ──────────────────────────────────────────────

@@ -16,6 +16,7 @@ const TYPE_KEYS = {
   refund_reversal: 'admin:customerDetail.typeRefundReversal',
   manual_grant: 'admin:customerDetail.typeManualGrant',
   manual_deduct: 'admin:customerDetail.typeManualDeduct',
+  signup_bonus: 'admin:customerDetail.typeSignupBonus',
 };
 
 export default function AdminCustomerDetail() {

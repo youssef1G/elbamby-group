@@ -19,6 +19,7 @@ export default function AdminSettings() {
   const [currency, setCurrency] = useState('EGP');
   const [earnRate, setEarnRate] = useState('1');
   const [redeemRate, setRedeemRate] = useState('0.1');
+  const [signupBonus, setSignupBonus] = useState('0');
 
   useEffect(() => {
     fetchAdminSettings()
@@ -28,6 +29,7 @@ export default function AdminSettings() {
         setCurrency(data?.currencyCode || 'EGP');
         setEarnRate(data ? String(data.pointsEarnRate ?? 1) : '1');
         setRedeemRate(data ? String(data.pointsRedeemRate ?? 0.1) : '0.1');
+        setSignupBonus(data ? String(data.pointsSignupBonus ?? 0) : '0');
       })
       .catch(() => setError(t('admin:settings.loadError')))
       .finally(() => setLoading(false));
@@ -41,6 +43,7 @@ export default function AdminSettings() {
       await updatePointsSettings({
         points_earn_rate: Number(earnRate) || 0,
         points_redeem_rate: Number(redeemRate) || 0,
+        points_signup_bonus: Math.max(0, Math.floor(Number(signupBonus) || 0)),
       });
       setSuccess(t('admin:settings.pointsSaved'));
       setTimeout(() => setSuccess(''), 4000);
@@ -195,6 +198,41 @@ export default function AdminSettings() {
                 className="btn-primary !min-h-0 h-9 px-4 mt-3 text-body-sm disabled:opacity-50"
               >
                 {saving === 'points_redeem_rate' ? t('admin:settings.saving') : t('admin:common.save')}
+              </button>
+            </form>
+          </div>
+
+          <div className="surface-card p-6">
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                savePoints('points_signup_bonus');
+              }}
+            >
+              <label className="block text-body-sm font-medium text-bg-text-primary mb-1.5">
+                {t('admin:settings.pointsSignupBonus')}
+              </label>
+              <div className="flex items-center rounded-md border border-bg-border overflow-hidden bg-bg-surface focus-within:ring-2 focus-within:ring-bg-primary-500/40 transition-colors">
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  dir="ltr"
+                  value={signupBonus}
+                  onChange={(e) => setSignupBonus(e.target.value)}
+                  className={`${inputCls} flex-1`}
+                  placeholder="0"
+                />
+              </div>
+              <p className="text-caption text-bg-text-secondary mt-2">
+                {t('admin:settings.pointsSignupBonusHint')}
+              </p>
+              <button
+                type="submit"
+                disabled={saving === 'points_signup_bonus'}
+                className="btn-primary !min-h-0 h-9 px-4 mt-3 text-body-sm disabled:opacity-50"
+              >
+                {saving === 'points_signup_bonus' ? t('admin:settings.saving') : t('admin:common.save')}
               </button>
             </form>
           </div>
