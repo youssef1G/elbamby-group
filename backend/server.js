@@ -438,7 +438,7 @@ if (isProduction) {
 app.use(helmet());
 const frontendUrls = (process.env.FRONTEND_URL || 'http://localhost:5173,http://localhost:5174')
   .split(',')
-  .map((s) => s.trim())
+  .map((s) => s.trim().replace(/\/$/, ''))
   .filter(Boolean);
 app.use(cors({ origin: frontendUrls, credentials: true }));
 app.use(express.json({ limit: '2mb' }));
