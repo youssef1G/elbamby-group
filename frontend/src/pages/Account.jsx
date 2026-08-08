@@ -12,15 +12,17 @@ import {
   updateMyProfile,
   changeMyPassword,
   getSettings,
+  deleteMyAccount,
 } from '@/api.js';
 import Skeleton from '@/components/ui/Skeleton.jsx';
 import EmptyState from '@/components/ui/EmptyState.jsx';
 import Button from '@/components/ui/Button.jsx';
+import Modal from '@/components/ui/Modal.jsx';
 import { useToast } from '@/components/ui/Toast.jsx';
 import { formatDate } from '@/lib/formatters.js';
 import { AUTO_REFRESH_MS } from '@/lib/constants.js';
 import { OrderCard } from './MyOrders.jsx';
-import { Plus, Minus, LogOut, LayoutGrid, Package, Settings as SettingsIcon } from 'lucide-react';
+import { Plus, Minus, LogOut, LayoutGrid, Package, Settings as SettingsIcon, Trash2 } from 'lucide-react';
 
 const TYPE_KEYS = {
   earn: 'admin:customerDetail.typeEarn',
@@ -280,6 +282,10 @@ export default function Account() {
   const [orders, setOrders] = useState(null);
   const [ordersPage, setOrdersPage] = useState(1);
 
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const { toast } = useToast();
+
   const loadHistory = useCallback((p) => {
     fetchMyPointsHistory({ page: p, limit: 15 })
       .then(setHistory)
@@ -349,6 +355,22 @@ export default function Account() {
     setJustLoggedOut(true);
     await logout();
     navigate('/', { replace: true });
+  };
+
+  const handleDeleteAccount = async () => {
+    setDeleting(true);
+    try {
+      await deleteMyAccount();
+      setJustLoggedOut(true);
+      await logout();
+      toast(t('account.settings.accountDeleted'), 'success');
+      navigate('/', { replace: true });
+    } catch (err) {
+      toast(err.message || t('errors.generic'), 'error');
+    } finally {
+      setDeleting(false);
+      setDeleteOpen(false);
+    }
   };
 
   const tabs = [
@@ -631,6 +653,40 @@ export default function Account() {
           </div>
         </div>
       )}
+
+      {tab === 'settings' && (
+        <div className="surface-card p-6 border-bg-error/30">
+          <h2 className="font-heading text-body-sm font-bold text-bg-error mb-1">
+            {t('account.settings.dangerZone')}
+          </h2>
+          <p className="text-body-sm text-bg-text-secondary mb-4">
+            {t('account.settings.deleteHint')}
+          </p>
+          <Button variant="danger" className="h-10 px-4 text-body-sm" onClick={() => setDeleteOpen(true)}>
+            <Trash2 size={15} aria-hidden="true" className="rtl:-scale-x-100" focusable="false" />
+            {t('account.settings.deleteAccount')}
+          </Button>
+        </div>
+      )}
+
+      <Modal isOpen={deleteOpen} onClose={() => setDeleteOpen(false)} size="sm">
+        <div className="p-6">
+          <h3 className="text-body font-semibold text-bg-text-primary mb-2">
+            {t('account.settings.deleteConfirmTitle')}
+          </h3>
+          <p className="text-body-sm text-bg-text-secondary mb-6">
+            {t('account.settings.deleteConfirmDesc')}
+          </p>
+          <div className="flex items-center justify-end gap-3">
+            <Button variant="ghost" onClick={() => setDeleteOpen(false)}>
+              {t('account.settings.deleteCancel')}
+            </Button>
+            <Button variant="danger" onClick={handleDeleteAccount} loading={deleting} disabled={deleting}>
+              {deleting ? t('account.settings.deleting') : t('account.settings.deleteAccount')}
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </motion.div>
   );
 }

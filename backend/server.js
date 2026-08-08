@@ -1531,6 +1531,22 @@ async function adminGetCustomer(req, res, next) {
   }
 }
 
+/**
+ * Admin remove-customer (migration 025). Full delete: orders keep their
+ * name/phone snapshot (customer_id → null), the points ledger cascades away.
+ */
+async function adminDeleteCustomer(req, res, next) {
+  try {
+    const { error } = await deleteCustomer(req.params.id);
+
+    if (error) return next(error);
+
+    res.json({ message: 'Customer removed' });
+  } catch (err) {
+    next(err);
+  }
+}
+
 async function adminGetCustomerPointsHistory(req, res, next) {
   try {
     const { page = '1', limit = '20' } = req.query;
@@ -1655,6 +1671,7 @@ app.get('/api/admin/customers/:id', adminGetCustomer);
 app.get('/api/admin/customers/:id/points-history', adminGetCustomerPointsHistory);
 app.post('/api/admin/customers', validate(adminCreateCustomerSchema), adminCreateCustomerAccount);
 app.post('/api/admin/customers/:id/points-adjust', validate(pointsAdjustSchema), adminAdjustCustomerPoints);
+app.delete('/api/admin/customers/:id', adminDeleteCustomer);
 
 // ──────────────────────────────────────────────────────────────
 //  CUSTOMER AUTH + ACCOUNT (docs/13-points-system.md §5.1)
@@ -1777,6 +1794,24 @@ function customerLogout(_req, res) {
   res.json({ message: 'Logged out' });
 }
 
+/**
+ * Self-service account deletion (migration 025): removes the logged-in
+ * customer's row + ledger; past orders keep their snapshot. Session cookie
+ * is cleared so the client ends up logged out.
+ */
+async function customerDeleteAccount(req, res, next) {
+  try {
+    const { error } = await deleteCustomer(req.customer.id);
+
+    if (error) return next(error);
+
+    res.clearCookie(CUSTOMER_COOKIE, CUSTOMER_COOKIE_OPTIONS);
+    res.json({ message: 'Account deleted' });
+  } catch (err) {
+    next(err);
+  }
+}
+
 async function customerMe(req, res, next) {
   try {
     // Guests legitimately probe this endpoint on every page load to learn
@@ -1895,6 +1930,8 @@ async function customerChangePassword(req, res, next) {
 app.post('/api/customers/register', customerAuthLimiter, validate(customerRegisterSchema), customerRegister);
 app.post('/api/customers/login', customerAuthLimiter, validate(customerLoginSchema), customerLogin);
 app.post('/api/customers/logout', customerLogout);
+app.delete('/api/customers/me', requireCustomer, customerDeleteAccount);
+app.delete('/api/customers/me', requireCustomer, customerDeleteAccount);
 app.get('/api/customers/me', optionalCustomer, customerMe);
 app.get('/api/customers/me/points-history', requireCustomer, customerPointsHistory);
 app.get('/api/customers/me/orders', requireCustomer, customerOrders);

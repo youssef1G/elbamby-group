@@ -2,22 +2,31 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { useLocale } from '@/context/LocaleContext.jsx';
-import { fetchCustomers } from '@/api.js';
+import { fetchCustomers, deleteAdminCustomer } from '@/api.js';
 import Skeleton from '@/components/ui/Skeleton.jsx';
 import EmptyState from '@/components/ui/EmptyState.jsx';
 import AddPointsModal from '@/components/admin/AddPointsModal.jsx';
+import ConfirmDialog from '@/components/admin/ConfirmDialog.jsx';
 import { formatDate, formatPrice } from '@/lib/formatters.js';
-import { Search, Plus, ChevronRight } from 'lucide-react';
+import { useToast } from '@/components/ui/Toast.jsx';
+import { Search, Plus, ChevronRight, Trash2 } from 'lucide-react';
 
 export default function AdminCustomers() {
   const { t } = useLocale();
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [data, setData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [addOpen, setAddOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleting, setDeleting] = useState(false);
+
+  const reload = () => {
+    fetchCustomers({ page, limit: 20, search }).then(setData).catch(() => {});
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -34,6 +43,21 @@ export default function AdminCustomers() {
       cancelled = true;
     };
   }, [page, search]);
+
+  const handleDelete = async () => {
+    if (!deleteTarget?.id) return;
+    setDeleting(true);
+    try {
+      await deleteAdminCustomer(deleteTarget.id);
+      toast(t('admin:customers.deleted'), 'success');
+      setDeleteTarget(null);
+      reload();
+    } catch (err) {
+      toast(err.message || t('common:common.error'), 'error');
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   const customers = data?.data || [];
   const meta = data?.meta || {};
@@ -220,7 +244,18 @@ export default function AdminCustomers() {
                     </td>
                   ))}
                   <td className="px-4 py-3 text-end w-10">
-                    {c.id && (
+                    {c.id ? (
+                      <button
+                        aria-label={t('admin:customers.removeLabel')}
+                        className="text-bg-text-secondary/50 hover:text-bg-error transition-colors p-1"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setDeleteTarget(c);
+                        }}
+                      >
+                        <Trash2 size={16} aria-hidden="true" focusable="false" />
+                      </button>
+                    ) : (
                       <ChevronRight
                         size={16}
                         className="text-bg-text-secondary/50 inline-block rtl:-scale-x-100"
@@ -261,9 +296,17 @@ export default function AdminCustomers() {
       <AddPointsModal
         isOpen={addOpen}
         onClose={() => setAddOpen(false)}
-        onAdjustApplied={() => {
-          fetchCustomers({ page, limit: 20, search }).then(setData).catch(() => {});
-        }}
+        onAdjustApplied={reload}
+      />
+
+      <ConfirmDialog
+        isOpen={Boolean(deleteTarget)}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleDelete}
+        loading={deleting}
+        title={t('admin:customers.removeTitle')}
+        description={t('admin:customers.removeDesc', { name: deleteTarget?.name || '' })}
+        confirmLabel={t('admin:customers.removeConfirm')}
       />
     </motion.div>
   );

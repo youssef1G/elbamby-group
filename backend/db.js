@@ -891,6 +891,15 @@ export async function updateCustomerPassword(id, passwordHash) {
 }
 
 /**
+ * Full account deletion (migration 025): the customer row and their ledger go
+ * away; their past orders keep the name/phone snapshot and customer_id becomes
+ * null. Returns { data, error } — data null + no error when no row matched.
+ */
+export async function deleteCustomer(id) {
+  return _from(TABLE.CUSTOMERS).delete().eq('id', id);
+}
+
+/**
  * Orders belonging to a registered customer account — same field shape as
  * getOrdersByPhone so the storefront OrderCard can render them identically.
  */

@@ -191,3 +191,11 @@ export function createCustomer(data) {
 export function adjustCustomerPoints(id, data) {
   return apiClient(`/admin/customers/${id}/points-adjust`, { method: 'POST', body: JSON.stringify(data) });
 }
+export function deleteAdminCustomer(id) {
+  return apiClient(`/admin/customers/${id}`, { method: 'DELETE' });
+}
+
+// ─── Customer account (self-service) ─────────────────────────────────────────
+export function deleteMyAccount() {
+  return apiClient('/customers/me', { method: 'DELETE' });
+}
