@@ -1,165 +1,131 @@
-import { motion } from 'motion/react';
-
-const FRAME = 'M12,12 H508 M12,12 V388 H508 V12';
-
-const CORNER_TICKS = ['M12,34 V12 H34', 'M474,12 H508 V34', 'M508,366 V388 H474', 'M34,388 H12 V366'];
-
-var tickIn = {
-  hidden: { opacity: 0 },
-  show: {
-    opacity: 1,
-    transition: { duration: 0.4, ease: 'easeOut' },
-  },
-};
-
-var specCaption = {
-  hidden: { opacity: 0, y: 8 },
-  show: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.5, ease: [0.25, 0.1, 0.25, 1] },
-  },
-};
+import { motion } from "motion/react";
+import { Link } from "react-router-dom";
+import { useLocale } from "@/context/LocaleContext.jsx";
+import { formatPrice } from "@/lib/formatters.js";
+import { Cpu } from "lucide-react";
 
 /**
- * HeroVisual — the page's signature element (v3, "spec plate").
+ * HeroVisual — the hero's product statement (v4).
  *
- * One idea, done quietly: a product rendered as a printed catalogue plate.
- * A hairline frame with printer's crop marks encloses the device; "FIG 01"
- * and a mono spec line caption it like a figure in a technical manual.
+ * One real product, photographed large: the catalog is the brand. A soft
+ * rotated echo behind, a ghosted capacity numeral, a dashed accent ring —
+ * geometry in service of the product, not decoration over it. The figure
+ * settles in once and floats very gently; nothing else moves.
  *
- * Motion is a single settle: the frame draws itself once (stroke reveal),
- * the corner ticks tick in, the device and caption fall into place — then
- * everything is still. No loop, no float, no parallax, no glow. This is the
- * "spec sheet, not a template" promise at its most literal.
- *
- * The drawing is symmetric and layout-neutral, so it reads correctly in RTL
- * with no mirroring tricks, and Arabic never touches mono glyphs.
+ * Loading shows a quiet skeleton; empty/error shows a placeholder plate
+ * with the brand mark, so the hero never breaks or fakes a product.
  */
+export default function HeroVisual({ products = [], loading = false }) {
+  const { t, isAr } = useLocale();
 
-export default function HeroVisual() {
+  if (loading) {
+    return (
+      <div
+        className="relative mx-auto w-full max-w-xl lg:max-w-none"
+        aria-hidden="true"
+      >
+        <div className="animate-pulse">
+          <div className="relative">
+            <div className="absolute inset-0 translate-y-3 translate-x-3 rounded-[1.5rem] bg-bg-surface-sunken" />
+            <div className="relative aspect-[4/5] w-full rounded-[1.5rem] border border-bg-border bg-bg-surface-sunken sm:aspect-[5/4]" />
+          </div>
+          <div className="mt-4 flex items-center justify-between">
+            <div className="h-3 w-20 rounded-sm bg-bg-surface-sunken" />
+            <div className="h-4 w-16 rounded-sm bg-bg-surface-sunken" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const product = products[0];
+  const image = product?.productImages?.[0]?.imageUrl || "";
+  const name = product
+    ? isAr && product.nameAr
+      ? product.nameAr
+      : product.nameEn
+    : "";
+  const numeral = product?.capacityGb
+    ? `${product.capacityGb}GB`
+    : product?.interfaceType || "BG";
+
   return (
-    <figure className="mx-auto w-full max-w-md lg:max-w-none">
-      <div className="relative">
-        <motion.svg
-          viewBox="0 0 520 400"
-          className="block h-auto w-full overflow-visible"
-          initial="hidden"
-          whileInView="show"
-          viewport={{ once: true, margin: '-80px' }}
-          variants={{ hidden: {}, show: { transition: { staggerChildren: 0.1, delayChildren: 0.25 } } }}
+    <figure
+      className="relative mx-auto w-full max-w-xl lg:max-w-none select-none"
+      aria-label={name || t("home.heroSerial")}
+    >
+      {/* Ghosted capacity numeral — the product's spec as background type */}
+      <span
+        aria-hidden="true"
+        className="pointer-events-none absolute -top-10 -end-4 z-0 font-mono text-[6.5rem] font-medium leading-none tracking-tight text-bg-text-primary/[0.07] sm:text-[9rem] lg:-top-14 lg:text-[11rem] ltr-nums"
+      >
+        {numeral}
+      </span>
+
+      {/* Mono ring accent */}
+      <span
+        aria-hidden="true"
+        className="pointer-events-none absolute -bottom-6 -start-6 z-0 h-24 w-28 rounded-full border border-dashed border-bg-border"
+      />
+
+      <div className="relative z-10">
+        {/* Echo panel behind the card */}
+        <div
           aria-hidden="true"
+          className="absolute inset-0 translate-x-4 translate-y-4 rotate-2 rounded-[1.5rem] bg-bg-surface-sunken"
+        />
+
+        <motion.div
+          initial={{ opacity: 0, y: 28 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1], delay: 0.2 }}
         >
-          {/* The frame — draws on once, clockwise, a single 700ms sweep */}
-          <path
-            d={FRAME}
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1"
-            strokeLinecap="square"
-            className="text-bg-text-primary"
-            pathLength="1"
-            initial={{ pathLength: 0, opacity: 0 }}
-            animate={{ pathLength: 1, opacity: 1 }}
-            transition={{ duration: 0.9, ease: [0.25, 0.1, 0.25, 1], delay: 0.1 }}
-          />
-
-          {/* Catalogue marks — the printer's crop ticks */}
-          {CORNER_TICKS.map((d, i) => (
-            <motion.path
-              key={d}
-              d={d}
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1"
-              strokeLinecap="square"
-              className="text-bg-text-secondary"
-              variants={tickIn}
-            />
-          ))}
-
-          {/* Top-of-plate meta: edition number + a registration disc */}
-          <motion.text
-            x="40"
-            y="40"
-            textAnchor="start"
-            fontFamily="'JetBrains Mono', monospace"
-            fontSize="10"
-            letterSpacing="2"
-            fill="currentColor"
-            className="text-bg-text-secondary"
-            variants={tickIn}
+          <motion.div
+            animate={{ y: [0, -8, 0] }}
+            transition={{ duration: 7, repeat: Infinity, ease: "easeInOut" }}
           >
-            FIG.01
-          </motion.text>
-          <motion.g variants={tickIn}>
-            <circle cx="480" cy="40" r="7" fill="none" stroke="currentColor" strokeWidth="1" className="text-bg-text-secondary" />
-            <circle cx="480" cy="40" r="3" fill="currentColor" className="text-bg-primary-500" />
-          </motion.g>
-
-          {/* The device — line-art, ink strokes, one flat screen */}
-          <motion.g variants={specCaption}>
-            {/* body */}
-            <path
-              d="M166,70 h188 a26,26 0 0 1 26,26 v222 a26,26 0 0 1 -26,26 h-188 a26,26 0 0 1 -26,-26 v-222 a26,26 0 0 1 26,-26 z"
-              fill="var(--bg-surface)"
-              stroke="currentColor"
-              strokeWidth="1.25"
-              className="text-bg-text-primary"
-            />
-            {/* screen */}
-            <rect x="182" y="88" width="156" height="212" rx="15" fill="none" stroke="currentColor" strokeWidth="0.75" className="text-bg-text-primary" />
-            {/* home button */}
-            <rect x="236" y="302" width="48" height="6" rx="3" fill="currentColor" className="text-bg-text-primary opacity-50" />
-            {/* camera + flash */}
-            <circle cx="242" cy="38" r="5" fill="currentColor" className="text-bg-text-secondary" />
-            <circle cx="262" cy="38" r="2" fill="currentColor" className="text-bg-primary-500" />
-            {/* speaker slot */}
-            <rect x="230" y="78" width="26" height="3" rx="1.5" fill="currentColor" className="text-bg-text-primary opacity-40" />
-            {/* capacity readout — the one piece of content */}
-            <text
-              x="260"
-              y="146"
-              textAnchor="middle"
-              fontFamily="'JetBrains Mono', monospace"
-              fontSize="17"
-              letterSpacing="1"
-              fill="currentColor"
-              className="text-bg-text-primary"
-            >
-              256GB
-            </text>
-            <line x1="220" y1="160" x2="300" y2="160" stroke="currentColor" strokeWidth="1" strokeLinecap="square" className="text-bg-text-primary opacity-30" />
-            <line x1="226" y1="168" x2="294" y2="168" stroke="currentColor" strokeWidth="1" strokeLinecap="square" className="text-bg-text-primary opacity-30" />
-            <circle cx="260" cy="188" r="10" fill="none" stroke="currentColor" strokeWidth="1" className="text-bg-primary-500" />
-            <circle cx="260" cy="188" r="3" fill="currentColor" className="text-bg-primary-500" />
-          </motion.g>
-
-          {/* Caption — set inside the plate, like a catalogue legend */}
-          <motion.text
-            x="40"
-            y="360"
-            textAnchor="start"
-            fontFamily="'JetBrains Mono', monospace"
-            fontSize="10"
-            letterSpacing="1.5"
-            fill="currentColor"
-            className="text-bg-text-secondary"
-            variants={specCaption}
-          >
-            BG — 01 / ACCESSORIES
-          </motion.text>
-          <motion.line
-            x1="40"
-            y1="370"
-            x2="96"
-            y2="370"
-            stroke="currentColor"
-            strokeWidth="1"
-            className="text-bg-primary-500"
-            variants={specCaption}
-          />
-        </motion.svg>
+            {image && product ? (
+              <Link
+                to={`/product/${product.slug}`}
+                className="group relative block overflow-hidden rounded-[1.5rem] border border-bg-border bg-bg-surface-raised shadow-card"
+              >
+                <div className="aspect-[4/5] overflow-hidden sm:aspect-[5/4]">
+                  <img
+                    src={image}
+                    alt={name}
+                    className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.03]"
+                  />
+                </div>
+                <figcaption className="flex items-center justify-between gap-3 border-t border-bg-border px-5 py-4">
+                  <span className="font-mono text-caption tracking-[0.18em] text-bg-text-secondary ltr-nums">
+                    {t("home.heroSerial")}
+                  </span>
+                  <span className="min-w-0 truncate text-body-sm font-semibold text-bg-text-primary">
+                    {name}
+                  </span>
+                  <span className="shrink-0 font-mono text-body-sm font-medium text-bg-primary-600 ltr-nums">
+                    {formatPrice(product.price)}
+                  </span>
+                </figcaption>
+              </Link>
+            ) : (
+              <div className="flex aspect-[4/5] items-center justify-center rounded-[1.5rem] border border-bg-border bg-bg-surface-raised sm:aspect-[5/4]">
+                <div className="flex flex-col items-center gap-4 text-bg-text-secondary">
+                  <Cpu
+                    size={44}
+                    strokeWidth={1.25}
+                    className="text-bg-primary-500"
+                    aria-hidden="true"
+                    focusable="false"
+                  />
+                  <span className="font-mono text-caption tracking-[0.2em] uppercase">
+                    {numeral}
+                  </span>
+                </div>
+              </div>
+            )}
+          </motion.div>
+        </motion.div>
       </div>
     </figure>
   );

@@ -1,330 +1,142 @@
-import { useState, useEffect, useRef } from 'react';
-import { useLocale } from '@/context/LocaleContext.jsx';
-import { motion, AnimatePresence } from 'motion/react';
-import { Link } from 'react-router-dom';
-import { Truck, Clock, ShieldCheck, Plug, Smartphone, Package, ChevronRight, Cable, BatteryCharging, Headphones, MemoryStick } from 'lucide-react';
-import { fetchCategories, fetchProducts, fetchBanners } from '@/api.js';
-import { fadeUp } from '@/lib/animations.js';
-import ProductGrid from '@/components/shop/ProductGrid.jsx';
-import SEO from '@/components/common/SEO.jsx';
-import HeroVisual from '@/components/common/HeroVisual.jsx';
-import EmptyState from '@/components/ui/EmptyState.jsx';
-import Skeleton from '@/components/ui/Skeleton.jsx';
+import { useState, useEffect } from "react";
+import { useLocale } from "@/context/LocaleContext.jsx";
+import { motion } from "motion/react";
+import { Link } from "react-router-dom";
+import {
+  Truck,
+  Clock,
+  ShieldCheck,
+  Plug,
+  Smartphone,
+  Package,
+  ChevronRight,
+  Cable,
+  BatteryCharging,
+  Headphones,
+  MemoryStick,
+} from "lucide-react";
+import { fetchCategories, fetchProducts, fetchBanners } from "@/api.js";
+import { fadeUp, staggerContainer, staggerItem } from "@/lib/animations.js";
+import ProductGrid from "@/components/shop/ProductGrid.jsx";
+import SEO from "@/components/common/SEO.jsx";
+import HeroVisual from "@/components/common/HeroVisual.jsx";
+import EmptyState from "@/components/ui/EmptyState.jsx";
+import Skeleton from "@/components/ui/Skeleton.jsx";
 
 /**
- * SIGNATURE ELEMENT: the capacity marquee.
- * BG sells storage — flash drives, SD/microSD cards. Instead of decorative
- * icons or stock photography clichés, the brand's visual signature is the
- * spec sheet itself: real capacity denominations, set in mono type, treated
- * as a recurring graphic motif. This is content-as-decoration, not a template.
- * Uses font-mono (JetBrains Mono — see 01-brand-design-system.md addendum).
+ * HeroLine — line-based reveal for the headline.
+ * Each line sits in an overflow mask and slides up into place once; the
+ * headline reads as type on a page, not as an FX demo. Works identically
+ * in Arabic (no mono, no uppercase applied).
  */
-const CAPACITIES = ['8GB', '16GB', '32GB', '64GB', '128GB', '256GB', '512GB', '1TB', '2TB'];
+function HeroLine({ children, delay = 0 }) {
+  return (
+    <span className="block overflow-hidden">
+      <motion.span
+        className="block"
+        initial={{ y: "115%" }}
+        animate={{ y: 0 }}
+        transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1], delay }}
+      >
+        {children}
+      </motion.span>
+    </span>
+  );
+}
+
+/**
+ * Hero — "the product is the poster" (v4).
+ * No decorative chrome: a type statement on one side, the flagship product
+ * photographed large on the other, and the capacity spec ghosted behind it
+ * as background type. The catalog does the selling.
+ *
+ * Loading/empty states live inside HeroVisual so the hero never fakes a
+ * product or breaks while the featured query is in flight.
+ */
+function Hero({ products, loading }) {
+  const { t, isAr } = useLocale();
+
+  return (
+    <section className="relative overflow-hidden border-b border-bg-border">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-1 items-center gap-14 py-14 sm:py-16 lg:grid-cols-12 lg:gap-12 lg:py-24">
+          <motion.div
+            className="lg:col-span-5 xl:col-span-6"
+            initial="hidden"
+            animate="show"
+            variants={staggerContainer}
+          >
+            <h1 className="font-heading text-display font-bold leading-[1.08] tracking-tight text-bg-text-primary">
+              <HeroLine delay={0.05}>{t("home.heroLine1")}</HeroLine>
+              <HeroLine delay={0.18}>
+                <span className="text-bg-text-secondary">
+                  {t("home.heroLine2")}
+                </span>
+              </HeroLine>
+            </h1>
+
+            <motion.span
+              variants={staggerItem}
+              className="mt-6 block h-px w-16 bg-bg-primary-500/80"
+              aria-hidden="true"
+            />
+
+            <motion.p
+              variants={staggerItem}
+              className="mt-6 max-w-md text-body-lg text-bg-text-secondary"
+            >
+              {t("home.heroSubtitle")}
+            </motion.p>
+
+            <motion.div
+              variants={staggerItem}
+              className="mt-9 flex flex-wrap items-center gap-4"
+            >
+              <Link
+                to="/shop"
+                className="rounded-md bg-bg-primary-500 px-8 py-3.5 text-body-sm font-semibold text-white transition-colors hover:bg-bg-primary-600"
+              >
+                {t("home.heroCta")}
+              </Link>
+              <Link
+                to="/shop?category=storage"
+                className="text-body-sm font-medium text-bg-text-secondary underline decoration-bg-border underline-offset-4 transition hover:text-bg-text-primary hover:decoration-bg-primary-500"
+              >
+                {t("home.heroCtaSecondary")}
+              </Link>
+            </motion.div>
+          </motion.div>
+
+          <motion.div
+            className="lg:col-span-7 xl:col-span-6"
+            initial={{ opacity: 0, x: isAr ? -32 : 32 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{
+              duration: 0.75,
+              ease: [0.22, 1, 0.36, 1],
+              delay: 0.35,
+            }}
+          >
+            <HeroVisual products={products} loading={loading} />
+          </motion.div>
+        </div>
+      </div>
+    </section>
+  );
+}
 
 const CATEGORY_ICONS = {
   chargers: Plug,
   cables: Cable,
-  'power-banks': BatteryCharging,
-  'screen-protectors': ShieldCheck,
-  'phone-cases': Smartphone,
+  "power-banks": BatteryCharging,
+  "screen-protectors": ShieldCheck,
+  "phone-cases": Smartphone,
   cases: Smartphone,
   storage: MemoryStick,
   memmory: MemoryStick,
   earbuds: Headphones,
   headphones: Headphones,
 };
-
-/**
- * Hero category chips — the plainest possible answer to "what do you sell":
- * say it. Seven real categories, each linking straight into the shop with
- * that filter applied. This is the textual counterpart to the flat-lay
- * visual — the same catalog, spelled out for anyone scanning past the art.
- */
-const HERO_CHIPS = [
-  { slug: 'cables', Icon: Cable, key: 'home.chip.cables' },
-  { slug: 'chargers', Icon: Plug, key: 'home.chip.chargers' },
-  { slug: 'power-banks', Icon: BatteryCharging, key: 'home.chip.powerBanks' },
-  { slug: 'phone-cases', Icon: Smartphone, key: 'home.chip.cases' },
-  { slug: 'screen-protectors', Icon: ShieldCheck, key: 'home.chip.screenProtectors' },
-  { slug: 'earbuds', Icon: Headphones, key: 'home.chip.earbuds' },
-  { slug: 'storage', Icon: MemoryStick, key: 'home.chip.storage' },
-];
-
-/**
- * MaskedWords — word-by-word headline reveal.
- * Each word sits in an overflow-hidden mask and slides up into place with a
- * 60ms stagger — an editorial "typeset" entrance. Works in both languages
- * (Arabic falls out of the mask identically; no mono/uppercase applied).
- */
-function MaskedWords({ text, delayBase = 0.1 }) {
-  const words = text.split(' ');
-  return (
-    <>
-      {words.map((word, i) => (
-        <span key={i} className="inline-block overflow-hidden align-top">
-          <motion.span
-            className="inline-block"
-            initial={{ y: '110%' }}
-            animate={{ y: 0 }}
-            transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1], delay: delayBase + i * 0.06 }}
-          >
-            {word}
-            {i < words.length - 1 ? '\u00A0' : ''}
-          </motion.span>
-        </span>
-      ))}
-    </>
-  );
-}
-
-function CapacityMarquee() {
-  return (
-    <div className="relative overflow-hidden border-y border-bg-border py-3 select-none" aria-hidden="true">
-      <div className="flex w-max animate-marquee gap-8 font-mono text-caption tracking-wider text-bg-text-secondary">
-        {[...CAPACITIES, ...CAPACITIES, ...CAPACITIES].map((cap, i) => (
-          <span key={i} className="flex items-center gap-8">
-            <span>{cap}</span>
-            <span className="text-bg-primary-400">·</span>
-          </span>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function HeroCarousel() {
-  const { t, isAr } = useLocale();
-  const isRtl = isAr;
-  const [banners, setBanners] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    let cancelled = false;
-    fetchBanners({ position: 'home_hero' })
-      .then((res) => { if (!cancelled) setBanners(res?.data || []); })
-      .catch(() => { if (!cancelled) setBanners([]); })
-      .finally(() => { if (!cancelled) setIsLoading(false); });
-    return () => { cancelled = true; };
-  }, []);
-
-  const [current, setCurrent] = useState(0);
-  const [paused, setPaused] = useState(false);
-  const intervalRef = useRef(null);
-
-  useEffect(() => {
-    if (paused || banners.length <= 1) return;
-    intervalRef.current = setInterval(() => {
-      setCurrent((prev) => (prev + 1) % banners.length);
-    }, 6000);
-    return () => clearInterval(intervalRef.current);
-  }, [paused, banners.length]);
-
-  const goTo = (idx) => setCurrent(idx);
-  const next = () => setCurrent((prev) => (prev + 1) % banners.length);
-  const prev = () => setCurrent((prev) => (prev - 1 + banners.length) % banners.length);
-
-  const handleDragEnd = (_, info) => {
-    const threshold = 50;
-    if (Math.abs(info.offset.x) > threshold || Math.abs(info.velocity.x) > 0.3) {
-      if (isRtl) {
-        info.offset.x > 0 ? next() : prev();
-      } else {
-        info.offset.x > 0 ? prev() : next();
-      }
-    }
-  };
-
-// --- No-banner fallback: this IS the brand hero, not a placeholder. ---
-  // Editorial "spec plate" spread: the page is the paper — warm surface,
-  // ink hairlines, the HeroVisual plate as the figure. One quiet typeset
-  // entrance, then stillness. No dark band, no glow, no free-floating motion.
-  if (!isLoading && banners.length === 0) {
-    return (
-      <section className="relative overflow-hidden">
-        <div className="mx-auto max-w-7xl px-4 pb-12 pt-14 sm:px-6 lg:px-8 lg:pb-16 lg:pt-20">
-          <div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-12 lg:gap-8">
-            {/* Copy side — staggered masked reveal */}
-            <motion.div
-              className="lg:col-span-5"
-              initial="hidden"
-              animate="show"
-              variants={{ hidden: {}, show: { transition: { staggerChildren: 0.12, delayChildren: 0.15 } } }}
-            >
-              {/* Eyebrow — hairline-bracketed mono caption, set in ink */}
-              <motion.p
-                variants={{ hidden: { opacity: 0, y: 8 }, show: { opacity: 1, y: 0 } }}
-                transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-                className="mb-6 flex items-center gap-4 font-mono text-caption uppercase tracking-[0.25em] text-bg-text-secondary"
-              >
-                <span className="h-px w-8 bg-bg-text-secondary/50" aria-hidden="true" />
-                {t('home.heroEyebrow')}
-                <span className="h-px w-8 bg-bg-text-secondary/50" aria-hidden="true" />
-              </motion.p>
-
-              <h1 className="text-display font-bold leading-[1.05] tracking-tight">
-                <motion.span
-                  className="block"
-                  variants={{ hidden: { opacity: 0, y: 10 }, show: { opacity: 1, y: 0 } }}
-                  transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-                >
-                  <MaskedWords text={t('home.heroLine1')} delayBase={0.1} />
-                </motion.span>
-                <motion.span
-                  className="block text-bg-primary-600"
-                  variants={{ hidden: { opacity: 0, y: 10 }, show: { opacity: 1, y: 0 } }}
-                  transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-                >
-                  <MaskedWords text={t('home.heroLine2')} delayBase={0.28} />
-                </motion.span>
-              </h1>
-
-              <motion.p
-                variants={{ hidden: { opacity: 0, y: 10 }, show: { opacity: 1, y: 0 } }}
-                transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-                className="mt-6 max-w-md text-body-lg text-bg-text-secondary"
-              >
-                {t('home.heroSubtitle')}
-              </motion.p>
-
-              <motion.div
-                variants={{ hidden: { opacity: 0, y: 10 }, show: { opacity: 1, y: 0 } }}
-                transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-                className="mt-9 flex flex-wrap items-center gap-5"
-              >
-                <Link
-                  to="/shop"
-                  className="inline-flex items-center gap-2 rounded-md bg-bg-primary-500 px-8 py-3.5 text-body-sm font-semibold text-white transition-colors hover:bg-bg-primary-600"
-                >
-                  {t('home.heroCta')}
-                </Link>
-                <Link
-                  to="/shop?sort=newest"
-                  className="text-body-sm font-medium text-bg-text-secondary underline decoration-bg-border underline-offset-4 transition hover:text-bg-text-primary hover:decoration-bg-primary-500"
-                >
-                  {t('home.heroCtaSecondary')}
-                </Link>
-              </motion.div>
-
-              {/* Category chips — ink-on-paper tags, bordered paper pills */}
-              <motion.div
-                variants={{ hidden: { opacity: 0, y: 10 }, show: { opacity: 1, y: 0 } }}
-                transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-                className="mt-10 flex flex-wrap gap-2 border-t border-bg-border pt-7"
-              >
-                {HERO_CHIPS.map(({ slug, Icon, key }) => (
-                  <Link
-                    key={slug}
-                    to={`/shop?category=${slug}`}
-                    className="group inline-flex items-center gap-1.5 rounded-full border border-bg-border bg-bg-surface-raised px-3.5 py-2 text-caption text-bg-text-primary transition-colors duration-200 hover:border-bg-primary-400 hover:text-bg-primary-600"
-                  >
-                    <Icon size={13} strokeWidth={1.75} className="text-bg-primary-500" />
-                    {t(key)}
-                  </Link>
-                ))}
-              </motion.div>
-            </motion.div>
-
-            {/* Spec visual — the signature */}
-            <div className="lg:col-span-7 lg:-mx-4 xl:-mx-10">
-              <HeroVisual />
-            </div>
-          </div>
-        </div>
-        <CapacityMarquee />
-      </section>
-    );
-  }
-
-  if (isLoading) {
-    return (
-      <section className="relative overflow-hidden">
-        <div className="h-[60vh] sm:h-[70vh] animate-pulse bg-bg-surface-sunken" />
-        <CapacityMarquee />
-      </section>
-    );
-  }
-
-  return (
-    <section
-      className="relative overflow-hidden"
-      onMouseEnter={() => setPaused(true)}
-      onMouseLeave={() => setPaused(false)}
-      onTouchStart={() => setPaused(true)}
-      onTouchEnd={() => setTimeout(() => setPaused(false), 3000)}
-    >
-      <div className="relative h-[60vh] sm:h-[70vh]">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={current}
-            drag="x"
-            dragConstraints={{ left: 0, right: 0 }}
-            dragElastic={0.3}
-            onDragEnd={handleDragEnd}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.5 }}
-            className="absolute inset-0"
-          >
-            <img
-              src={banners[current].imageUrl}
-              alt={isRtl && banners[current].titleAr ? banners[current].titleAr : banners[current].titleEn}
-              className="w-full h-full object-cover"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/25 to-transparent" />
-            <div className="absolute bottom-0 inset-x-0 p-6 sm:p-12 text-white">
-              {banners[current].titleEn && (
-                <h2 className="text-h1 sm:text-display font-bold mb-2">
-                  {isRtl && banners[current].titleAr ? banners[current].titleAr : banners[current].titleEn}
-                </h2>
-              )}
-              {banners[current].subtitleEn && (
-                <p className="text-body-lg sm:text-h3 opacity-90 max-w-xl">
-                  {isRtl && banners[current].subtitleAr ? banners[current].subtitleAr : banners[current].subtitleEn}
-                </p>
-              )}
-              {banners[current].linkUrl && (
-                <Link to={banners[current].linkUrl} className="mt-4 inline-block btn-primary">
-                  {t('common.seeMore')}
-                </Link>
-              )}
-            </div>
-          </motion.div>
-        </AnimatePresence>
-
-        {banners.length > 1 && (
-          <>
-            <button
-              onClick={prev}
-              className="hidden sm:flex absolute start-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm text-white items-center justify-center hover:bg-white/30 transition"
-              aria-label={t('hero.prevSlide')}
-            >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="rtl:rotate-180"><polyline points="15 18 9 12 15 6" /></svg>
-            </button>
-            <button
-              onClick={next}
-              className="hidden sm:flex absolute end-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm text-white items-center justify-center hover:bg-white/30 transition"
-              aria-label={t('hero.nextSlide')}
-            >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="rtl:rotate-180"><polyline points="9 18 15 12 9 6" /></svg>
-            </button>
-            <div className="absolute bottom-4 inset-x-0 flex justify-center gap-2">
-              {banners.map((_, i) => (
-                <button
-                  key={i}
-                  onClick={() => goTo(i)}
-                  className={`h-2.5 rounded-full transition-all ${i === current ? 'w-8 bg-white' : 'w-2.5 bg-white/50'}`}
-                  aria-label={t('hero.slide', { n: i + 1 })}
-                />
-              ))}
-            </div>
-          </>
-        )}
-      </div>
-      <CapacityMarquee />
-    </section>
-  );
-}
 
 function SecondaryBanners() {
   const { t, isAr } = useLocale();
@@ -337,11 +149,19 @@ function SecondaryBanners() {
     let cancelled = false;
     setIsLoading(true);
     setIsError(false);
-    fetchBanners({ position: 'home_secondary' })
-      .then((res) => { if (!cancelled) setBanners(res?.data || []); })
-      .catch(() => { if (!cancelled) setIsError(true); })
-      .finally(() => { if (!cancelled) setIsLoading(false); });
-    return () => { cancelled = true; };
+    fetchBanners({ position: "home_secondary" })
+      .then((res) => {
+        if (!cancelled) setBanners(res?.data || []);
+      })
+      .catch(() => {
+        if (!cancelled) setIsError(true);
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [reload]);
 
   if (isLoading) {
@@ -355,8 +175,11 @@ function SecondaryBanners() {
     return (
       <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
         <EmptyState
-          message={t('common.common.error')}
-          action={{ label: t('common.common.retry'), onClick: () => setReload((v) => v + 1) }}
+          message={t("common.common.error")}
+          action={{
+            label: t("common.common.retry"),
+            onClick: () => setReload((v) => v + 1),
+          }}
         />
       </section>
     );
@@ -371,12 +194,12 @@ function SecondaryBanners() {
             key={b.id}
             initial={{ opacity: 0, y: 16 }}
             whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: '-80px' }}
+            viewport={{ once: true, margin: "-80px" }}
             transition={{ duration: 0.4, delay: i * 0.1 }}
           >
             <Link
-              to={b.linkUrl || '#'}
-              className={`group relative block aspect-[2/1] overflow-hidden rounded-xl ${b.linkUrl ? '' : 'pointer-events-none'}`}
+              to={b.linkUrl || "#"}
+              className={`group relative block aspect-[2/1] overflow-hidden rounded-xl ${b.linkUrl ? "" : "pointer-events-none"}`}
             >
               <img
                 src={b.imageUrl}
@@ -429,32 +252,56 @@ export default function Home() {
     setCatLoading(true);
     setCatError(false);
     fetchCategories()
-      .then((res) => { if (!cancelled) setCatData(res); })
-      .catch(() => { if (!cancelled) setCatError(true); })
-      .finally(() => { if (!cancelled) setCatLoading(false); });
-    return () => { cancelled = true; };
+      .then((res) => {
+        if (!cancelled) setCatData(res);
+      })
+      .catch(() => {
+        if (!cancelled) setCatError(true);
+      })
+      .finally(() => {
+        if (!cancelled) setCatLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [catReload]);
 
   useEffect(() => {
     let cancelled = false;
     setFeatLoading(true);
     setFeatError(false);
-    fetchProducts({ featured: 'true', limit: 8 })
-      .then((res) => { if (!cancelled) setFeaturedData(res); })
-      .catch(() => { if (!cancelled) setFeatError(true); })
-      .finally(() => { if (!cancelled) setFeatLoading(false); });
-    return () => { cancelled = true; };
+    fetchProducts({ featured: "true", limit: 8 })
+      .then((res) => {
+        if (!cancelled) setFeaturedData(res);
+      })
+      .catch(() => {
+        if (!cancelled) setFeatError(true);
+      })
+      .finally(() => {
+        if (!cancelled) setFeatLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [featReload]);
 
   useEffect(() => {
     let cancelled = false;
     setNewLoading(true);
     setNewError(false);
-    fetchProducts({ new: 'true', limit: 8 })
-      .then((res) => { if (!cancelled) setNewData(res); })
-      .catch(() => { if (!cancelled) setNewError(true); })
-      .finally(() => { if (!cancelled) setNewLoading(false); });
-    return () => { cancelled = true; };
+    fetchProducts({ new: "true", limit: 8 })
+      .then((res) => {
+        if (!cancelled) setNewData(res);
+      })
+      .catch(() => {
+        if (!cancelled) setNewError(true);
+      })
+      .finally(() => {
+        if (!cancelled) setNewLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [newReload]);
 
   const categories = catData?.data || [];
@@ -466,25 +313,28 @@ export default function Home() {
       <SEO
         titleKey="nav.home"
         jsonLd={{
-          '@context': 'https://schema.org',
-          '@type': 'Organization',
-          name: t('brand.fullName'),
+          "@context": "https://schema.org",
+          "@type": "Organization",
+          name: t("brand.fullName"),
           url: window.location.origin,
           logo: `${window.location.origin}/logo.png`,
         }}
       />
 
-      <HeroCarousel />
+      <Hero products={featured} loading={featLoading} />
 
       {/* Categories — tiled cards: tinted icon tile, name, slide-in chevron on hover */}
       <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 lg:py-10">
         <motion.div {...fadeUp}>
           <div className="mb-5 flex items-end justify-between">
             <p className="font-mono text-caption uppercase tracking-[0.2em] text-bg-text-secondary">
-              {t('home.shopByCategory')}
+              {t("home.shopByCategory")}
             </p>
-            <Link to="/shop" className="text-body-sm font-medium text-bg-primary-500 hover:text-bg-primary-600 transition">
-              {t('common.viewAll')}
+            <Link
+              to="/shop"
+              className="text-body-sm font-medium text-bg-primary-500 hover:text-bg-primary-600 transition"
+            >
+              {t("common.viewAll")}
             </Link>
           </div>
           {catLoading && (
@@ -496,8 +346,11 @@ export default function Home() {
           )}
           {catError && !catLoading && (
             <EmptyState
-              message={t('common.common.error')}
-              action={{ label: t('common.common.retry'), onClick: () => setCatReload((v) => v + 1) }}
+              message={t("common.common.error")}
+              action={{
+                label: t("common.common.retry"),
+                onClick: () => setCatReload((v) => v + 1),
+              }}
             />
           )}
           {!catLoading && !catError && categories.length > 0 && (
@@ -510,9 +363,9 @@ export default function Home() {
                     key={cat.id}
                     initial={{ opacity: 0, y: 10 }}
                     whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true, margin: '-80px' }}
+                    viewport={{ once: true, margin: "-80px" }}
                     transition={{ duration: 0.3, delay: i * 0.05 }}
-                    className={isHiddenOnMobile ? 'hidden sm:block' : ''}
+                    className={isHiddenOnMobile ? "hidden sm:block" : ""}
                   >
                     <Link
                       to={`/shop?category=${cat.slug}`}
@@ -520,9 +373,16 @@ export default function Home() {
                     >
                       <span
                         className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md"
-                        style={{ background: 'color-mix(in srgb, var(--bg-primary-500) 10%, transparent)' }}
+                        style={{
+                          background:
+                            "color-mix(in srgb, var(--bg-primary-500) 10%, transparent)",
+                        }}
                       >
-                        <CategoryIcon size={20} strokeWidth={1.5} className="text-bg-primary-500" />
+                        <CategoryIcon
+                          size={20}
+                          strokeWidth={1.5}
+                          className="text-bg-primary-500"
+                        />
                       </span>
                       <span className="min-w-0 flex-1">
                         <span className="block truncate text-body-sm font-medium text-bg-text-primary transition-colors duration-300 group-hover:text-bg-primary-500">
@@ -548,11 +408,18 @@ export default function Home() {
         <motion.div {...fadeUp}>
           <div className="flex items-end justify-between mb-6 lg:mb-8">
             <div>
-              <p className="mb-1 font-mono text-caption uppercase tracking-[0.2em] text-bg-primary-500">{t('home.featuredEyebrow')}</p>
-              <h2 className="text-h2 font-semibold text-bg-text-primary">{t('shop:featured')}</h2>
+              <p className="mb-1 font-mono text-caption uppercase tracking-[0.2em] text-bg-primary-500">
+                {t("home.featuredEyebrow")}
+              </p>
+              <h2 className="text-h2 font-semibold text-bg-text-primary">
+                {t("shop:featured")}
+              </h2>
             </div>
-            <Link to="/shop?sort=featured" className="text-body-sm font-medium text-bg-primary-500 hover:text-bg-primary-600 transition">
-              {t('common.viewAll')}
+            <Link
+              to="/shop?sort=featured"
+              className="text-body-sm font-medium text-bg-primary-500 hover:text-bg-primary-600 transition"
+            >
+              {t("common.viewAll")}
             </Link>
           </div>
           <ProductGrid
@@ -560,7 +427,7 @@ export default function Home() {
             isLoading={featLoading}
             isError={featError}
             onRetry={() => setFeatReload((v) => v + 1)}
-            emptyMessage={t('shop:noProducts')}
+            emptyMessage={t("shop:noProducts")}
           />
         </motion.div>
       </section>
@@ -572,11 +439,18 @@ export default function Home() {
         <motion.div {...fadeUp}>
           <div className="flex items-end justify-between mb-6 lg:mb-8">
             <div>
-              <p className="mb-1 font-mono text-caption uppercase tracking-[0.2em] text-bg-primary-500">{t('home.newEyebrow')}</p>
-              <h2 className="text-h2 font-semibold text-bg-text-primary">{t('shop:newArrivals')}</h2>
+              <p className="mb-1 font-mono text-caption uppercase tracking-[0.2em] text-bg-primary-500">
+                {t("home.newEyebrow")}
+              </p>
+              <h2 className="text-h2 font-semibold text-bg-text-primary">
+                {t("shop:newArrivals")}
+              </h2>
             </div>
-            <Link to="/shop?sort=newest" className="text-body-sm font-medium text-bg-primary-500 hover:text-bg-primary-600 transition">
-              {t('common.viewAll')}
+            <Link
+              to="/shop?sort=newest"
+              className="text-body-sm font-medium text-bg-primary-500 hover:text-bg-primary-600 transition"
+            >
+              {t("common.viewAll")}
             </Link>
           </div>
           <ProductGrid
@@ -584,27 +458,49 @@ export default function Home() {
             isLoading={newLoading}
             isError={newError}
             onRetry={() => setNewReload((v) => v + 1)}
-            emptyMessage={t('shop:noProducts')}
+            emptyMessage={t("shop:noProducts")}
           />
         </motion.div>
       </section>
 
       {/* Trust strip — light spec-sheet band, hardware icon chips, hairline dividers */}
       <section className="border-y border-bg-border bg-bg-surface-sunken/50">
-        <motion.div {...fadeUp} className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8 lg:py-12">
+        <motion.div
+          {...fadeUp}
+          className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8 lg:py-12"
+        >
           <div className="grid grid-cols-1 divide-y divide-bg-border sm:grid-cols-3 sm:divide-y-0 sm:divide-x rtl:sm:divide-x-reverse">
             {[
-              { Icon: Truck, labelKey: 'footer.cod', descKey: 'home.codDesc' },
-              { Icon: Clock, labelKey: 'home.deliveryDays', descKey: 'home.deliveryDesc' },
-              { Icon: ShieldCheck, labelKey: 'home.quality', descKey: 'home.qualityDesc' },
+              { Icon: Truck, labelKey: "footer.cod", descKey: "home.codDesc" },
+              {
+                Icon: Clock,
+                labelKey: "home.deliveryDays",
+                descKey: "home.deliveryDesc",
+              },
+              {
+                Icon: ShieldCheck,
+                labelKey: "home.quality",
+                descKey: "home.qualityDesc",
+              },
             ].map(({ Icon, labelKey, descKey }, i) => (
-              <div key={i} className="flex items-center gap-4 py-6 sm:justify-center sm:py-0 sm:px-8">
+              <div
+                key={i}
+                className="flex items-center gap-4 py-6 sm:justify-center sm:py-0 sm:px-8"
+              >
                 <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-sm border border-bg-border bg-bg-surface shadow-card">
-                  <Icon size={20} strokeWidth={1.5} className="text-bg-primary-500" />
+                  <Icon
+                    size={20}
+                    strokeWidth={1.5}
+                    className="text-bg-primary-500"
+                  />
                 </span>
                 <div>
-                  <h3 className="text-body-sm font-semibold text-bg-text-primary">{t(labelKey)}</h3>
-                  <p className="mt-0.5 text-caption text-bg-text-secondary">{t(descKey)}</p>
+                  <h3 className="text-body-sm font-semibold text-bg-text-primary">
+                    {t(labelKey)}
+                  </h3>
+                  <p className="mt-0.5 text-caption text-bg-text-secondary">
+                    {t(descKey)}
+                  </p>
                 </div>
               </div>
             ))}

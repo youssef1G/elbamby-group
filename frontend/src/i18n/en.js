@@ -59,13 +59,13 @@ export default {
   "common.toast.notifications": "Notifications",
 
   "common.accessibility.skipToContent": "Skip to content",
-  "common.home.heroEyebrow": "STORAGE, DONE RIGHT",
-  "common.home.heroLine1": "Real speed.",
-  "common.home.heroLine2": "Storage you can trust.",
+  "common.home.heroLine1": "Genuine. In stock.",
+  "common.home.heroLine2": "Delivered to your door.",
   "common.home.heroSubtitle":
-    "Cash on delivery, real stock on hand, and fast shipping across Egypt.",
-  "common.home.heroCta": "Browse Products",
-  "common.home.heroCtaSecondary": "Shop storage",
+    "Memory cards, flash drives, chargers, power banks, audio, and cables — original, guaranteed, and delivered fast anywhere in Egypt.",
+  "common.home.heroCta": "Shop now",
+  "common.home.heroCtaSecondary": "Browse storage",
+  "common.home.heroSerial": "BG · 01",
 
   "common.home.codDesc": "Pay when you receive",
   "common.home.deliveryDays": "1–3 Day Delivery",

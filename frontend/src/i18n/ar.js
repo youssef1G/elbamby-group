@@ -57,13 +57,13 @@ export default {
   "common.toast.notifications": "الإشعارات",
 
   "common.accessibility.skipToContent": "تخطَّ إلى المحتوى",
-  "common.home.heroEyebrow": "تخزين بجودة تستحق",
-  "common.home.heroLine1": "سرعة حقيقية",
-  "common.home.heroLine2": "تخزين تثق فيه",
+  "common.home.heroLine1": "أصلي ومتوفّر دائمًا.",
+  "common.home.heroLine2": "ويوصلك لحد بابك.",
   "common.home.heroSubtitle":
-    "الدفع عند الاستلام، مخزون حقيقي متوفر، وتوصيل سريع لكل مصر.",
-  "common.home.heroCta": "تصفح المنتجات",
-  "common.home.heroCtaSecondary": "تسوق وسائط التخزين",
+    "كروت ذاكرة، فلاشات، شواحن، باور بانك، سماعات وكل الإكسسوارات — أصلية ومضمونة، بتوصيل سريع لكل مصر.",
+  "common.home.heroCta": "تسوق الآن",
+  "common.home.heroCtaSecondary": "قسم وسائط التخزين",
+  "common.home.heroSerial": "ب ج · ٠١",
 
   "common.home.codDesc": "ادفع عند الاستلام",
   "common.home.deliveryDays": "توصيل 1–3 أيام",
