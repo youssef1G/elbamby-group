@@ -49,7 +49,9 @@ export default function HeroVisual({ products = [], loading = false }) {
     : "";
   const numeral = product?.capacityGb
     ? `${product.capacityGb}GB`
-    : product?.interfaceType || "BG";
+    : product?.interfaceType
+      ? product.interfaceType
+      : t("home.heroGhost");
   const chips = product
     ? [
         product.capacityGb && `${product.capacityGb}GB`,
@@ -112,7 +114,7 @@ export default function HeroVisual({ products = [], loading = false }) {
       {/* Ghosted capacity numeral — the spec as background type */}
       <span
         aria-hidden="true"
-        className="pointer-events-none absolute -top-10 -end-4 z-0 font-mono text-[6rem] font-medium leading-none tracking-tight text-bg-text-primary/[0.07] ltr-nums sm:text-[9rem] lg:-top-12 lg:text-[11rem]"
+        className="pointer-events-none absolute -top-12 -end-4 z-0 font-mono text-[6rem] font-semibold leading-none tracking-tight text-bg-text-primary/[0.12] ltr-nums sm:text-[9rem] lg:-top-14 lg:text-[11rem]"
       >
         {numeral}
       </span>

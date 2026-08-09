@@ -64,6 +64,7 @@ export default {
   "common.home.heroCta": "تسوق الآن",
   "common.home.heroCtaSecondary": "قسم وسائط التخزين",
   "common.home.heroToken": "BG — البمبي جروب",
+  "common.home.heroGhost": "ذاكرة",
 
   "common.home.codDesc": "ادفع عند الاستلام",
   "common.home.deliveryDays": "توصيل 1–3 أيام",

@@ -66,6 +66,7 @@ export default {
   "common.home.heroCta": "Shop now",
   "common.home.heroCtaSecondary": "Browse storage",
   "common.home.heroToken": "BG — El Bamby Group",
+  "common.home.heroGhost": "MEMORY",
 
   "common.home.codDesc": "Pay when you receive",
   "common.home.deliveryDays": "1–3 Day Delivery",
