@@ -1,53 +1,72 @@
 export default {
   "common.brand.name": "El Bamby Group BG",
   "common.brand.fullName": "El Bamby Group BG",
-  "common.brand.subName": "House of Memory",
+  "common.brand.subName": "House of Memory",
+
   "common.nav.home": "Home",
   "common.nav.shop": "Products",
   "common.nav.about": "About",
-  "common.nav.contact": "Contact",
+  "common.nav.contact": "Contact",
+
   "common.nav.myOrders": "My Orders",
   "common.nav.login": "Login",
   "common.nav.account": "My Account",
-  "common.nav.hi": "Hi, {{name}}",
+  "common.nav.hi": "Hi, {{name}}",
+
   "common.nav.cart": "Cart",
   "common.nav.checkout": "Checkout",
-  "common.nav.menu": "Menu",
-  "common.nav.main": "Main navigation",
+  "common.nav.menu": "Menu",
+
+  "common.nav.main": "Main navigation",
+
   "common.theme.toggleToLight": "Switch to light mode",
   "common.theme.toggleToDark": "Switch to dark mode",
   "common.language.switchToEnglish": "English",
-  "common.language.switchToArabic": "العربية",
+  "common.language.switchToArabic": "العربية",
+
   "common.common.loading": "Loading…",
   "common.common.retry": "Try Again",
-  "common.common.clear": "Clear",
-  "common.common.close": "Close",
+  "common.common.clear": "Clear",
+
+  "common.common.close": "Close",
+
   "common.common.remove": "Remove",
   "common.common.decrease": "Decrease",
-  "common.common.increase": "Increase",
+  "common.common.increase": "Increase",
+
   "common.common.viewAll": "View all",
   "common.common.seeMore": "See more",
   "common.common.nothing": "Nothing here yet",
-  "common.common.error": "Something went wrong",
-  "common.footer.tagline": "Flash drives & memory cards, delivered across Egypt.",
+  "common.common.error": "Something went wrong",
+
+  "common.footer.tagline":
+    "Flash drives & memory cards, delivered across Egypt.",
+
   "common.footer.shop": "Shop",
   "common.footer.help": "Help",
   "common.footer.trackOrder": "Track order",
   "common.footer.returns": "Returns",
   "common.footer.connect": "Follow us",
   "common.footer.location": "Store location",
-  "common.footer.copyright": "© {{year}} El Bamby Group BG. All rights reserved.",
-  "common.footer.developedBy": "Developed by",
-  "common.footer.cod": "Cash on Delivery",
-  "common.footer.register": "Create Account",
-  "common.toast.notifications": "Notifications",
+  "common.footer.copyright":
+    "© {{year}} El Bamby Group BG. All rights reserved.",
+  "common.footer.developedBy": "Developed by",
+
+  "common.footer.cod": "Cash on Delivery",
+
+  "common.footer.register": "Create Account",
+
+  "common.toast.notifications": "Notifications",
+
   "common.accessibility.skipToContent": "Skip to content",
   "common.home.heroEyebrow": "STORAGE, DONE RIGHT",
   "common.home.heroLine1": "Real speed.",
   "common.home.heroLine2": "Storage you can trust.",
-  "common.home.heroSubtitle": "Cash on delivery, real stock on hand, and fast shipping across Egypt.",
+  "common.home.heroSubtitle":
+    "Cash on delivery, real stock on hand, and fast shipping across Egypt.",
   "common.home.heroCta": "Browse Products",
-  "common.home.heroCtaSecondary": "Shop storage",
+  "common.home.heroCtaSecondary": "Shop storage",
+
   "common.home.codDesc": "Pay when you receive",
   "common.home.deliveryDays": "1–3 Day Delivery",
   "common.home.deliveryDesc": "Across Egypt, fast and reliable",
@@ -61,25 +80,38 @@ export default {
   "common.hero.slide": "Slide {{n}}",
   "common.cart.empty": "Your cart is empty",
   "common.cart.continueShopping": "Continue Shopping",
-  "common.cart.stockChanged": "Some items in your cart have changed in stock. Please review before checking out.",
+  "common.cart.stockChanged":
+    "Some items in your cart have changed in stock. Please review before checking out.",
   "common.notFound.title": "Page Not Found",
-  "common.notFound.subtitle": "This page doesn't exist or is no longer available.",
+  "common.notFound.subtitle":
+    "This page doesn't exist or is no longer available.",
   "common.notFound.backHome": "Back to Home",
-  "common.about.title": "About Us",
-  "common.about.storyP1": "بيت الميموري — Bayt Al Memory — was founded with a simple mission: bring high-quality, affordable flash drives and memory cards to every corner of Egypt.",
-  "common.about.storyP2": "We specialize in storage media. Every product is sourced from trusted manufacturers and tested for speed, capacity, and reliability before reaching our shelves.",
+  "common.about.title": "About Us",
+
+  "common.about.storyP1":
+    "بيت الميموري — Bayt Al Memory — was founded with a simple mission: bring high-quality, affordable flash drives and memory cards to every corner of Egypt.",
+  "common.about.storyP2":
+    "We specialize in storage media. Every product is sourced from trusted manufacturers and tested for speed, capacity, and reliability before reaching our shelves.",
+
   "common.about.value1Title": "Quality First",
-  "common.about.value1Desc": "Every flash drive and memory card is speed-tested and verified. We never compromise on storage quality.",
+  "common.about.value1Desc":
+    "Every flash drive and memory card is speed-tested and verified. We never compromise on storage quality.",
   "common.about.value2Title": "Customer Focus",
-  "common.about.value2Desc": "Your satisfaction drives everything we do. We're here to help before, during, and after your purchase.",
+  "common.about.value2Desc":
+    "Your satisfaction drives everything we do. We're here to help before, during, and after your purchase.",
   "common.about.value3Title": "Fast Delivery",
-  "common.about.value3Desc": "We deliver across Egypt in 1-3 business days, so you get your storage when you need it.",
+  "common.about.value3Desc":
+    "We deliver across Egypt in 1-3 business days, so you get your storage when you need it.",
+
   "common.tracking.title": "Track Your Order",
-  "common.tracking.formTitle": "Enter your order details to track",
+  "common.tracking.formTitle": "Enter your order details to track",
+
   "common.tracking.notFound": "No order found with that number and phone.",
   "common.tracking.cancelTitle": "Cancel Order",
   "common.tracking.cancelling": "Cancelling…",
-  "common.tracking.cancelConfirm": "Are you sure you want to cancel this order?",
+  "common.tracking.cancelConfirm":
+    "Are you sure you want to cancel this order?",
+
   "common.tracking.status_pending": "Order Placed",
   "common.tracking.status_confirmed": "Confirmed",
   "common.tracking.status_processing": "Processing",
@@ -96,12 +128,14 @@ export default {
   "common.myOrders.formTitle": "Enter your phone number to view orders",
   "common.myOrders.phone": "Phone Number",
   "common.myOrders.submit": "View Orders",
-  "common.myOrders.noOrders": "No orders found for this phone number.",
+  "common.myOrders.noOrders": "No orders found for this phone number.",
+
   "common.myOrders.track": "Track",
   "common.myOrders.requestReturn": "Request Return",
   "common.myOrders.reorder": "Reorder",
   "common.myOrders.reorderAdded": "Items added to cart",
-  "common.myOrders.reorderUnavailable": "Some items were unavailable or out of stock",
+  "common.myOrders.reorderUnavailable":
+    "Some items were unavailable or out of stock",
   "common.myOrders.reorderEmpty": "This order can't be reordered",
 
   "support.return.requestReturn": "Request a Return",
@@ -114,23 +148,29 @@ export default {
   "support.return.details": "Details (optional)",
   "support.return.submit": "Submit Request",
   "support.return.cancel": "Cancel",
-  "support.return.success": "Return request submitted successfully. We will contact you soon.",
-  "support.return.missingInfo": "Missing order number or phone — please refresh your orders and try again.",
-  "support.return.notFound": "No delivered order matches that number and phone. Please double-check and try again.",
+  "support.return.success":
+    "Return request submitted successfully. We will contact you soon.",
+  "support.return.missingInfo":
+    "Missing order number or phone — please refresh your orders and try again.",
+  "support.return.notFound":
+    "No delivered order matches that number and phone. Please double-check and try again.",
   "support.return.validationFailed": "Please fill in all required fields.",
 
   "common.select.empty": "No options",
 
-"common.contact.title": "Contact Us",
+  "common.contact.title": "Contact Us",
   "common.contact.instagram": "El Bamby Group on Instagram",
   "common.contact.whatsapp": "Chat with El Bamby Group on WhatsApp",
   "common.contact.formTitle": "Send us a message",
   "common.contact.name": "Full Name",
-  "common.contact.phone": "Phone Number",
+  "common.contact.phone": "Phone Number",
+
   "common.contact.message": "Your Message",
   "common.contact.submit": "Send Message",
   "common.contact.sending": "Sending…",
-  "common.contact.success": "Message sent successfully! We'll get back to you soon.",
+  "common.contact.success":
+    "Message sent successfully! We'll get back to you soon.",
+
   "shop.filters.sortBy": "Sort by",
   "shop.filters.newest": "Newest",
   "shop.filters.price_asc": "Lowest price",
@@ -141,13 +181,15 @@ export default {
   "shop.filters.allCategories": "All Categories",
   "shop.product.addToCart": "Add to Cart",
   "shop.product.added": "✓ Added",
-  "shop.product.outOfStock": "Out of Stock",
+  "shop.product.outOfStock": "Out of Stock",
+
   "shop.product.viewDetails": "View Details",
   "shop.product.lowStock": "Only {{count}} left",
   "shop.product.quantity": "Quantity",
   "shop.product.askAbout": "Ask about this product",
-  
-  "shop.product.relatedProducts": "Related Products",
+
+  "shop.product.relatedProducts": "Related Products",
+
   "shop.categories": "Categories",
   "shop.noCategories": "No categories yet",
   "shop.featured": "Featured",
@@ -157,13 +199,15 @@ export default {
   "shop.gallery.next": "Next image",
   "shop.gallery.image": "Image {{n}}",
   "shop.searchPlaceholder": "Search products...",
-  "shop.searchClear": "Clear search",
+  "shop.searchClear": "Clear search",
+
   "shop.loadMore": "Load More",
-"shop.allLoaded": "All {{count}} products loaded",
-"shop.loadFailed": "Failed to load products",
+  "shop.allLoaded": "All {{count}} products loaded",
+  "shop.loadFailed": "Failed to load products",
 
   "checkout.validation.name": "Full name is required",
-  "checkout.validation.phone": "Enter a valid Egyptian phone number (e.g. 01012345678)",
+  "checkout.validation.phone":
+    "Enter a valid Egyptian phone number (e.g. 01012345678)",
   "checkout.validation.email": "Enter a valid email",
   "checkout.validation.address": "Address is required",
   "checkout.validation.city": "City is required",
@@ -175,7 +219,8 @@ export default {
   "checkout.form.cityLabel": "City",
   "checkout.form.notesLabel": "Delivery Notes (optional)",
   "checkout.form.submit": "Place Order",
-  "checkout.form.placingOrder": "Placing order…",
+  "checkout.form.placingOrder": "Placing order…",
+
   "checkout.form.cod": "Cash on Delivery",
   "checkout.form.codDesc": "Pay when you receive your order",
   "checkout.summary.subtotal": "Subtotal",
@@ -184,10 +229,13 @@ export default {
   "checkout.summary.freeShippingHint": "Add {{amount}} more for free shipping",
   "checkout.summary.total": "Total",
   "checkout.success.title": "Order Placed!",
-  "checkout.success.subtitle": "Thank you for your order. We'll confirm it shortly.",
-  "checkout.success.estimatedDelivery": "Estimated delivery within 1–3 business days.",
+  "checkout.success.subtitle":
+    "Thank you for your order. We'll confirm it shortly.",
+  "checkout.success.estimatedDelivery":
+    "Estimated delivery within 1–3 business days.",
   "checkout.success.trackOrder": "Track Order",
-  "checkout.success.continueShopping": "Continue Shopping",
+  "checkout.success.continueShopping": "Continue Shopping",
+
   "checkout.errors.generic": "Something went wrong. Please try again.",
   "checkout.redeem.title": "Use your points",
   "checkout.redeem.balance": "You have {{points}} points available",
@@ -196,21 +244,30 @@ export default {
   "checkout.redeem.rateHint": "Each point is worth {{rate}}",
   "checkout.redeem.discount": "Points discount",
   "checkout.redeem.unavailable": "Points redemption is temporarily unavailable",
-  "checkout.errors.insufficientPoints": "Your points balance is not enough to cover the requested redemption. Please lower the amount.",
-  "checkout.errors.redemptionDisabled": "Points redemption is currently unavailable. Please try again later.",
-  "checkout.errors.redemptionRequiresLogin": "You must be logged in to redeem points. Please log in and try again.",
-  "checkout.errors.stockConflict": "Some items are no longer available in the requested quantity. Please review your cart:",
-  "checkout.errors.stockConflictItem": "{{name}} — available: {{available}}, requested: {{requested}}",
-  "checkout.success.pointsEarned": "You'll earn {{points}} points when this order is delivered.",
-  "checkout.success.pointsRedeemed": "You redeemed {{points}} points — {{amount}} off this order.",
+  "checkout.errors.insufficientPoints":
+    "Your points balance is not enough to cover the requested redemption. Please lower the amount.",
+  "checkout.errors.redemptionDisabled":
+    "Points redemption is currently unavailable. Please try again later.",
+  "checkout.errors.redemptionRequiresLogin":
+    "You must be logged in to redeem points. Please log in and try again.",
+  "checkout.errors.stockConflict":
+    "Some items are no longer available in the requested quantity. Please review your cart:",
+  "checkout.errors.stockConflictItem":
+    "{{name}} — available: {{available}}, requested: {{requested}}",
+  "checkout.success.pointsEarned":
+    "You'll earn {{points}} points when this order is delivered.",
+  "checkout.success.pointsRedeemed":
+    "You redeemed {{points}} points — {{amount}} off this order.",
   "auth.login.title": "Customer Login",
   "auth.login.subtitle": "Log in to track and redeem your points",
   "auth.login.phone": "Phone Number",
   "auth.login.password": "Password",
   "auth.login.submit": "Log in",
   "auth.login.invalidCredentials": "Invalid phone or password",
-  "auth.errors.rateLimited": "Too many attempts. Please wait a moment and try again.",
-  "auth.errors.validationFailed": "Please check the entered details and try again.",
+  "auth.errors.rateLimited":
+    "Too many attempts. Please wait a moment and try again.",
+  "auth.errors.validationFailed":
+    "Please check the entered details and try again.",
   "auth.login.noAccount": "Don't have an account?",
   "auth.login.registerLink": "Create one",
   "auth.register.title": "Create Account",
@@ -222,8 +279,10 @@ export default {
   "auth.register.email": "Email (optional)",
   "auth.register.submit": "Create account",
   "auth.register.conflict": "An account already exists for this phone number.",
-  "auth.register.welcomeTitle": "No matter what, you're already a winner with El Bamby Group!",
-  "auth.register.welcomeBody": "As a welcome gift, we've added {{points}} points to your account — ready to use on your first order.",
+  "auth.register.welcomeTitle":
+    "No matter what, you're already a winner with El Bamby Group!",
+  "auth.register.welcomeBody":
+    "As a welcome gift, we've added {{points}} points to your account — ready to use on your first order.",
   "auth.register.welcomeNext": "Go to my account",
   "auth.register.loginLink": "Log in instead",
   "auth.register.haveAccount": "Already have an account?",
@@ -236,18 +295,26 @@ export default {
   "account.history": "Points History",
   "account.noHistory": "No transactions yet",
   "account.logout": "Log out",
+  "account.loggingOut": "Logging out…",
   "account.continueShopping": "Continue Shopping",
   "account.tabs.overview": "Overview",
   "account.tabs.orders": "My Orders",
-  "account.tabs.settings": "Settings",
-  "account.orders.emptyHint": "Orders placed from this account will appear here.",
+  "account.tabs.settings": "Settings",
+
+  "account.orders.emptyHint":
+    "Orders placed from this account will appear here.",
   "account.pointsInfo.title": "How points work",
-  "account.pointsInfo.earnRateOne": "Earn 1 point for every 1 {{currency}} spent",
-  "account.pointsInfo.earnRateMany": "Earn {{points}} points for every 1 {{currency}} spent",
+  "account.pointsInfo.earnRateOne":
+    "Earn 1 point for every 1 {{currency}} spent",
+  "account.pointsInfo.earnRateMany":
+    "Earn {{points}} points for every 1 {{currency}} spent",
   "account.pointsInfo.redeemRateOne": "1 point = 1 {{currency}} off your order",
-  "account.pointsInfo.redeemRateMany": "{{points}} points = 1 {{currency}} off your order",
-  "account.pointsInfo.deliveredHint": "Points are added to your balance when your order is delivered.",
-  "account.pointsInfo.redeemHint": "Redeem points at checkout for a discount on your order.",
+  "account.pointsInfo.redeemRateMany":
+    "{{points}} points = 1 {{currency}} off your order",
+  "account.pointsInfo.deliveredHint":
+    "Points are added to your balance when your order is delivered.",
+  "account.pointsInfo.redeemHint":
+    "Redeem points at checkout for a discount on your order.",
   "account.settings.profileTitle": "Profile",
   "account.settings.passwordTitle": "Change Password",
   "account.settings.name": "Full Name",
@@ -259,10 +326,12 @@ export default {
   "account.settings.passwordUpdated": "Password updated successfully",
   "account.settings.wrongPassword": "Current password is incorrect",
   "account.settings.dangerZone": "Danger zone",
-  "account.settings.deleteHint": "Deleting your account permanently removes it and all of your points. Your past orders stay on record.",
+  "account.settings.deleteHint":
+    "Deleting your account permanently removes it and all of your points. Your past orders stay on record.",
   "account.settings.deleteAccount": "Delete my account",
   "account.settings.deleteConfirmTitle": "Delete your account?",
-  "account.settings.deleteConfirmDesc": "This permanently deletes your account, your points and points history. This cannot be undone.",
+  "account.settings.deleteConfirmDesc":
+    "This permanently deletes your account, your points and points history. This cannot be undone.",
   "account.settings.deleteCancel": "Cancel",
   "account.settings.deleting": "Deleting…",
   "account.settings.accountDeleted": "Your account has been deleted",
@@ -276,7 +345,9 @@ export default {
   "admin.sidebar.support": "Support",
   "admin.sidebar.analytics": "Analytics",
   "admin.sidebar.customers": "Customers",
-  "admin.sidebar.logout": "Logout",
+  "admin.sidebar.logout": "Logout",
+  "admin.sidebar.loggingOut": "Logging out…",
+
   "admin.login.subtitle": "— Admin Panel —",
   "admin.login.username": "Username",
   "admin.login.placeholderUsername": "Type your username",
@@ -284,18 +355,23 @@ export default {
   "admin.login.submit": "Sign in",
   "admin.login.required": "This field is required",
   "admin.login.error": "Invalid credentials",
-  "admin.login.sessionExpired": "Your session expired. Please sign in again.",
+  "admin.login.sessionExpired": "Your session expired. Please sign in again.",
+
   "admin.common.save": "Save",
   "admin.common.cancel": "Cancel",
   "admin.common.delete": "Delete",
   "admin.common.edit": "Edit",
-  "admin.common.create": "Create",
+  "admin.common.create": "Create",
+
   "admin.common.actions": "Actions",
-  "admin.common.noResults": "No results found",
+  "admin.common.noResults": "No results found",
+
   "admin.common.confirmDelete": "Are you sure you want to delete this item?",
   "admin.common.confirmDeleteDesc": "This action cannot be undone.",
-  "admin.common.yesDelete": "Yes, delete",
-  "admin.common.back": "Back",
+  "admin.common.yesDelete": "Yes, delete",
+
+  "admin.common.back": "Back",
+
   "admin.common.page": "Page",
   "admin.common.of": "of",
   "admin.common.prev": "Previous",
@@ -306,47 +382,60 @@ export default {
   "admin.common.lowStock": "Low",
   "admin.common.outOfStock": "Out of Stock",
   "admin.dashboard.title": "Dashboard",
-  "admin.dashboard.totalOrders": "Total Orders",
+  "admin.dashboard.totalOrders": "Total Orders",
+
   "admin.dashboard.revenue": "Revenue",
-  "admin.dashboard.lowStock": "Low Stock",
+  "admin.dashboard.lowStock": "Low Stock",
+
   "admin.dashboard.pending": "Pending Orders",
   "admin.dashboard.products": "Total Products",
-  "admin.dashboard.recentOrders": "Recent Orders",
+  "admin.dashboard.recentOrders": "Recent Orders",
+
   "admin.products.title": "Products",
   "admin.products.create": "New Product",
-  "admin.products.edit": "Edit Product",
+  "admin.products.edit": "Edit Product",
+
   "admin.products.nameEn": "Name (English)",
-  "admin.products.nameAr": "Name (Arabic)",
+  "admin.products.nameAr": "Name (Arabic)",
+
   "admin.products.descriptionEn": "Description (English)",
   "admin.products.descriptionAr": "Description (Arabic)",
   "admin.products.category": "Category",
-  "admin.products.price": "Price",
+  "admin.products.price": "Price",
+
   "admin.products.stockQuantity": "Stock",
   "admin.products.lowStockThreshold": "Low Stock Threshold",
   "admin.products.images": "Images",
   "admin.products.isFeatured": "Featured",
-  "admin.products.isNewArrival": "New Arrival",
-  "admin.products.deleteConfirm": "Delete this product? It will be hidden from the store.",
+  "admin.products.isNewArrival": "New Arrival",
+
+  "admin.products.deleteConfirm":
+    "Delete this product? It will be hidden from the store.",
   "admin.products.slugExists": "A product with this slug already exists",
   "admin.products.created": "Product created",
   "admin.products.updated": "Product updated",
   "admin.products.deleted": "Product deleted",
   "admin.products.saved": "Saved",
-  "admin.categories.title": "Categories",
+  "admin.categories.title": "Categories",
+
   "admin.categories.nameEn": "Name (English)",
   "admin.categories.nameAr": "Name (Arabic)",
-  "admin.categories.slug": "Slug",
+  "admin.categories.slug": "Slug",
+
   "admin.categories.productCount": "Products",
-  "admin.categories.deleteBlocked": "Cannot delete — {{count}} product(s) reference this category",
+  "admin.categories.deleteBlocked":
+    "Cannot delete — {{count}} product(s) reference this category",
   "admin.categories.created": "Category created",
   "admin.categories.updated": "Category updated",
   "admin.categories.deleted": "Category deleted",
   "admin.orders.title": "Orders",
   "admin.orders.detail": "Order Detail",
   "admin.orders.orderNumber": "Order #",
-  "admin.orders.customer": "Customer",
+  "admin.orders.customer": "Customer",
+
   "admin.orders.total": "Total",
-  "admin.orders.status": "Status",
+  "admin.orders.status": "Status",
+
   "admin.orders.items": "Items",
   "admin.orders.customerInfo": "Customer Info",
   "admin.orders.deliveryAddress": "Delivery Address",
@@ -363,8 +452,10 @@ export default {
   "admin.orders.subtotal": "Subtotal",
   "admin.orders.paymentMethod": "Cash on Delivery",
   "admin.customers.title": "Customers",
-  "admin.customers.subtitle": "Accounts and order-based customers, with points balances",
-  "admin.customers.searchPlaceholder": "Search by name or phone...",
+  "admin.customers.subtitle":
+    "Accounts and order-based customers, with points balances",
+  "admin.customers.searchPlaceholder": "Search by name or phone...",
+
   "admin.customers.name": "Name",
   "admin.customers.phone": "Phone",
   "admin.customers.pointsBalance": "Points Balance",
@@ -376,9 +467,11 @@ export default {
   "admin.customers.addPoints": "Add Points",
   "admin.customers.removeLabel": "Remove customer",
   "admin.customers.removeTitle": "Remove this customer?",
-  "admin.customers.removeDesc": "This permanently deletes {{name}}'s account and points history. Their past orders stay on record.",
+  "admin.customers.removeDesc":
+    "This permanently deletes {{name}}'s account and points history. Their past orders stay on record.",
   "admin.customers.removeConfirm": "Remove customer",
-  "admin.customers.deleted": "Customer removed",
+  "admin.customers.deleted": "Customer removed",
+
   "admin.customerDetail.back": "Back to customers",
   "admin.customerDetail.memberSince": "Member since {{date}}",
   "admin.customerDetail.email": "Email",
@@ -403,9 +496,11 @@ export default {
   "admin.addPoints.subtitle": "Grant or deduct points for an in-store purchase",
   "admin.addPoints.searchLabel": "Customer phone",
   "admin.addPoints.searchPlaceholder": "01xxxxxxxxx",
-  "admin.addPoints.searchBtn": "Search",
+  "admin.addPoints.searchBtn": "Search",
+
   "admin.addPoints.currentBalance": "Current balance: {{points}} points",
-  "admin.addPoints.notFound": "No account found for this phone. Create one below.",
+  "admin.addPoints.notFound":
+    "No account found for this phone. Create one below.",
   "admin.addPoints.nameLabel": "Name",
   "admin.addPoints.phoneLabel": "Phone",
   "admin.addPoints.createBtn": "Create customer",
@@ -418,8 +513,10 @@ export default {
   "admin.addPoints.pointsToDeduct": "Points to deduct",
   "admin.addPoints.noteLabel": "Note",
   "admin.addPoints.notePlaceholder": "In-store purchase — EGP {{amount}}",
-  "admin.addPoints.computedPoints": "= EGP {{amount}} × earn rate ({{rate}} points per EGP)",
-  "admin.addPoints.confirmGrant": "Grant {{points}} points for an EGP {{amount}} in-store purchase?",
+  "admin.addPoints.computedPoints":
+    "= EGP {{amount}} × earn rate ({{rate}} points per EGP)",
+  "admin.addPoints.confirmGrant":
+    "Grant {{points}} points for an EGP {{amount}} in-store purchase?",
   "admin.addPoints.confirmDeduct": "Deduct {{points}} points from the balance?",
   "admin.addPoints.confirm": "Confirm",
   "admin.addPoints.back": "Back",
@@ -427,33 +524,41 @@ export default {
   "admin.addPoints.successDeduct": "{{points}} points deducted from {{name}}",
   "admin.addPoints.error": "Could not update points. Try again.",
   "admin.addPoints.emptySearch": "Enter a phone number first",
-  "admin.addPoints.deductTooHigh": "Cannot deduct more than the current balance",
+  "admin.addPoints.deductTooHigh":
+    "Cannot deduct more than the current balance",
   "admin.addPoints.required": "This field is required",
   "admin.settings.title": "Shipping",
   "admin.settings.defaultShippingFee": "Default Shipping Fee",
-  "admin.settings.freeShippingThreshold": "Free Shipping Threshold",
-  "admin.settings.superAdminOnly": "Super admin only",
+  "admin.settings.freeShippingThreshold": "Free Shipping Threshold",
+
+  "admin.settings.superAdminOnly": "Super admin only",
+
   "admin.admins.title": "Admins",
   "admin.admins.create": "New Admin",
   "admin.admins.edit": "Edit Admin",
   "admin.admins.username": "Username",
   "admin.admins.password": "Password",
-  "admin.admins.role": "Role",
+  "admin.admins.role": "Role",
+
   "admin.admins.lastLogin": "Last Login",
   "admin.admins.deleteConfirm": "Delete this admin?",
   "admin.admins.cannotDeleteSelf": "Cannot delete your own account",
-  "admin.admins.cannotDeleteLastSuper": "Cannot delete the last active super admin",
+  "admin.admins.cannotDeleteLastSuper":
+    "Cannot delete the last active super admin",
   "admin.admins.created": "Admin created",
   "admin.admins.updated": "Admin updated",
   "admin.admins.deleted": "Admin deleted",
   "admin.support.title": "Support",
   "admin.support.complaints": "Complaints",
-  "admin.support.returns": "Return Requests",
-  "admin.support.reason": "Reason",
+  "admin.support.returns": "Return Requests",
+
+  "admin.support.reason": "Reason",
+
   "admin.support.deleted": "Deleted",
   "admin.support.deleteConfirm": "Delete this {{type}}? This cannot be undone.",
   "admin.support.statusUpdated": "Status updated",
-  "admin.analytics.title": "Analytics",
+  "admin.analytics.title": "Analytics",
+
   "errors.generic": "Something went wrong. Please try again.",
   "admin.adminPanel": "Admin Panel",
   "admin.storefront": "View storefront",
@@ -472,12 +577,15 @@ export default {
   "admin.form.viewStorefront": "View storefront",
   "admin.form.basicInfo": "Basic Information",
   "admin.form.pricing": "Pricing & Stock",
-  "admin.form.details": "Description & Details",
+  "admin.form.details": "Description & Details",
+
   "admin.form.required": "This field is required",
   "admin.form.namePlaceholder": "e.g. Samsung EVO Plus 128GB",
-  "admin.form.nameArPlaceholder": "Arabic product name",
+  "admin.form.nameArPlaceholder": "Arabic product name",
+
   "admin.form.categoryPlaceholder": "Choose category...",
-  "admin.form.noCategories": "No categories yet",
+  "admin.form.noCategories": "No categories yet",
+
   "admin.form.validPrice": "Enter a valid price",
   "admin.form.pricePlaceholder": "0.00",
   "admin.form.validStock": "Enter a valid stock quantity",
@@ -523,7 +631,8 @@ export default {
   "admin.dashboard.total": "Total",
   "admin.dashboard.status": "Status",
   "admin.dashboard.manageStock": "Manage stock",
-  "admin.dashboard.wellStocked": "All products are well-stocked",
+  "admin.dashboard.wellStocked": "All products are well-stocked",
+
   "admin.analytics.subtitle": "Sales and performance data",
   "admin.analytics.totalOrders": "Total Orders",
   "admin.analytics.revenue": "Revenue",
@@ -544,10 +653,12 @@ export default {
   "admin.analytics.exportSold": "Quantity Sold",
   "admin.analytics.exportViews": "Views",
   "admin.analytics.exportStatus": "Status",
-  "admin.analytics.exportCategory": "Category",
+  "admin.analytics.exportCategory": "Category",
+
   "admin.analytics.last7": "Last 7 days",
   "admin.analytics.last30": "Last 30 days",
-  "admin.analytics.last90": "Last 90 days",
+  "admin.analytics.last90": "Last 90 days",
+
   "admin.support.order": "Order:",
   "admin.support.noComplaints": "No complaints yet",
   "admin.support.noReturns": "No return requests yet",
@@ -556,37 +667,46 @@ export default {
   "admin.categories.addCategory": "+ Add category",
   "admin.categories.creating": "Creating...",
   "admin.categories.noCategories": "No categories yet",
-  "admin.categories.firstCategory": "Add your first category to organize products.",
+  "admin.categories.firstCategory":
+    "Add your first category to organize products.",
   "admin.categories.deleting": "Deleting...",
-  "admin.categories.deleteConfirm": "Delete \"{{name}}\"?",
+  "admin.categories.deleteConfirm": 'Delete "{{name}}"?',
   "admin.categories.errorExists": "A category with this name already exists.",
   "admin.categories.errorNotFound": "Category not found.",
-  "admin.categories.errorInUse": "Cannot delete a category that still has products. Reassign or delete those products first.",
+  "admin.categories.errorInUse":
+    "Cannot delete a category that still has products. Reassign or delete those products first.",
   "admin.categories.nameEnPlaceholder": "Name in English",
   "admin.categories.nameArPlaceholder": "Name in Arabic",
-  "admin.categories.slugPlaceholder": "category-slug",
+  "admin.categories.slugPlaceholder": "category-slug",
+
   "admin.settings.subtitle": "Configure shipping fees for your store",
   "admin.settings.loadError": "Failed to load settings",
   "admin.settings.saveError": "Failed to save",
-  "admin.settings.saveSuccess": "{{label}} saved — refresh the checkout to see changes",
+  "admin.settings.saveSuccess":
+    "{{label}} saved — refresh the checkout to see changes",
   "admin.settings.saving": "Saving...",
   "admin.settings.preview": "Checkout preview",
   "admin.settings.belowThreshold": "Delivery for orders below EGP {{amount}}:",
-  "admin.settings.aboveThreshold": "Delivery for orders of EGP {{amount}} or more:",
+  "admin.settings.aboveThreshold":
+    "Delivery for orders of EGP {{amount}} or more:",
   "admin.settings.free": "Free",
   "admin.settings.shipping": "Shipping",
   "admin.settings.feePerOrder": "EGP {{fee}} per order.",
   "admin.settings.noFee": "No fee — free shipping.",
-  "admin.settings.thresholdLabel": "Orders of EGP {{amount}} or more get free shipping.",
-  "admin.settings.noThreshold": "No threshold. The fee above applies to all orders.",
+  "admin.settings.thresholdLabel":
+    "Orders of EGP {{amount}} or more get free shipping.",
+  "admin.settings.noThreshold":
+    "No threshold. The fee above applies to all orders.",
   "admin.settings.pointsTitle": "Points Settings",
-  "admin.settings.pointsSubtitle": "Earn and redeem rates for the loyalty program",
+  "admin.settings.pointsSubtitle":
+    "Earn and redeem rates for the loyalty program",
   "admin.settings.pointsEarnRate": "Points Earn Rate",
   "admin.settings.pointsEarnRateHint": "Points earned per 1 EGP spent",
   "admin.settings.pointsRedeemRate": "Points Redeem Rate",
   "admin.settings.pointsRedeemRateHint": "EGP discount per 1 point redeemed",
   "admin.settings.pointsSignupBonus": "Signup Bonus (points)",
-  "admin.settings.pointsSignupBonusHint": "Free points granted when a new customer creates an account. 0 = disabled.",
+  "admin.settings.pointsSignupBonusHint":
+    "Free points granted when a new customer creates an account. 0 = disabled.",
   "admin.settings.pointsSaved": "Points settings saved",
   "admin.manage.addAdmin": "Add new admin",
   "admin.manage.username": "Username",
@@ -610,8 +730,11 @@ export default {
   "admin.manage.savePassword": "Save password",
   "admin.manage.changeError": "Could not save changes",
   "admin.manage.superOnlyTitle": "Admins only",
-  "admin.manage.superOnlyDesc": "Only the owner (super admin) can manage admins. Ask the store owner to make this change.",
-  "errors.validation.required": "This field is required",
+  "admin.manage.superOnlyDesc":
+    "Only the owner (super admin) can manage admins. Ask the store owner to make this change.",
+
+  "errors.validation.required": "This field is required",
+
   "errors.validation.phone": "Valid phone number required",
   "cat.Phone Cases": "Phone Cases",
   "cat.Chargers": "Chargers",
@@ -626,6 +749,7 @@ export default {
   "cat.Uncategorized": "Uncategorized",
   "cat.Unknown": "Unknown",
   "errors.boundary.title": "Something went wrong",
-  "errors.boundary.message": "An unexpected error occurred while loading this page. Reloading usually fixes it.",
-  "errors.boundary.reload": "Reload page"
+  "errors.boundary.message":
+    "An unexpected error occurred while loading this page. Reloading usually fixes it.",
+  "errors.boundary.reload": "Reload page",
 };

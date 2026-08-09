@@ -1,11 +1,11 @@
-import { useCallback, useEffect, useState } from 'react';
-import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
-import { motion } from 'motion/react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { useLocale } from '@/context/LocaleContext.jsx';
-import { useCustomerAuth } from '@/context/CustomerAuthContext.jsx';
+import { useCallback, useEffect, useState } from "react";
+import { Link, Navigate, useNavigate, useSearchParams } from "react-router-dom";
+import { motion } from "motion/react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { useLocale } from "@/context/LocaleContext.jsx";
+import { useCustomerAuth } from "@/context/CustomerAuthContext.jsx";
 import {
   fetchMyPointsHistory,
   fetchMyOrders,
@@ -13,36 +13,45 @@ import {
   changeMyPassword,
   getSettings,
   deleteMyAccount,
-} from '@/api.js';
-import Skeleton from '@/components/ui/Skeleton.jsx';
-import EmptyState from '@/components/ui/EmptyState.jsx';
-import Button from '@/components/ui/Button.jsx';
-import Modal from '@/components/ui/Modal.jsx';
-import { useToast } from '@/components/ui/Toast.jsx';
-import { formatDate } from '@/lib/formatters.js';
-import { AUTO_REFRESH_MS } from '@/lib/constants.js';
-import { OrderCard } from './MyOrders.jsx';
-import { Plus, Minus, LogOut, LayoutGrid, Package, Settings as SettingsIcon, Trash2, Gift } from 'lucide-react';
+} from "@/api.js";
+import Skeleton from "@/components/ui/Skeleton.jsx";
+import EmptyState from "@/components/ui/EmptyState.jsx";
+import Button from "@/components/ui/Button.jsx";
+import Modal from "@/components/ui/Modal.jsx";
+import { useToast } from "@/components/ui/Toast.jsx";
+import { formatDate } from "@/lib/formatters.js";
+import { AUTO_REFRESH_MS } from "@/lib/constants.js";
+import { OrderCard } from "./MyOrders.jsx";
+import {
+  Plus,
+  Minus,
+  LogOut,
+  LayoutGrid,
+  Package,
+  Settings as SettingsIcon,
+  Trash2,
+  Gift,
+} from "lucide-react";
 
-const WELCOME_BONUS_KEY = 'bg_welcome_bonus';
+const WELCOME_BONUS_KEY = "bg_welcome_bonus";
 
 const TYPE_KEYS = {
-  earn: 'admin:customerDetail.typeEarn',
-  redeem: 'admin:customerDetail.typeRedeem',
-  refund_reversal: 'admin:customerDetail.typeRefundReversal',
-  manual_grant: 'admin:customerDetail.typeManualGrant',
-  manual_deduct: 'admin:customerDetail.typeManualDeduct',
-  signup_bonus: 'admin:customerDetail.typeSignupBonus',
+  earn: "admin:customerDetail.typeEarn",
+  redeem: "admin:customerDetail.typeRedeem",
+  refund_reversal: "admin:customerDetail.typeRefundReversal",
+  manual_grant: "admin:customerDetail.typeManualGrant",
+  manual_deduct: "admin:customerDetail.typeManualDeduct",
+  signup_bonus: "admin:customerDetail.typeSignupBonus",
 };
 
 const profileSchema = z.object({
-  name: z.string().min(1, 'auth:validation.required'),
-  email: z.string().email('auth:validation.email').optional().or(z.literal('')),
+  name: z.string().min(1, "auth:validation.required"),
+  email: z.string().email("auth:validation.email").optional().or(z.literal("")),
 });
 
 const passwordSchema = z.object({
-  currentPassword: z.string().min(1, 'auth:validation.required'),
-  newPassword: z.string().min(6, 'auth:validation.passwordMin'),
+  currentPassword: z.string().min(1, "auth:validation.required"),
+  newPassword: z.string().min(6, "auth:validation.passwordMin"),
 });
 
 function PointsInfoCard() {
@@ -56,47 +65,71 @@ function PointsInfoCard() {
         if (!cancelled) setRates(s);
       })
       .catch(() => {});
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const earnRate = rates ? Number(rates.pointsEarnRate ?? 1) : 1;
   const redeemRate = rates ? Number(rates.pointsRedeemRate ?? 0.1) : 0.1;
-  const currency = rates?.currencyCode || rates?.currency || 'EGP';
+  const currency = rates?.currencyCode || rates?.currency || "EGP";
   const pointsPerEgp = Math.round(1 / Math.max(redeemRate, 0.0001));
 
   return (
     <div className="surface-card p-6">
       <h2 className="font-heading text-body-sm font-bold text-bg-text-primary mb-3">
-        {t('account.pointsInfo.title')}
+        {t("account.pointsInfo.title")}
       </h2>
       <ul className="space-y-2 text-body-sm">
         <li className="flex items-start gap-2 text-bg-text-secondary">
-          <Plus size={15} strokeWidth={2.5} className="text-bg-success shrink-0 mt-0.5" aria-hidden="true" />
+          <Plus
+            size={15}
+            strokeWidth={2.5}
+            className="text-bg-success shrink-0 mt-0.5"
+            aria-hidden="true"
+          />
           <span>
             {earnRate === 1
-              ? t('account.pointsInfo.earnRateOne', { currency })
-              : t('account.pointsInfo.earnRateMany', { points: earnRate, currency })}
+              ? t("account.pointsInfo.earnRateOne", { currency })
+              : t("account.pointsInfo.earnRateMany", {
+                  points: earnRate,
+                  currency,
+                })}
           </span>
         </li>
         <li className="flex items-start gap-2 text-bg-text-secondary">
-          <Minus size={15} strokeWidth={2.5} className="text-bg-primary-500 shrink-0 mt-0.5" aria-hidden="true" />
+          <Minus
+            size={15}
+            strokeWidth={2.5}
+            className="text-bg-primary-500 shrink-0 mt-0.5"
+            aria-hidden="true"
+          />
           <span>
             {pointsPerEgp === 1
-              ? t('account.pointsInfo.redeemRateOne', { currency })
-              : t('account.pointsInfo.redeemRateMany', { points: pointsPerEgp, currency })}
+              ? t("account.pointsInfo.redeemRateOne", { currency })
+              : t("account.pointsInfo.redeemRateMany", {
+                  points: pointsPerEgp,
+                  currency,
+                })}
           </span>
         </li>
         <li className="flex items-start gap-2 text-bg-text-secondary">
           <span className="w-[15px] shrink-0 mt-0.5 flex justify-center">
-            <span className="h-1.5 w-1.5 rounded-full bg-bg-primary-500" aria-hidden="true" />
+            <span
+              className="h-1.5 w-1.5 rounded-full bg-bg-primary-500"
+              aria-hidden="true"
+            />
           </span>
-          <span>{t('account.pointsInfo.deliveredHint')}</span>
+          <span>{t("account.pointsInfo.deliveredHint")}</span>
         </li>
         <li className="flex items-start gap-2 text-bg-text-secondary">
           <span className="w-[15px] shrink-0 mt-0.5 flex justify-center">
-            <span className="h-1.5 w-1.5 rounded-full bg-bg-primary-500" aria-hidden="true" />
+            <span
+              className="h-1.5 w-1.5 rounded-full bg-bg-primary-500"
+              aria-hidden="true"
+            />
           </span>
-          <span>{t('account.pointsInfo.redeemHint')}</span>
+          <span>{t("account.pointsInfo.redeemHint")}</span>
         </li>
       </ul>
     </div>
@@ -106,7 +139,7 @@ function PointsInfoCard() {
 function ProfileForm({ customer, onSaved }) {
   const { t } = useLocale();
   const { toast } = useToast();
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   const {
     register,
@@ -114,17 +147,17 @@ function ProfileForm({ customer, onSaved }) {
     formState: { errors, isSubmitting },
   } = useForm({
     resolver: zodResolver(profileSchema),
-    defaultValues: { name: customer?.name || '', email: customer?.email || '' },
+    defaultValues: { name: customer?.name || "", email: customer?.email || "" },
   });
 
   const onSubmit = async (data) => {
-    setError('');
+    setError("");
     try {
       await updateMyProfile({ name: data.name, email: data.email });
       if (onSaved) onSaved();
-      toast(t('account.settings.saved'), 'success');
+      toast(t("account.settings.saved"), "success");
     } catch (err) {
-      setError(err.message || t('errors.generic'));
+      setError(err.message || t("errors.generic"));
     }
   };
 
@@ -132,44 +165,57 @@ function ProfileForm({ customer, onSaved }) {
     <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
       <div>
         <label className="block text-caption font-semibold text-bg-text-secondary mb-1.5 uppercase tracking-[0.08em]">
-          {t('account.settings.name')}
+          {t("account.settings.name")}
         </label>
         <input
           type="text"
-          {...register('name')}
+          {...register("name")}
           autoComplete="name"
           className="input-base w-full px-3 h-10 text-body-sm bg-bg-surface text-bg-text-primary placeholder:text-bg-text-secondary/40"
         />
         {errors.name?.message && (
-          <p className="text-body-sm text-bg-error mt-1">{t(errors.name.message)}</p>
+          <p className="text-body-sm text-bg-error mt-1">
+            {t(errors.name.message)}
+          </p>
         )}
       </div>
 
       <div>
         <label className="block text-caption font-semibold text-bg-text-secondary mb-1.5 uppercase tracking-[0.08em]">
-          {t('account.settings.email')}
+          {t("account.settings.email")}
         </label>
         <input
           type="email"
-          {...register('email')}
+          {...register("email")}
           autoComplete="email"
           dir="ltr"
           placeholder="you@example.com"
           className="input-base w-full px-3 h-10 text-body-sm bg-bg-surface text-bg-text-primary placeholder:text-bg-text-secondary/40 ltr-nums"
         />
         {errors.email?.message && (
-          <p className="text-body-sm text-bg-error mt-1">{t(errors.email.message)}</p>
+          <p className="text-body-sm text-bg-error mt-1">
+            {t(errors.email.message)}
+          </p>
         )}
       </div>
 
       {error && (
-        <p className="text-body-sm text-bg-error bg-bg-error/10 rounded-sm px-3 py-2" role="alert">
+        <p
+          className="text-body-sm text-bg-error bg-bg-error/10 rounded-sm px-3 py-2"
+          role="alert"
+        >
           {error}
         </p>
       )}
 
-      <Button type="submit" variant="primary" className="h-10 px-5 text-body-sm" loading={isSubmitting} disabled={isSubmitting}>
-        {t('account.settings.save')}
+      <Button
+        type="submit"
+        variant="primary"
+        className="h-10 px-5 text-body-sm"
+        loading={isSubmitting}
+        disabled={isSubmitting}
+      >
+        {t("account.settings.save")}
       </Button>
     </form>
   );
@@ -178,7 +224,7 @@ function ProfileForm({ customer, onSaved }) {
 function PasswordForm() {
   const { t } = useLocale();
   const { toast } = useToast();
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   const {
     register,
@@ -188,19 +234,19 @@ function PasswordForm() {
   } = useForm({ resolver: zodResolver(passwordSchema) });
 
   const onSubmit = async (data) => {
-    setError('');
+    setError("");
     try {
       await changeMyPassword({
         current_password: data.currentPassword,
         new_password: data.newPassword,
       });
       reset();
-      toast(t('account.settings.passwordUpdated'), 'success');
+      toast(t("account.settings.passwordUpdated"), "success");
     } catch (err) {
       setError(
-        err.code === 'WRONG_PASSWORD'
-          ? t('account.settings.wrongPassword')
-          : err.message || t('errors.generic')
+        err.code === "WRONG_PASSWORD"
+          ? t("account.settings.wrongPassword")
+          : err.message || t("errors.generic"),
       );
     }
   };
@@ -209,42 +255,55 @@ function PasswordForm() {
     <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
       <div>
         <label className="block text-caption font-semibold text-bg-text-secondary mb-1.5 uppercase tracking-[0.08em]">
-          {t('account.settings.currentPassword')}
+          {t("account.settings.currentPassword")}
         </label>
         <input
           type="password"
-          {...register('currentPassword')}
+          {...register("currentPassword")}
           autoComplete="current-password"
           className="input-base w-full px-3 h-10 text-body-sm bg-bg-surface text-bg-text-primary placeholder:text-bg-text-secondary/40"
         />
         {errors.currentPassword?.message && (
-          <p className="text-body-sm text-bg-error mt-1">{t(errors.currentPassword.message)}</p>
+          <p className="text-body-sm text-bg-error mt-1">
+            {t(errors.currentPassword.message)}
+          </p>
         )}
       </div>
 
       <div>
         <label className="block text-caption font-semibold text-bg-text-secondary mb-1.5 uppercase tracking-[0.08em]">
-          {t('account.settings.newPassword')}
+          {t("account.settings.newPassword")}
         </label>
         <input
           type="password"
-          {...register('newPassword')}
+          {...register("newPassword")}
           autoComplete="new-password"
           className="input-base w-full px-3 h-10 text-body-sm bg-bg-surface text-bg-text-primary placeholder:text-bg-text-secondary/40"
         />
         {errors.newPassword?.message && (
-          <p className="text-body-sm text-bg-error mt-1">{t(errors.newPassword.message)}</p>
+          <p className="text-body-sm text-bg-error mt-1">
+            {t(errors.newPassword.message)}
+          </p>
         )}
       </div>
 
       {error && (
-        <p className="text-body-sm text-bg-error bg-bg-error/10 rounded-sm px-3 py-2" role="alert">
+        <p
+          className="text-body-sm text-bg-error bg-bg-error/10 rounded-sm px-3 py-2"
+          role="alert"
+        >
           {error}
         </p>
       )}
 
-      <Button type="submit" variant="primary" className="h-10 px-5 text-body-sm" loading={isSubmitting} disabled={isSubmitting}>
-        {t('account.settings.save')}
+      <Button
+        type="submit"
+        variant="primary"
+        className="h-10 px-5 text-body-sm"
+        loading={isSubmitting}
+        disabled={isSubmitting}
+      >
+        {t("account.settings.save")}
       </Button>
     </form>
   );
@@ -254,15 +313,22 @@ export default function Account() {
   const { t } = useLocale();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { customer, isLoading: authLoading, logout, refreshProfile } = useCustomerAuth();
+  const {
+    customer,
+    isLoading: authLoading,
+    logout,
+    refreshProfile,
+  } = useCustomerAuth();
 
   // Set right before logout so the `!customer → <Navigate to="/login">` guard
   // doesn't race the imperative navigate('/') and strand the user on /login.
   const [justLoggedOut, setJustLoggedOut] = useState(false);
 
-  const TABS = ['overview', 'orders', 'settings'];
-  const tabParam = searchParams.get('tab');
-  const [tab, setTab] = useState(() => (TABS.includes(tabParam) ? tabParam : 'overview'));
+  const TABS = ["overview", "orders", "settings"];
+  const tabParam = searchParams.get("tab");
+  const [tab, setTab] = useState(() =>
+    TABS.includes(tabParam) ? tabParam : "overview",
+  );
 
   // Follow ?tab= from the navbar "My Orders" link without a reload.
   useEffect(() => {
@@ -271,7 +337,7 @@ export default function Account() {
 
   const handleTabClick = (key) => {
     setTab(key);
-    if (key === 'overview') {
+    if (key === "overview") {
       setSearchParams({}, { replace: true });
     } else {
       setSearchParams({ tab: key }, { replace: true });
@@ -286,6 +352,7 @@ export default function Account() {
 
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
   const { toast } = useToast();
 
   // Welcome-bonus popup: Register.jsx stores the granted amount in
@@ -324,7 +391,7 @@ export default function Account() {
   useEffect(() => {
     if (!customer) return undefined;
     const id = setInterval(() => {
-      if (document.visibilityState !== 'visible') return;
+      if (document.visibilityState !== "visible") return;
       loadHistory(page);
     }, AUTO_REFRESH_MS);
     return () => clearInterval(id);
@@ -337,15 +404,15 @@ export default function Account() {
   }, []);
 
   useEffect(() => {
-    if (tab === 'orders' && customer) loadOrders(1);
+    if (tab === "orders" && customer) loadOrders(1);
   }, [tab, customer, loadOrders]);
 
   // Silent refresh: delivery status advances without a reload while the
   // orders tab is open.
   useEffect(() => {
-    if (tab !== 'orders' || !customer) return undefined;
+    if (tab !== "orders" || !customer) return undefined;
     const id = setInterval(() => {
-      if (document.visibilityState !== 'visible') return;
+      if (document.visibilityState !== "visible") return;
       loadOrders(ordersPage);
     }, AUTO_REFRESH_MS);
     return () => clearInterval(id);
@@ -371,12 +438,14 @@ export default function Account() {
 
   const rows = history?.data || [];
   const meta = history?.meta || {};
-  const typeLabel = (type) => t(TYPE_KEYS[type] || 'admin:customerDetail.typeEarn');
+  const typeLabel = (type) =>
+    t(TYPE_KEYS[type] || "admin:customerDetail.typeEarn");
 
   const handleLogout = async () => {
+    setLoggingOut(true);
     setJustLoggedOut(true);
     await logout();
-    navigate('/', { replace: true });
+    navigate("/", { replace: true });
   };
 
   const handleDeleteAccount = async () => {
@@ -385,10 +454,10 @@ export default function Account() {
       await deleteMyAccount();
       setJustLoggedOut(true);
       await logout();
-      toast(t('account.settings.accountDeleted'), 'success');
-      navigate('/', { replace: true });
+      toast(t("account.settings.accountDeleted"), "success");
+      navigate("/", { replace: true });
     } catch (err) {
-      toast(err.message || t('errors.generic'), 'error');
+      toast(err.message || t("errors.generic"), "error");
     } finally {
       setDeleting(false);
       setDeleteOpen(false);
@@ -396,9 +465,9 @@ export default function Account() {
   };
 
   const tabs = [
-    { key: 'overview', label: t('account.tabs.overview'), icon: LayoutGrid },
-    { key: 'orders', label: t('account.tabs.orders'), icon: Package },
-    { key: 'settings', label: t('account.tabs.settings'), icon: SettingsIcon },
+    { key: "overview", label: t("account.tabs.overview"), icon: LayoutGrid },
+    { key: "orders", label: t("account.tabs.orders"), icon: Package },
+    { key: "settings", label: t("account.tabs.settings"), icon: SettingsIcon },
   ];
 
   return (
@@ -410,17 +479,31 @@ export default function Account() {
     >
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="font-heading text-h2 font-bold tracking-tight text-bg-text-primary">
-          {t('common.nav.account')}
+          {t("common.nav.account")}
         </h1>
-        <button onClick={handleLogout} className="btn-secondary !min-h-0 h-10 px-4 text-body-sm">
-          <LogOut size={15} className="rtl:-scale-x-100" aria-hidden="true" focusable="false" />
-          {t('account.logout')}
-        </button>
+        <Button
+          variant="secondary"
+          size="sm"
+          className="h-10 px-4 text-body-sm"
+          onClick={handleLogout}
+          loading={loggingOut}
+          disabled={loggingOut}
+        >
+          {!loggingOut && (
+            <LogOut
+              size={15}
+              className="rtl:-scale-x-100"
+              aria-hidden="true"
+              focusable="false"
+            />
+          )}
+          {loggingOut ? t("account.loggingOut") : t("account.logout")}
+        </Button>
       </div>
 
       <div
         role="tablist"
-        aria-label={t('common.nav.account')}
+        aria-label={t("common.nav.account")}
         className="flex items-center gap-1 rounded-full border border-bg-border bg-bg-surface p-1 overflow-x-auto"
       >
         {tabs.map(({ key, label, icon: Icon }) => {
@@ -433,8 +516,8 @@ export default function Account() {
               onClick={() => handleTabClick(key)}
               className={`flex items-center gap-2 px-4 py-2 rounded-full text-body-sm font-semibold whitespace-nowrap transition-colors ${
                 active
-                  ? 'bg-bg-primary-500 text-white'
-                  : 'text-bg-text-secondary hover:text-bg-text-primary hover:bg-bg-border/40'
+                  ? "bg-bg-primary-500 text-white"
+                  : "text-bg-text-secondary hover:text-bg-text-primary hover:bg-bg-border/40"
               }`}
             >
               <Icon size={15} aria-hidden="true" focusable="false" />
@@ -444,35 +527,45 @@ export default function Account() {
         })}
       </div>
 
-      {tab === 'overview' && (
+      {tab === "overview" && (
         <div className="space-y-6">
           <div className="surface-card p-6">
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div className="flex items-center gap-4 min-w-0">
                 <div className="h-14 w-14 rounded-full bg-bg-primary-500/10 flex items-center justify-center shrink-0">
                   <span className="font-heading text-lg font-bold text-bg-primary-500">
-                    {(customer.name || '?').trim().charAt(0)}
+                    {(customer.name || "?").trim().charAt(0)}
                   </span>
                 </div>
                 <div className="min-w-0">
-                  <h2 className="font-heading text-xl font-bold text-bg-text-primary truncate">{customer.name}</h2>
+                  <h2 className="font-heading text-xl font-bold text-bg-text-primary truncate">
+                    {customer.name}
+                  </h2>
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-caption text-bg-text-secondary mt-0.5">
-                    <span dir="ltr" className="ltr-nums">{customer.phone}</span>
+                    <span dir="ltr" className="ltr-nums">
+                      {customer.phone}
+                    </span>
                     {customer.email && <span dir="ltr">{customer.email}</span>}
                     {customer.createdAt && (
-                      <span>{t('account.memberSince', { date: formatDate(customer.createdAt) })}</span>
+                      <span>
+                        {t("account.memberSince", {
+                          date: formatDate(customer.createdAt),
+                        })}
+                      </span>
                     )}
                   </div>
                 </div>
               </div>
 
               <div className="text-end">
-                <p className="text-caption text-bg-text-secondary">{t('account.pointsBalance')}</p>
+                <p className="text-caption text-bg-text-secondary">
+                  {t("account.pointsBalance")}
+                </p>
                 <p
                   className="font-heading text-2xl font-bold text-bg-primary-500 ltr-nums leading-tight"
                   dir="ltr"
                 >
-                  {Number(customer.pointsBalance ?? 0).toLocaleString('en-US')}
+                  {Number(customer.pointsBalance ?? 0).toLocaleString("en-US")}
                 </p>
               </div>
             </div>
@@ -482,23 +575,33 @@ export default function Account() {
 
           <div>
             <h2 className="font-heading text-body-sm font-bold text-bg-text-primary mb-3">
-              {t('account.history')}
+              {t("account.history")}
             </h2>
             <div className="overflow-x-auto rounded-lg border border-bg-border bg-bg-surface">
               <table className="w-full">
                 <thead className="bg-bg-surface-sunken/50">
                   <tr>
                     {[
-                      { key: 'date', label: t('admin:customerDetail.date') },
-                      { key: 'type', label: t('admin:customerDetail.type') },
-                      { key: 'points', label: t('admin:customerDetail.points') },
-                      { key: 'balanceAfter', label: t('admin:customerDetail.balanceAfter') },
-                      { key: 'note', label: t('admin:customerDetail.note'), responsive: 'hidden md:table-cell' },
+                      { key: "date", label: t("admin:customerDetail.date") },
+                      { key: "type", label: t("admin:customerDetail.type") },
+                      {
+                        key: "points",
+                        label: t("admin:customerDetail.points"),
+                      },
+                      {
+                        key: "balanceAfter",
+                        label: t("admin:customerDetail.balanceAfter"),
+                      },
+                      {
+                        key: "note",
+                        label: t("admin:customerDetail.note"),
+                        responsive: "hidden md:table-cell",
+                      },
                     ].map((col) => (
                       <th
                         key={col.key}
                         scope="col"
-                        className={`px-4 py-3 text-caption font-semibold uppercase tracking-[0.08em] text-bg-text-secondary whitespace-nowrap text-start ${col.responsive || ''}`}
+                        className={`px-4 py-3 text-caption font-semibold uppercase tracking-[0.08em] text-bg-text-secondary whitespace-nowrap text-start ${col.responsive || ""}`}
                       >
                         {col.label}
                       </th>
@@ -519,43 +622,64 @@ export default function Account() {
                   ) : rows.length === 0 ? (
                     <tr>
                       <td colSpan={5}>
-                        <EmptyState message={t('account.noHistory')} />
+                        <EmptyState message={t("account.noHistory")} />
                       </td>
                     </tr>
                   ) : (
                     rows.map((r) => (
-                      <tr key={r.id} className="border-t border-bg-border hover:bg-bg-surface-sunken/30 transition-colors">
+                      <tr
+                        key={r.id}
+                        className="border-t border-bg-border hover:bg-bg-surface-sunken/30 transition-colors"
+                      >
                         <td className="px-4 py-3 whitespace-nowrap">
-                          <span className="text-caption text-bg-text-secondary ltr-nums" dir="ltr">
+                          <span
+                            className="text-caption text-bg-text-secondary ltr-nums"
+                            dir="ltr"
+                          >
                             {formatDate(r.createdAt)}
                           </span>
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap">
-                          <span className="text-caption text-bg-text-primary">{typeLabel(r.type)}</span>
+                          <span className="text-caption text-bg-text-primary">
+                            {typeLabel(r.type)}
+                          </span>
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap">
                           <span
                             className={`inline-flex items-center gap-0.5 text-caption font-bold ltr-nums ${
-                              r.points > 0 ? 'text-bg-success' : 'text-bg-error'
+                              r.points > 0 ? "text-bg-success" : "text-bg-error"
                             }`}
                             dir="ltr"
                           >
                             {r.points > 0 ? (
-                              <Plus size={12} strokeWidth={2.5} aria-hidden="true" />
+                              <Plus
+                                size={12}
+                                strokeWidth={2.5}
+                                aria-hidden="true"
+                              />
                             ) : (
-                              <Minus size={12} strokeWidth={2.5} aria-hidden="true" />
+                              <Minus
+                                size={12}
+                                strokeWidth={2.5}
+                                aria-hidden="true"
+                              />
                             )}
-                            {Math.abs(r.points).toLocaleString('en-US')}
+                            {Math.abs(r.points).toLocaleString("en-US")}
                           </span>
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap">
-                          <span className="text-caption text-bg-text-secondary ltr-nums" dir="ltr">
-                            {Number(r.balanceAfter ?? 0).toLocaleString('en-US')}
+                          <span
+                            className="text-caption text-bg-text-secondary ltr-nums"
+                            dir="ltr"
+                          >
+                            {Number(r.balanceAfter ?? 0).toLocaleString(
+                              "en-US",
+                            )}
                           </span>
                         </td>
                         <td className="px-4 py-3 hidden md:table-cell">
                           <span className="text-caption text-bg-text-secondary max-w-[280px] block truncate">
-                            {r.note || '—'}
+                            {r.note || "—"}
                           </span>
                         </td>
                       </tr>
@@ -575,10 +699,11 @@ export default function Account() {
                   }}
                   className="btn-ghost !min-h-0 h-8 px-3 text-body-sm disabled:opacity-30"
                 >
-                  {t('admin:common.prev')}
+                  {t("admin:common.prev")}
                 </button>
                 <span className="text-body-sm text-bg-text-secondary">
-                  {t('admin:common.page')} {meta.page} {t('admin:common.of')} {meta.totalPages}
+                  {t("admin:common.page")} {meta.page} {t("admin:common.of")}{" "}
+                  {meta.totalPages}
                 </span>
                 <button
                   disabled={page >= meta.totalPages}
@@ -588,21 +713,24 @@ export default function Account() {
                   }}
                   className="btn-ghost !min-h-0 h-8 px-3 text-body-sm disabled:opacity-30"
                 >
-                  {t('admin:common.next')}
+                  {t("admin:common.next")}
                 </button>
               </div>
             )}
 
             <p className="text-center mt-6">
-              <Link to="/shop" className="text-body-sm font-semibold text-bg-primary-500 hover:text-bg-primary-600 transition-colors">
-                {t('account.continueShopping')}
+              <Link
+                to="/shop"
+                className="text-body-sm font-semibold text-bg-primary-500 hover:text-bg-primary-600 transition-colors"
+              >
+                {t("account.continueShopping")}
               </Link>
             </p>
           </div>
         </div>
       )}
 
-      {tab === 'orders' && (
+      {tab === "orders" && (
         <div className="space-y-4">
           {!orders ? (
             Array.from({ length: 2 }).map((_, i) => (
@@ -611,8 +739,11 @@ export default function Account() {
           ) : orders.data.length === 0 ? (
             <div className="surface-card p-4">
               <EmptyState
-                message={t('account.orders.emptyHint')}
-                action={{ label: t('nav.shop', { ns: 'common' }), onClick: () => navigate('/shop') }}
+                message={t("account.orders.emptyHint")}
+                action={{
+                  label: t("nav.shop", { ns: "common" }),
+                  onClick: () => navigate("/shop"),
+                }}
               />
             </div>
           ) : (
@@ -634,10 +765,11 @@ export default function Account() {
                     }}
                     className="btn-ghost !min-h-0 h-8 px-3 text-body-sm disabled:opacity-30"
                   >
-                    {t('admin:common.prev')}
+                    {t("admin:common.prev")}
                   </button>
                   <span className="text-body-sm text-bg-text-secondary">
-                    {t('admin:common.page')} {orders.meta.page} {t('admin:common.of')} {orders.meta.totalPages}
+                    {t("admin:common.page")} {orders.meta.page}{" "}
+                    {t("admin:common.of")} {orders.meta.totalPages}
                   </span>
                   <button
                     disabled={ordersPage >= orders.meta.totalPages}
@@ -647,7 +779,7 @@ export default function Account() {
                     }}
                     className="btn-ghost !min-h-0 h-8 px-3 text-body-sm disabled:opacity-30"
                   >
-                    {t('admin:common.next')}
+                    {t("admin:common.next")}
                   </button>
                 </div>
               )}
@@ -656,37 +788,43 @@ export default function Account() {
         </div>
       )}
 
-      {tab === 'settings' && (
+      {tab === "settings" && (
         <div className="grid md:grid-cols-2 gap-6 items-start">
           <div className="surface-card p-6 space-y-4">
             <h2 className="font-heading text-body-sm font-bold text-bg-text-primary">
-              {t('account.settings.profileTitle')}
+              {t("account.settings.profileTitle")}
             </h2>
-            <ProfileForm
-              customer={customer}
-              onSaved={() => refreshProfile()}
-            />
+            <ProfileForm customer={customer} onSaved={() => refreshProfile()} />
           </div>
           <div className="surface-card p-6 space-y-4">
             <h2 className="font-heading text-body-sm font-bold text-bg-text-primary">
-              {t('account.settings.passwordTitle')}
+              {t("account.settings.passwordTitle")}
             </h2>
             <PasswordForm />
           </div>
         </div>
       )}
 
-      {tab === 'settings' && (
+      {tab === "settings" && (
         <div className="surface-card p-6 border-bg-error/30">
           <h2 className="font-heading text-body-sm font-bold text-bg-error mb-1">
-            {t('account.settings.dangerZone')}
+            {t("account.settings.dangerZone")}
           </h2>
           <p className="text-body-sm text-bg-text-secondary mb-4">
-            {t('account.settings.deleteHint')}
+            {t("account.settings.deleteHint")}
           </p>
-          <Button variant="danger" className="h-10 px-4 text-body-sm" onClick={() => setDeleteOpen(true)}>
-            <Trash2 size={15} aria-hidden="true" className="rtl:-scale-x-100" focusable="false" />
-            {t('account.settings.deleteAccount')}
+          <Button
+            variant="danger"
+            className="h-10 px-4 text-body-sm"
+            onClick={() => setDeleteOpen(true)}
+          >
+            <Trash2
+              size={15}
+              aria-hidden="true"
+              className="rtl:-scale-x-100"
+              focusable="false"
+            />
+            {t("account.settings.deleteAccount")}
           </Button>
         </div>
       )}
@@ -694,40 +832,56 @@ export default function Account() {
       <Modal isOpen={deleteOpen} onClose={() => setDeleteOpen(false)} size="sm">
         <div className="p-6">
           <h3 className="text-body font-semibold text-bg-text-primary mb-2">
-            {t('account.settings.deleteConfirmTitle')}
+            {t("account.settings.deleteConfirmTitle")}
           </h3>
           <p className="text-body-sm text-bg-text-secondary mb-6">
-            {t('account.settings.deleteConfirmDesc')}
+            {t("account.settings.deleteConfirmDesc")}
           </p>
           <div className="flex items-center justify-end gap-3">
             <Button variant="ghost" onClick={() => setDeleteOpen(false)}>
-              {t('account.settings.deleteCancel')}
+              {t("account.settings.deleteCancel")}
             </Button>
-            <Button variant="danger" onClick={handleDeleteAccount} loading={deleting} disabled={deleting}>
-              {deleting ? t('account.settings.deleting') : t('account.settings.deleteAccount')}
+            <Button
+              variant="danger"
+              onClick={handleDeleteAccount}
+              loading={deleting}
+              disabled={deleting}
+            >
+              {deleting
+                ? t("account.settings.deleting")
+                : t("account.settings.deleteAccount")}
             </Button>
           </div>
         </div>
       </Modal>
 
-      <Modal isOpen={welcomeBonus > 0} onClose={dismissWelcome} size="sm" ariaLabel={t('auth:register.welcomeTitle')}>
+      <Modal
+        isOpen={welcomeBonus > 0}
+        onClose={dismissWelcome}
+        size="sm"
+        ariaLabel={t("auth:register.welcomeTitle")}
+      >
         <div className="p-8 text-center">
           <motion.div
             initial={{ scale: 0, rotate: -30 }}
             animate={{ scale: 1, rotate: 0 }}
-            transition={{ type: 'spring', stiffness: 260, damping: 18 }}
+            transition={{ type: "spring", stiffness: 260, damping: 18 }}
             className="w-16 h-16 rounded-full bg-bg-success/15 text-bg-success flex items-center justify-center mx-auto mb-4"
           >
             <Gift size={32} aria-hidden="true" />
           </motion.div>
           <h2 className="font-heading font-bold text-xl text-bg-text-primary leading-snug">
-            {t('auth:register.welcomeTitle')}
+            {t("auth:register.welcomeTitle")}
           </h2>
           <p className="text-body-sm text-bg-text-secondary mt-3">
-            {t('auth:register.welcomeBody', { points: welcomeBonus })}
+            {t("auth:register.welcomeBody", { points: welcomeBonus })}
           </p>
-          <Button variant="primary" className="w-full mt-6 h-11" onClick={dismissWelcome}>
-            {t('auth:register.welcomeNext')}
+          <Button
+            variant="primary"
+            className="w-full mt-6 h-11"
+            onClick={dismissWelcome}
+          >
+            {t("auth:register.welcomeNext")}
           </Button>
         </div>
       </Modal>

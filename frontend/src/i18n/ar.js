@@ -1,35 +1,46 @@
 export default {
   "common.brand.name": "البمبي جروب",
   "common.brand.fullName": "البمبي جروب",
-  "common.brand.subName": "بيت الميموري",
+  "common.brand.subName": "بيت الميموري",
+
   "common.nav.home": "الرئيسية",
   "common.nav.shop": "المنتجات",
   "common.nav.about": "عن المجموعة",
-  "common.nav.contact": "اتصل بنا",
+  "common.nav.contact": "اتصل بنا",
+
   "common.nav.myOrders": "طلباتي",
   "common.nav.login": "تسجيل الدخول",
   "common.nav.account": "حسابي",
-  "common.nav.hi": "أهلاً، {{name}}",
+  "common.nav.hi": "أهلاً، {{name}}",
+
   "common.nav.cart": "السلة",
   "common.nav.checkout": "إتمام الطلب",
-  "common.nav.menu": "القائمة",
-  "common.nav.main": "القائمة الرئيسية",
+  "common.nav.menu": "القائمة",
+
+  "common.nav.main": "القائمة الرئيسية",
+
   "common.theme.toggleToLight": "التبديل إلى الوضع الفاتح",
   "common.theme.toggleToDark": "التبديل إلى الوضع الداكن",
   "common.language.switchToEnglish": "English",
-  "common.language.switchToArabic": "العربية",
+  "common.language.switchToArabic": "العربية",
+
   "common.common.loading": "جارٍ التحميل…",
   "common.common.retry": "إعادة المحاولة",
-  "common.common.clear": "مسح",
-  "common.common.close": "إغلاق",
+  "common.common.clear": "مسح",
+
+  "common.common.close": "إغلاق",
+
   "common.common.remove": "إزالة",
   "common.common.decrease": "تصغير",
-  "common.common.increase": "تكبير",
+  "common.common.increase": "تكبير",
+
   "common.common.viewAll": "عرض الكل",
   "common.common.seeMore": "عرض المزيد",
   "common.common.nothing": "لا يوجد شيء بعد",
-  "common.common.error": "حدث خطأ ما",
-  "common.footer.tagline": "فلاشات وكروت ميموري، تُسلَّم في جميع أنحاء مصر.",
+  "common.common.error": "حدث خطأ ما",
+
+  "common.footer.tagline": "فلاشات وكروت ميموري، تُسلَّم في جميع أنحاء مصر.",
+
   "common.footer.shop": "المتجر",
   "common.footer.help": "مساعدة",
   "common.footer.trackOrder": "تتبع الطلب",
@@ -37,17 +48,23 @@ export default {
   "common.footer.connect": "تابعنا",
   "common.footer.location": "موقع المتجر",
   "common.footer.copyright": "© {{year}} البمبي جروب. جميع الحقوق محفوظة.",
-  "common.footer.developedBy": "تصميم وتطوير",
-  "common.footer.cod": "الدفع عند الاستلام",
-  "common.footer.register": "إنشاء حساب",
-  "common.toast.notifications": "الإشعارات",
+  "common.footer.developedBy": "تصميم وتطوير",
+
+  "common.footer.cod": "الدفع عند الاستلام",
+
+  "common.footer.register": "إنشاء حساب",
+
+  "common.toast.notifications": "الإشعارات",
+
   "common.accessibility.skipToContent": "تخطَّ إلى المحتوى",
   "common.home.heroEyebrow": "تخزين بجودة تستحق",
   "common.home.heroLine1": "سرعة حقيقية",
   "common.home.heroLine2": "تخزين تثق فيه",
-  "common.home.heroSubtitle": "الدفع عند الاستلام، مخزون حقيقي متوفر، وتوصيل سريع لكل مصر.",
+  "common.home.heroSubtitle":
+    "الدفع عند الاستلام، مخزون حقيقي متوفر، وتوصيل سريع لكل مصر.",
   "common.home.heroCta": "تصفح المنتجات",
-  "common.home.heroCtaSecondary": "تسوق وسائط التخزين",
+  "common.home.heroCtaSecondary": "تسوق وسائط التخزين",
+
   "common.home.codDesc": "ادفع عند الاستلام",
   "common.home.deliveryDays": "توصيل 1–3 أيام",
   "common.home.deliveryDesc": "في جميع أنحاء مصر، سريع وموثوق",
@@ -61,25 +78,36 @@ export default {
   "common.hero.slide": "الشريحة {{n}}",
   "common.cart.empty": "سلتك فارغة",
   "common.cart.continueShopping": "مواصلة التسوق",
-  "common.cart.stockChanged": "بعض المنتجات في سلتك تغيرت كمياتها المتاحة. يرجى المراجعة قبل إتمام الطلب.",
+  "common.cart.stockChanged":
+    "بعض المنتجات في سلتك تغيرت كمياتها المتاحة. يرجى المراجعة قبل إتمام الطلب.",
   "common.notFound.title": "الصفحة غير موجودة",
   "common.notFound.subtitle": "هذه الصفحة غير موجودة أو لم تعد متاحة.",
   "common.notFound.backHome": "العودة إلى الرئيسية",
-  "common.about.title": "عن المجموعة",
-  "common.about.storyP1": "تأسست بيت الميموري بمهمة بسيطة: تقديم فلاشات وكروت ميموري عالية الجودة وبأسعار مناسبة في كل ركن من أركان مصر.",
-  "common.about.storyP2": "نحن متخصصون في وسائط التخزين. كل منتج يتم اختياره من مصنعين موثوقين واختباره من حيث السرعة والسعة والاعتمادية قبل وصوله إلى رفوفنا.",
+  "common.about.title": "عن المجموعة",
+
+  "common.about.storyP1":
+    "تأسست بيت الميموري بمهمة بسيطة: تقديم فلاشات وكروت ميموري عالية الجودة وبأسعار مناسبة في كل ركن من أركان مصر.",
+  "common.about.storyP2":
+    "نحن متخصصون في وسائط التخزين. كل منتج يتم اختياره من مصنعين موثوقين واختباره من حيث السرعة والسعة والاعتمادية قبل وصوله إلى رفوفنا.",
+
   "common.about.value1Title": "الجودة أولاً",
-  "common.about.value1Desc": "يتم اختبار سرعة وسعة كل فلاشة وكارت ميموري. لا نتنازل أبداً عن جودة التخزين.",
+  "common.about.value1Desc":
+    "يتم اختبار سرعة وسعة كل فلاشة وكارت ميموري. لا نتنازل أبداً عن جودة التخزين.",
   "common.about.value2Title": "التركيز على العميل",
-  "common.about.value2Desc": "رضاك هو محرك كل ما نقوم به. نحن هنا لمساعدتك قبل وأثناء وبعد الشراء.",
+  "common.about.value2Desc":
+    "رضاك هو محرك كل ما نقوم به. نحن هنا لمساعدتك قبل وأثناء وبعد الشراء.",
   "common.about.value3Title": "توصيل سريع",
-  "common.about.value3Desc": "نوصل في جميع أنحاء مصر في 1-3 أيام عمل، لتحصل على التخزين الذي تحتاجه عندما تحتاجه.",
+  "common.about.value3Desc":
+    "نوصل في جميع أنحاء مصر في 1-3 أيام عمل، لتحصل على التخزين الذي تحتاجه عندما تحتاجه.",
+
   "common.tracking.title": "تتبع طلبك",
-  "common.tracking.formTitle": "أدخل تفاصيل طلبك للتتبع",
+  "common.tracking.formTitle": "أدخل تفاصيل طلبك للتتبع",
+
   "common.tracking.notFound": "لم يتم العثور على طلب بهذا الرقم والهاتف.",
   "common.tracking.cancelTitle": "إلغاء الطلب",
   "common.tracking.cancelling": "جارٍ الإلغاء…",
-  "common.tracking.cancelConfirm": "هل أنت متأكد أنك تريد إلغاء هذا الطلب؟",
+  "common.tracking.cancelConfirm": "هل أنت متأكد أنك تريد إلغاء هذا الطلب؟",
+
   "common.tracking.status_pending": "تم تقديم الطلب",
   "common.tracking.status_confirmed": "تم التأكيد",
   "common.tracking.status_processing": "قيد المعالجة",
@@ -96,12 +124,14 @@ export default {
   "common.myOrders.formTitle": "أدخل رقم هاتفك لعرض الطلبات",
   "common.myOrders.phone": "رقم الهاتف",
   "common.myOrders.submit": "عرض الطلبات",
-  "common.myOrders.noOrders": "لم يتم العثور على طلبات لهذا الرقم.",
+  "common.myOrders.noOrders": "لم يتم العثور على طلبات لهذا الرقم.",
+
   "common.myOrders.track": "تتبع",
   "common.myOrders.requestReturn": "طلب إرجاع",
   "common.myOrders.reorder": "إعادة الطلب",
   "common.myOrders.reorderAdded": "تمت إضافة المنتجات إلى السلة",
-  "common.myOrders.reorderUnavailable": "بعض المنتجات غير متاحة أو نفدت من المخزون",
+  "common.myOrders.reorderUnavailable":
+    "بعض المنتجات غير متاحة أو نفدت من المخزون",
   "common.myOrders.reorderEmpty": "لا يمكن إعادة هذا الطلب",
 
   "support.return.requestReturn": "طلب إرجاع",
@@ -115,22 +145,26 @@ export default {
   "support.return.submit": "إرسال الطلب",
   "support.return.cancel": "إلغاء",
   "support.return.success": "تم إرسال طلب الإرجاع بنجاح. سنتواصل معك قريبًا.",
-  "support.return.missingInfo": "رقم الطلب أو رقم الهاتف مفقود — يرجى تحديث طلباتك والمحاولة مرة أخرى.",
-  "support.return.notFound": "لا يوجد طلب مُسلَّم مطابق لهذا الرقم والهاتف. يرجى التحقق والمحاولة مرة أخرى.",
+  "support.return.missingInfo":
+    "رقم الطلب أو رقم الهاتف مفقود — يرجى تحديث طلباتك والمحاولة مرة أخرى.",
+  "support.return.notFound":
+    "لا يوجد طلب مُسلَّم مطابق لهذا الرقم والهاتف. يرجى التحقق والمحاولة مرة أخرى.",
   "support.return.validationFailed": "يرجى إكمال جميع الحقول المطلوبة.",
 
   "common.select.empty": "لا توجد خيارات",
 
-"common.contact.title": "اتصل بنا",
+  "common.contact.title": "اتصل بنا",
   "common.contact.instagram": "البمبي جروب على إنستغرام",
   "common.contact.whatsapp": "تواصل مع البمبي جروب عبر واتساب",
   "common.contact.formTitle": "أرسل لنا رسالة",
   "common.contact.name": "الاسم الكامل",
-  "common.contact.phone": "رقم الهاتف",
+  "common.contact.phone": "رقم الهاتف",
+
   "common.contact.message": "رسالتك",
   "common.contact.submit": "إرسال الرسالة",
   "common.contact.sending": "جارٍ الإرسال…",
-  "common.contact.success": "تم إرسال الرسالة بنجاح! سنتواصل معك قريباً.",
+  "common.contact.success": "تم إرسال الرسالة بنجاح! سنتواصل معك قريباً.",
+
   "shop.filters.sortBy": "ترتيب حسب",
   "shop.filters.newest": "الأحدث",
   "shop.filters.price_asc": "السعر الأقل",
@@ -141,13 +175,15 @@ export default {
   "shop.filters.allCategories": "جميع التصنيفات",
   "shop.product.addToCart": "أضف للسلة",
   "shop.product.added": "✓ تمت الإضافة",
-  "shop.product.outOfStock": "غير متوفر",
+  "shop.product.outOfStock": "غير متوفر",
+
   "shop.product.viewDetails": "عرض التفاصيل",
   "shop.product.lowStock": "{{count}} متبقٍ فقط",
   "shop.product.quantity": "الكمية",
   "shop.product.askAbout": "استفسر عن هذا المنتج",
-  
-  "shop.product.relatedProducts": "منتجات ذات صلة",
+
+  "shop.product.relatedProducts": "منتجات ذات صلة",
+
   "shop.categories": "التصنيفات",
   "shop.noCategories": "لا توجد تصنيفات بعد",
   "shop.featured": "مميزة",
@@ -157,8 +193,9 @@ export default {
   "shop.gallery.next": "الصورة التالية",
   "shop.gallery.image": "الصورة {{n}}",
   "shop.searchPlaceholder": "ابحث عن منتجات...",
-  "shop.searchClear": "مسح البحث",
-"shop.loadMore": "تحميل المزيد",
+  "shop.searchClear": "مسح البحث",
+
+  "shop.loadMore": "تحميل المزيد",
   "shop.allLoaded": "تم تحميل جميع المنتجات ({{count}})",
   "shop.loadFailed": "تعذّر تحميل المنتجات",
 
@@ -175,7 +212,8 @@ export default {
   "checkout.form.cityLabel": "المدينة",
   "checkout.form.notesLabel": "ملاحظات التوصيل (اختياري)",
   "checkout.form.submit": "تأكيد الطلب",
-  "checkout.form.placingOrder": "جارٍ تأكيد الطلب…",
+  "checkout.form.placingOrder": "جارٍ تأكيد الطلب…",
+
   "checkout.form.cod": "الدفع عند الاستلام",
   "checkout.form.codDesc": "ادفع عند استلام طلبك",
   "checkout.summary.subtotal": "المجموع الفرعي",
@@ -187,7 +225,8 @@ export default {
   "checkout.success.subtitle": "شكراً لطلبك. سنقوم بتأكيده قريباً.",
   "checkout.success.estimatedDelivery": "التوصيل المتوقع خلال 1–3 أيام عمل.",
   "checkout.success.trackOrder": "تتبع الطلب",
-  "checkout.success.continueShopping": "مواصلة التسوق",
+  "checkout.success.continueShopping": "مواصلة التسوق",
+
   "checkout.errors.generic": "حدث خطأ ما. يرجى المحاولة مرة أخرى.",
   "checkout.redeem.title": "استخدم نقاطك",
   "checkout.redeem.balance": "لديك {{points}} نقطة متاحة",
@@ -196,21 +235,30 @@ export default {
   "checkout.redeem.rateHint": "كل نقطة تساوي {{rate}}",
   "checkout.redeem.discount": "خصم النقاط",
   "checkout.redeem.unavailable": "استخدام النقاط غير متاح مؤقتاً",
-  "checkout.errors.insufficientPoints": "رصيد النقاط غير كافٍ لتغطية الخصم المطلوب. يرجى تقليل المبلغ.",
-  "checkout.errors.redemptionDisabled": "استخدام النقاط غير متاح حالياً. يرجى المحاولة لاحقاً.",
-  "checkout.errors.redemptionRequiresLogin": "يجب تسجيل الدخول لاستخدام النقاط. يرجى تسجيل الدخول والمحاولة مرة أخرى.",
-  "checkout.errors.stockConflict": "بعض المنتجات غير متوفرة بالكمية المطلوبة. يرجى مراجعة سلة المشتريات:",
-  "checkout.errors.stockConflictItem": "{{name}} — المتاح: {{available}}، المطلوب: {{requested}}",
-  "checkout.success.pointsEarned": "ستحصل على {{points}} نقطة عند تسليم هذا الطلب.",
-  "checkout.success.pointsRedeemed": "استخدمت {{points}} نقطة — خصم {{amount}} من هذا الطلب.",
+  "checkout.errors.insufficientPoints":
+    "رصيد النقاط غير كافٍ لتغطية الخصم المطلوب. يرجى تقليل المبلغ.",
+  "checkout.errors.redemptionDisabled":
+    "استخدام النقاط غير متاح حالياً. يرجى المحاولة لاحقاً.",
+  "checkout.errors.redemptionRequiresLogin":
+    "يجب تسجيل الدخول لاستخدام النقاط. يرجى تسجيل الدخول والمحاولة مرة أخرى.",
+  "checkout.errors.stockConflict":
+    "بعض المنتجات غير متوفرة بالكمية المطلوبة. يرجى مراجعة سلة المشتريات:",
+  "checkout.errors.stockConflictItem":
+    "{{name}} — المتاح: {{available}}، المطلوب: {{requested}}",
+  "checkout.success.pointsEarned":
+    "ستحصل على {{points}} نقطة عند تسليم هذا الطلب.",
+  "checkout.success.pointsRedeemed":
+    "استخدمت {{points}} نقطة — خصم {{amount}} من هذا الطلب.",
   "auth.login.title": "تسجيل الدخول",
   "auth.login.subtitle": "سجّل الدخول لمتابعة نقاطك واستخدامها",
   "auth.login.phone": "رقم الهاتف",
   "auth.login.password": "كلمة المرور",
   "auth.login.submit": "تسجيل الدخول",
   "auth.login.invalidCredentials": "رقم الهاتف أو كلمة المرور غير صحيحة",
-  "auth.errors.rateLimited": "محاولات كثيرة جدًا. يرجى الانتظار قليلًا وإعادة المحاولة.",
-  "auth.errors.validationFailed": "يرجى التحقق من البيانات المُدخلة والمحاولة مرة أخرى.",
+  "auth.errors.rateLimited":
+    "محاولات كثيرة جدًا. يرجى الانتظار قليلًا وإعادة المحاولة.",
+  "auth.errors.validationFailed":
+    "يرجى التحقق من البيانات المُدخلة والمحاولة مرة أخرى.",
   "auth.login.noAccount": "ليس لديك حساب؟",
   "auth.login.registerLink": "أنشئ حساباً",
   "auth.register.title": "إنشاء حساب",
@@ -223,7 +271,8 @@ export default {
   "auth.register.submit": "إنشاء حساب",
   "auth.register.conflict": "يوجد حساب بالفعل لهذا الرقم.",
   "auth.register.welcomeTitle": "كدا دكا كسبان مع البمبي جروب!",
-  "auth.register.welcomeBody": "كهدية ترحيب، أضفنا لك {{points}} نقطة لرصيدك — جاهزة للاستخدام في طلبك الأول.",
+  "auth.register.welcomeBody":
+    "كهدية ترحيب، أضفنا لك {{points}} نقطة لرصيدك — جاهزة للاستخدام في طلبك الأول.",
   "auth.register.welcomeNext": "الانتقال إلى حسابي",
   "auth.register.loginLink": "سجّل الدخول بدلاً من ذلك",
   "auth.register.haveAccount": "لديك حساب بالفعل؟",
@@ -236,18 +285,25 @@ export default {
   "account.history": "سجل النقاط",
   "account.noHistory": "لا توجد معاملات بعد",
   "account.logout": "تسجيل الخروج",
+  "account.loggingOut": "جارٍ تسجيل الخروج…",
   "account.continueShopping": "مواصلة التسوق",
   "account.tabs.overview": "نظرة عامة",
   "account.tabs.orders": "طلباتي",
-  "account.tabs.settings": "الإعدادات",
+  "account.tabs.settings": "الإعدادات",
+
   "account.orders.emptyHint": "ستظهر هنا الطلبات التي أتممتها من هذا الحساب.",
   "account.pointsInfo.title": "كيف تعمل النقاط؟",
-  "account.pointsInfo.earnRateOne": "اربح نقطة واحدة عن كل 1 {{currency}} تصرفه",
-  "account.pointsInfo.earnRateMany": "اربح {{points}} نقاط عن كل 1 {{currency}} تصرفه",
-  "account.pointsInfo.redeemRateOne": "نقطة واحدة = 1 {{currency}} خصم على طلبك",
-  "account.pointsInfo.redeemRateMany": "{{points}} نقطة = 1 {{currency}} خصم على طلبك",
+  "account.pointsInfo.earnRateOne":
+    "اربح نقطة واحدة عن كل 1 {{currency}} تصرفه",
+  "account.pointsInfo.earnRateMany":
+    "اربح {{points}} نقاط عن كل 1 {{currency}} تصرفه",
+  "account.pointsInfo.redeemRateOne":
+    "نقطة واحدة = 1 {{currency}} خصم على طلبك",
+  "account.pointsInfo.redeemRateMany":
+    "{{points}} نقطة = 1 {{currency}} خصم على طلبك",
   "account.pointsInfo.deliveredHint": "تُضاف النقاط إلى رصيدك عند توصيل طلبك.",
-  "account.pointsInfo.redeemHint": "استخدم نقاطك عند إتمام الطلب للحصول على خصم.",
+  "account.pointsInfo.redeemHint":
+    "استخدم نقاطك عند إتمام الطلب للحصول على خصم.",
   "account.settings.profileTitle": "الملف الشخصي",
   "account.settings.passwordTitle": "تغيير كلمة المرور",
   "account.settings.name": "الاسم الكامل",
@@ -259,10 +315,12 @@ export default {
   "account.settings.passwordUpdated": "تم تحديث كلمة المرور بنجاح",
   "account.settings.wrongPassword": "كلمة المرور الحالية غير صحيحة",
   "account.settings.dangerZone": "منطقة الخطر",
-  "account.settings.deleteHint": "حذف حسابك يزيله نهائيًا مع كل نقاطك. تبقى طلباتك السابقة مسجلة.",
+  "account.settings.deleteHint":
+    "حذف حسابك يزيله نهائيًا مع كل نقاطك. تبقى طلباتك السابقة مسجلة.",
   "account.settings.deleteAccount": "حذف حسابي",
   "account.settings.deleteConfirmTitle": "حذف حسابك؟",
-  "account.settings.deleteConfirmDesc": "سيؤدي هذا إلى حذف حسابك ونقاطك وسجل نقاطك نهائيًا. لا يمكن التراجع.",
+  "account.settings.deleteConfirmDesc":
+    "سيؤدي هذا إلى حذف حسابك ونقاطك وسجل نقاطك نهائيًا. لا يمكن التراجع.",
   "account.settings.deleteCancel": "إلغاء",
   "account.settings.deleting": "جارِ الحذف…",
   "account.settings.accountDeleted": "تم حذف حسابك",
@@ -276,7 +334,9 @@ export default {
   "admin.sidebar.support": "الدعم",
   "admin.sidebar.analytics": "التحليلات",
   "admin.sidebar.customers": "العملاء",
-  "admin.sidebar.logout": "تسجيل الخروج",
+  "admin.sidebar.logout": "تسجيل الخروج",
+  "admin.sidebar.loggingOut": "جارٍ تسجيل الخروج…",
+
   "admin.login.subtitle": "— لوحة التحكم —",
   "admin.login.username": "اسم المستخدم",
   "admin.login.placeholderUsername": "اكتب اسم المستخدم",
@@ -284,19 +344,24 @@ export default {
   "admin.login.submit": "دخول",
   "admin.login.required": "هذا الحقل مطلوب",
   "admin.login.error": "بيانات غير صحيحة",
-  "admin.login.sessionExpired": "انتهت جلستك، الرجاء تسجيل الدخول مرة أخرى.",
+  "admin.login.sessionExpired": "انتهت جلستك، الرجاء تسجيل الدخول مرة أخرى.",
+
   "admin.common.save": "حفظ",
   "admin.common.cancel": "إلغاء",
   "admin.common.delete": "حذف",
   "admin.common.edit": "تعديل",
-  "admin.common.create": "إنشاء",
+  "admin.common.create": "إنشاء",
+
   "admin.common.actions": "إجراءات",
-  "admin.common.noResults": "لا توجد نتائج",
+  "admin.common.noResults": "لا توجد نتائج",
+
   "admin.common.loading": "جارٍ التحميل...",
   "admin.common.confirmDelete": "هل أنت متأكد من الحذف؟",
   "admin.common.confirmDeleteDesc": "لا يمكن التراجع عن هذا الإجراء.",
-  "admin.common.yesDelete": "نعم، احذف",
-  "admin.common.back": "رجوع",
+  "admin.common.yesDelete": "نعم، احذف",
+
+  "admin.common.back": "رجوع",
+
   "admin.common.page": "صفحة",
   "admin.common.of": "من",
   "admin.common.prev": "السابق",
@@ -306,47 +371,59 @@ export default {
   "admin.common.lowStock": "منخفض",
   "admin.common.outOfStock": "نفذ المخزون",
   "admin.dashboard.title": "لوحة التحكم",
-  "admin.dashboard.totalOrders": "إجمالي الطلبات",
+  "admin.dashboard.totalOrders": "إجمالي الطلبات",
+
   "admin.dashboard.revenue": "الإيرادات",
-  "admin.dashboard.lowStock": "مخزون منخفض",
+  "admin.dashboard.lowStock": "مخزون منخفض",
+
   "admin.dashboard.recentOrders": "أحدث الطلبات",
   "admin.dashboard.pending": "طلبات معلقة",
-  "admin.dashboard.products": "إجمالي المنتجات",
+  "admin.dashboard.products": "إجمالي المنتجات",
+
   "admin.products.title": "المنتجات",
   "admin.products.create": "منتج جديد",
-  "admin.products.edit": "تعديل منتج",
+  "admin.products.edit": "تعديل منتج",
+
   "admin.products.nameEn": "الاسم (إنجليزي)",
-  "admin.products.nameAr": "الاسم (عربي)",
+  "admin.products.nameAr": "الاسم (عربي)",
+
   "admin.products.descriptionEn": "الوصف (إنجليزي)",
   "admin.products.descriptionAr": "الوصف (عربي)",
   "admin.products.category": "القسم",
-  "admin.products.price": "السعر",
+  "admin.products.price": "السعر",
+
   "admin.products.stockQuantity": "المخزون",
   "admin.products.lowStockThreshold": "حد المخزون المنخفض",
   "admin.products.images": "الصور",
   "admin.products.isFeatured": "مميز",
-  "admin.products.isNewArrival": "وصل حديثاً",
+  "admin.products.isNewArrival": "وصل حديثاً",
+
   "admin.products.deleteConfirm": "حذف هذا المنتج؟ سيتم إخفاؤه عن المتجر.",
   "admin.products.slugExists": "يوجد منتج بنفس الرابط",
   "admin.products.created": "تم إنشاء المنتج",
   "admin.products.updated": "تم تحديث المنتج",
   "admin.products.deleted": "تم حذف المنتج",
   "admin.products.saved": "تم الحفظ",
-  "admin.categories.title": "الأقسام",
+  "admin.categories.title": "الأقسام",
+
   "admin.categories.nameEn": "الاسم (إنجليزي)",
   "admin.categories.nameAr": "الاسم (عربي)",
-  "admin.categories.slug": "الرابط",
+  "admin.categories.slug": "الرابط",
+
   "admin.categories.productCount": "المنتجات",
-  "admin.categories.deleteBlocked": "لا يمكن الحذف — هناك {{count}} منتجاً مرتبطاً بهذا القسم",
+  "admin.categories.deleteBlocked":
+    "لا يمكن الحذف — هناك {{count}} منتجاً مرتبطاً بهذا القسم",
   "admin.categories.created": "تم إنشاء القسم",
   "admin.categories.updated": "تم تحديث القسم",
   "admin.categories.deleted": "تم حذف القسم",
   "admin.orders.title": "الطلبات",
   "admin.orders.detail": "تفاصيل الطلب",
   "admin.orders.orderNumber": "رقم الطلب",
-  "admin.orders.customer": "العميل",
+  "admin.orders.customer": "العميل",
+
   "admin.orders.total": "الإجمالي",
-  "admin.orders.status": "الحالة",
+  "admin.orders.status": "الحالة",
+
   "admin.orders.items": "المنتجات",
   "admin.orders.customerInfo": "بيانات العميل",
   "admin.orders.deliveryAddress": "عنوان التوصيل",
@@ -364,7 +441,8 @@ export default {
   "admin.orders.paymentMethod": "الدفع عند الاستلام",
   "admin.customers.title": "العملاء",
   "admin.customers.subtitle": "الحسابات والعملاء من الطلبات، مع أرصدة النقاط",
-  "admin.customers.searchPlaceholder": "ابحث بالاسم أو رقم الهاتف...",
+  "admin.customers.searchPlaceholder": "ابحث بالاسم أو رقم الهاتف...",
+
   "admin.customers.name": "الاسم",
   "admin.customers.phone": "الهاتف",
   "admin.customers.pointsBalance": "رصيد النقاط",
@@ -376,9 +454,11 @@ export default {
   "admin.customers.addPoints": "إضافة نقاط",
   "admin.customers.removeLabel": "حذف العميل",
   "admin.customers.removeTitle": "حذف هذا العميل؟",
-  "admin.customers.removeDesc": "سيؤدي هذا إلى حذف حساب {{name}} ونقاطه نهائيًا. تبقى طلباته مسجلة.",
+  "admin.customers.removeDesc":
+    "سيؤدي هذا إلى حذف حساب {{name}} ونقاطه نهائيًا. تبقى طلباته مسجلة.",
   "admin.customers.removeConfirm": "حذف العميل",
-  "admin.customers.deleted": "تم حذف العميل",
+  "admin.customers.deleted": "تم حذف العميل",
+
   "admin.customerDetail.back": "رجوع إلى العملاء",
   "admin.customerDetail.memberSince": "عميل منذ {{date}}",
   "admin.customerDetail.email": "البريد الإلكتروني",
@@ -403,7 +483,8 @@ export default {
   "admin.addPoints.subtitle": "امنح أو اخصم نقاطاً لمبيعات داخلية",
   "admin.addPoints.searchLabel": "رقم هاتف العميل",
   "admin.addPoints.searchPlaceholder": "01xxxxxxxxx",
-  "admin.addPoints.searchBtn": "بحث",
+  "admin.addPoints.searchBtn": "بحث",
+
   "admin.addPoints.currentBalance": "الرصيد الحالي: {{points}} نقطة",
   "admin.addPoints.notFound": "لا يوجد حساب لهذا الرقم. أنشئ واحداً بالأسفل.",
   "admin.addPoints.nameLabel": "الاسم",
@@ -418,8 +499,10 @@ export default {
   "admin.addPoints.pointsToDeduct": "النقاط المطلوب خصمها",
   "admin.addPoints.noteLabel": "ملاحظة",
   "admin.addPoints.notePlaceholder": "مشتريات داخلية — {{amount}} ج.م",
-  "admin.addPoints.computedPoints": "= {{amount}} ج.م × معدل الكسب ({{rate}} نقطة لكل ج.م)",
-  "admin.addPoints.confirmGrant": "إضافة {{points}} نقطة مقابل مشتريات داخلية بقيمة {{amount}} ج.م؟",
+  "admin.addPoints.computedPoints":
+    "= {{amount}} ج.م × معدل الكسب ({{rate}} نقطة لكل ج.م)",
+  "admin.addPoints.confirmGrant":
+    "إضافة {{points}} نقطة مقابل مشتريات داخلية بقيمة {{amount}} ج.م؟",
   "admin.addPoints.confirmDeduct": "خصم {{points}} نقطة من الرصيد؟",
   "admin.addPoints.confirm": "تأكيد",
   "admin.addPoints.back": "رجوع",
@@ -432,13 +515,15 @@ export default {
   "admin.settings.title": "الشحن",
   "admin.settings.defaultShippingFee": "رسوم الشحن الافتراضية",
   "admin.settings.freeShippingThreshold": "حد الشحن المجاني",
-  "admin.settings.superAdminOnly": "للمشرف العام فقط",
+  "admin.settings.superAdminOnly": "للمشرف العام فقط",
+
   "admin.admins.title": "المشرفين",
   "admin.admins.create": "مشرف جديد",
   "admin.admins.edit": "تعديل مشرف",
   "admin.admins.username": "اسم المستخدم",
   "admin.admins.password": "كلمة المرور",
-  "admin.admins.role": "الدور",
+  "admin.admins.role": "الدور",
+
   "admin.admins.lastLogin": "آخر دخول",
   "admin.admins.deleteConfirm": "حذف هذا المشرف؟",
   "admin.admins.cannotDeleteSelf": "لا يمكن حذف حسابك",
@@ -448,12 +533,16 @@ export default {
   "admin.admins.deleted": "تم حذف المشرف",
   "admin.support.title": "الدعم",
   "admin.support.complaints": "الشكاوى",
-  "admin.support.returns": "طلبات الإرجاع",
-  "admin.support.reason": "السبب",
+  "admin.support.returns": "طلبات الإرجاع",
+
+  "admin.support.reason": "السبب",
+
   "admin.support.deleted": "تم الحذف",
-  "admin.support.deleteConfirm": "حذف {{type}}؟ لا يمكن التراجع عن هذا الإجراء.",
+  "admin.support.deleteConfirm":
+    "حذف {{type}}؟ لا يمكن التراجع عن هذا الإجراء.",
   "admin.support.statusUpdated": "تم تحديث الحالة",
-  "admin.analytics.title": "التحليلات",
+  "admin.analytics.title": "التحليلات",
+
   "errors.generic": "حدث خطأ ما. يرجى المحاولة مرة أخرى.",
   "admin.adminPanel": "لوحة التحكم",
   "admin.storefront": "عرض المتجر",
@@ -472,12 +561,15 @@ export default {
   "admin.form.viewStorefront": "عرض في المتجر",
   "admin.form.basicInfo": "معلومات أساسية",
   "admin.form.pricing": "السعر والمخزون",
-  "admin.form.details": "الوصف والتفاصيل",
+  "admin.form.details": "الوصف والتفاصيل",
+
   "admin.form.required": "هذا الحقل مطلوب",
   "admin.form.namePlaceholder": "مثال: سامسونج EVO بلس 128GB",
-  "admin.form.nameArPlaceholder": "اسم المنتج بالعربية",
+  "admin.form.nameArPlaceholder": "اسم المنتج بالعربية",
+
   "admin.form.categoryPlaceholder": "اختر القسم...",
-  "admin.form.noCategories": "لا توجد أقسام بعد",
+  "admin.form.noCategories": "لا توجد أقسام بعد",
+
   "admin.form.validPrice": "أدخل سعرًا صحيحًا",
   "admin.form.pricePlaceholder": "0.00",
   "admin.form.validStock": "أدخل كمية مخزون صحيحة",
@@ -508,7 +600,8 @@ export default {
   "admin.form.validationFailed": "يرجى تصحيح الحقول المحددة",
   "admin.orders.subtitle": "إدارة جميع طلبات المتجر",
   "admin.orders.allOrders": "كل الطلبات",
-  "admin.orders.searchPlaceholder": "ابحث برقم الطلب أو الاسم أو رقم الموبايل...",
+  "admin.orders.searchPlaceholder":
+    "ابحث برقم الطلب أو الاسم أو رقم الموبايل...",
   "admin.orders.showing": "عرض {{filtered}} من {{total}} طلب",
   "admin.orders.noOrders": "لا توجد طلبات",
   "admin.orders.noMatch": "لا توجد طلبات مطابقة لبحثك.",
@@ -523,7 +616,8 @@ export default {
   "admin.dashboard.total": "الإجمالي",
   "admin.dashboard.status": "الحالة",
   "admin.dashboard.manageStock": "إدارة المخزون",
-  "admin.dashboard.wellStocked": "جميع المنتجات متوفرة بمخزون كافٍ",
+  "admin.dashboard.wellStocked": "جميع المنتجات متوفرة بمخزون كافٍ",
+
   "admin.analytics.subtitle": "بيانات المبيعات والأداء",
   "admin.analytics.totalOrders": "إجمالي الطلبات",
   "admin.analytics.revenue": "الإيرادات",
@@ -544,10 +638,12 @@ export default {
   "admin.analytics.exportSold": "الكمية المباعة",
   "admin.analytics.exportViews": "المشاهدات",
   "admin.analytics.exportStatus": "الحالة",
-  "admin.analytics.exportCategory": "القسم",
+  "admin.analytics.exportCategory": "القسم",
+
   "admin.analytics.last7": "آخر 7 أيام",
   "admin.analytics.last30": "آخر 30 يوم",
-  "admin.analytics.last90": "آخر 90 يوم",
+  "admin.analytics.last90": "آخر 90 يوم",
+
   "admin.support.order": "الطلب:",
   "admin.support.noComplaints": "لا توجد شكاوى بعد",
   "admin.support.noReturns": "لا توجد طلبات إرجاع بعد",
@@ -558,17 +654,20 @@ export default {
   "admin.categories.noCategories": "لا توجد أقسام بعد",
   "admin.categories.firstCategory": "أضف أول قسم لتنظيم المنتجات",
   "admin.categories.deleting": "جارٍ الحذف...",
-  "admin.categories.deleteConfirm": "حذف \"{{name}}\"؟",
+  "admin.categories.deleteConfirm": 'حذف "{{name}}"؟',
   "admin.categories.errorExists": "يوجد قسم بهذا الاسم بالفعل",
   "admin.categories.errorNotFound": "القسم غير موجود",
-  "admin.categories.errorInUse": "لا يمكن حذف قسم ما زال يحتوي على منتجات — انقل أو احذف المنتجات أولاً",
+  "admin.categories.errorInUse":
+    "لا يمكن حذف قسم ما زال يحتوي على منتجات — انقل أو احذف المنتجات أولاً",
   "admin.categories.nameEnPlaceholder": "الاسم بالإنجليزية",
   "admin.categories.nameArPlaceholder": "الاسم بالعربية",
-  "admin.categories.slugPlaceholder": "رابط-القسم",
+  "admin.categories.slugPlaceholder": "رابط-القسم",
+
   "admin.settings.subtitle": "اضبط رسوم الشحن لمتجرك",
   "admin.settings.loadError": "تعذر تحميل الإعدادات",
   "admin.settings.saveError": "تعذر الحفظ",
-  "admin.settings.saveSuccess": "تم حفظ {{label}} — حدّث صفحة إتمام الطلب لترى التغييرات",
+  "admin.settings.saveSuccess":
+    "تم حفظ {{label}} — حدّث صفحة إتمام الطلب لترى التغييرات",
   "admin.settings.saving": "جارٍ الحفظ...",
   "admin.settings.preview": "معاينة السلة",
   "admin.settings.belowThreshold": "الشحن للطلبات الأقل من {{amount}} ج.م:",
@@ -577,8 +676,10 @@ export default {
   "admin.settings.shipping": "الشحن",
   "admin.settings.feePerOrder": "جنيه {{fee}} لكل طلب",
   "admin.settings.noFee": "بدون رسوم — شحن مجاني",
-  "admin.settings.thresholdLabel": "الطلبات من جنيه {{amount}} فأكثر تشحن مجاناً",
-  "admin.settings.noThreshold": "لا يوجد حد — الرسوم أعلاه تنطبق على كل الطلبات",
+  "admin.settings.thresholdLabel":
+    "الطلبات من جنيه {{amount}} فأكثر تشحن مجاناً",
+  "admin.settings.noThreshold":
+    "لا يوجد حد — الرسوم أعلاه تنطبق على كل الطلبات",
   "admin.settings.pointsTitle": "إعدادات النقاط",
   "admin.settings.pointsSubtitle": "معدلات الكسب والاسترداد لنظام النقاط",
   "admin.settings.pointsEarnRate": "معدل كسب النقاط",
@@ -586,7 +687,8 @@ export default {
   "admin.settings.pointsRedeemRate": "معدل استرداد النقاط",
   "admin.settings.pointsRedeemRateHint": "خصم ج.م مقابل كل نقطة يتم استردادها",
   "admin.settings.pointsSignupBonus": "نقاط هدية التسجيل",
-  "admin.settings.pointsSignupBonusHint": "نقاط مجانية تُمنح للعميل عند إنشاء حساب جديد. ضع 0 للإيقاف.",
+  "admin.settings.pointsSignupBonusHint":
+    "نقاط مجانية تُمنح للعميل عند إنشاء حساب جديد. ضع 0 للإيقاف.",
   "admin.settings.pointsSaved": "تم حفظ إعدادات النقاط",
   "admin.manage.addAdmin": "إضافة مشرف جديد",
   "admin.manage.username": "اسم المستخدم",
@@ -610,8 +712,11 @@ export default {
   "admin.manage.savePassword": "حفظ كلمة المرور",
   "admin.manage.changeError": "تعذّر حفظ التغييرات",
   "admin.manage.superOnlyTitle": "المشرفون فقط",
-  "admin.manage.superOnlyDesc": "إدارة المشرفين متاحة للمالك فقط (المشرف الرئيسي). يرجى طلب إجراء هذا التغيير من مالك المتجر.",
-  "errors.validation.required": "هذا الحقل مطلوب",
+  "admin.manage.superOnlyDesc":
+    "إدارة المشرفين متاحة للمالك فقط (المشرف الرئيسي). يرجى طلب إجراء هذا التغيير من مالك المتجر.",
+
+  "errors.validation.required": "هذا الحقل مطلوب",
+
   "errors.validation.phone": "رقم هاتف صالح مطلوب",
   "cat.Phone Cases": "جرابات الموبايل",
   "cat.Chargers": "شواحن",
@@ -626,6 +731,7 @@ export default {
   "cat.Uncategorized": "غير مصنف",
   "cat.Unknown": "غير معروف",
   "errors.boundary.title": "حدث خطأ ما",
-  "errors.boundary.message": "حدث خطأ غير متوقع أثناء تحميل هذه الصفحة. إعادة التحميل عادةً ما تُصلح ذلك.",
-  "errors.boundary.reload": "إعادة تحميل الصفحة"
+  "errors.boundary.message":
+    "حدث خطأ غير متوقع أثناء تحميل هذه الصفحة. إعادة التحميل عادةً ما تُصلح ذلك.",
+  "errors.boundary.reload": "إعادة تحميل الصفحة",
 };
