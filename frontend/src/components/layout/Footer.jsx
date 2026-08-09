@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { Facebook, Instagram, MapPin, MessageCircle, Send } from 'lucide-react';
+import { Facebook, Instagram, MapPin, MessageCircle, Music2, Send } from 'lucide-react';
 import { useLocale } from '@/context/LocaleContext.jsx';
 import { useCustomerAuth } from '@/context/CustomerAuthContext.jsx';
 import { fadeIn } from '@/lib/animations.js';
@@ -12,6 +12,7 @@ const SOCIALS = [
   { label: 'Telegram', href: 'https://t.me/elbambygroupBG', Icon: Send },
   { label: 'Instagram', href: 'https://www.instagram.com/hassanelbamby', Icon: Instagram },
   { label: 'Facebook', href: 'https://www.facebook.com/elbambygroupBG', Icon: Facebook },
+  { label: 'TikTok', href: 'https://www.tiktok.com/@hassanelbamby', Icon: Music2 },
 ];
 
 const linkCls =
