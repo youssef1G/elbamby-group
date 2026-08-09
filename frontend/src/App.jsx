@@ -20,6 +20,7 @@ const Register = lazy(() => import('@/pages/Register.jsx'));
 const Account = lazy(() => import('@/pages/Account.jsx'));
 const NotFound = lazy(() => import('@/pages/NotFound.jsx'));
 import ContactButton from '@/components/common/ContactButton.jsx';
+import ErrorBoundary from '@/components/common/ErrorBoundary.jsx';
 
 import AdminRoute from '@/components/admin/AdminRoute.jsx';
 import AdminLayout from '@/pages/admin/AdminLayout.jsx';
@@ -77,77 +78,79 @@ function ContactWrapper() {
 export default function App() {
   return (
     <ToastProvider>
-      <div className="min-h-screen flex flex-col bg-bg-surface text-bg-text-primary">
-        <Routes>
-          <Route element={<Layout />}>
-            <Route path="/" element={<Home />} />
-            <Route path="/shop" element={<Shop />} />
-            <Route path="/about" element={<About />} />
-            <Route path="/contact" element={<Contact />} />
-            <Route path="/my-orders" element={<MyOrders />} />
-            <Route path="/cart" element={<Cart />} />
-            <Route path="/checkout" element={<Checkout />} />
-            <Route path="/checkout/success" element={<CheckoutSuccess />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/account" element={<Account />} />
-            <Route path="/product/:slug" element={<ProductDetail />} />
-            <Route path="*" element={<NotFound />} />
-          </Route>
+      <ErrorBoundary>
+        <div className="min-h-screen flex flex-col bg-bg-surface text-bg-text-primary">
+          <Routes>
+            <Route element={<Layout />}>
+              <Route path="/" element={<Home />} />
+              <Route path="/shop" element={<Shop />} />
+              <Route path="/about" element={<About />} />
+              <Route path="/contact" element={<Contact />} />
+              <Route path="/my-orders" element={<MyOrders />} />
+              <Route path="/cart" element={<Cart />} />
+              <Route path="/checkout" element={<Checkout />} />
+              <Route path="/checkout/success" element={<CheckoutSuccess />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/account" element={<Account />} />
+              <Route path="/product/:slug" element={<ProductDetail />} />
+              <Route path="*" element={<NotFound />} />
+            </Route>
 
-          <Route path="/admin/login" element={
-            <Suspense fallback={spinner}><AdminLogin /></Suspense>
-          } />
+            <Route path="/admin/login" element={
+              <Suspense fallback={spinner}><AdminLogin /></Suspense>
+            } />
 
-          <Route path="/admin" element={
-            <AdminRoute>
-              <AdminLayout />
-            </AdminRoute>
-          }>
-            <Route index element={
-              <Suspense fallback={spinner}><AdminDashboard /></Suspense>
-            } />
-            <Route path="products" element={
-              <Suspense fallback={spinner}><AdminProducts /></Suspense>
-            } />
-            <Route path="products/new" element={
-              <Suspense fallback={spinner}><ProductForm /></Suspense>
-            } />
-            <Route path="products/:id/edit" element={
-              <Suspense fallback={spinner}><ProductForm /></Suspense>
-            } />
-            <Route path="categories" element={
-              <Suspense fallback={spinner}><AdminCategories /></Suspense>
-            } />
-            <Route path="orders" element={
-              <Suspense fallback={spinner}><AdminOrders /></Suspense>
-            } />
-            <Route path="orders/:id" element={
-              <Suspense fallback={spinner}><AdminOrderDetail /></Suspense>
-            } />
-            
-            <Route path="customers" element={
-              <Suspense fallback={spinner}><AdminCustomers /></Suspense>
-            } />
-            <Route path="customers/:id" element={
-              <Suspense fallback={spinner}><AdminCustomerDetail /></Suspense>
-            } />
-            <Route path="settings" element={
-              <Suspense fallback={spinner}><AdminSettings /></Suspense>
-            } />
-            <Route path="manage" element={
-              <Suspense fallback={spinner}><AdminManage /></Suspense>
-            } />
-            <Route path="support" element={
-              <Suspense fallback={spinner}><AdminSupport /></Suspense>
-            } />
-            <Route path="analytics" element={
-              <Suspense fallback={spinner}><AdminAnalytics /></Suspense>
-            } />
-          </Route>
-        </Routes>
-        <ContactWrapper />
-      </div>
+            <Route path="/admin" element={
+              <AdminRoute>
+                <AdminLayout />
+              </AdminRoute>
+            }>
+              <Route index element={
+                <Suspense fallback={spinner}><AdminDashboard /></Suspense>
+              } />
+              <Route path="products" element={
+                <Suspense fallback={spinner}><AdminProducts /></Suspense>
+              } />
+              <Route path="products/new" element={
+                <Suspense fallback={spinner}><ProductForm /></Suspense>
+              } />
+              <Route path="products/:id/edit" element={
+                <Suspense fallback={spinner}><ProductForm /></Suspense>
+              } />
+              <Route path="categories" element={
+                <Suspense fallback={spinner}><AdminCategories /></Suspense>
+              } />
+              <Route path="orders" element={
+                <Suspense fallback={spinner}><AdminOrders /></Suspense>
+              } />
+              <Route path="orders/:id" element={
+                <Suspense fallback={spinner}><AdminOrderDetail /></Suspense>
+              } />
+              
+              <Route path="customers" element={
+                <Suspense fallback={spinner}><AdminCustomers /></Suspense>
+              } />
+              <Route path="customers/:id" element={
+                <Suspense fallback={spinner}><AdminCustomerDetail /></Suspense>
+              } />
+              <Route path="settings" element={
+                <Suspense fallback={spinner}><AdminSettings /></Suspense>
+              } />
+              <Route path="manage" element={
+                <Suspense fallback={spinner}><AdminManage /></Suspense>
+              } />
+              <Route path="support" element={
+                <Suspense fallback={spinner}><AdminSupport /></Suspense>
+              } />
+              <Route path="analytics" element={
+                <Suspense fallback={spinner}><AdminAnalytics /></Suspense>
+              } />
+            </Route>
+          </Routes>
+          <ContactWrapper />
+        </div>
+      </ErrorBoundary>
     </ToastProvider>
   );
 }

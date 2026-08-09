@@ -624,5 +624,8 @@ export default {
   "cat.Car Accessories": "إكسسوارات السيارة",
   "cat.Gaming": "جيمنج",
   "cat.Uncategorized": "غير مصنف",
-  "cat.Unknown": "غير معروف"
+  "cat.Unknown": "غير معروف",
+  "errors.boundary.title": "حدث خطأ ما",
+  "errors.boundary.message": "حدث خطأ غير متوقع أثناء تحميل هذه الصفحة. إعادة التحميل عادةً ما تُصلح ذلك.",
+  "errors.boundary.reload": "إعادة تحميل الصفحة"
 };

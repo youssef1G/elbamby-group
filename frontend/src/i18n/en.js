@@ -624,5 +624,8 @@ export default {
   "cat.Car Accessories": "Car Accessories",
   "cat.Gaming": "Gaming",
   "cat.Uncategorized": "Uncategorized",
-  "cat.Unknown": "Unknown"
+  "cat.Unknown": "Unknown",
+  "errors.boundary.title": "Something went wrong",
+  "errors.boundary.message": "An unexpected error occurred while loading this page. Reloading usually fixes it.",
+  "errors.boundary.reload": "Reload page"
 };
