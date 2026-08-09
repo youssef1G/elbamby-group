@@ -4,6 +4,7 @@ dist/
 *.log
 vite.err
 vite.log
+*.tmp-*.txt
 .DS_Store
 
 # Internal project docs — kept local, not part of the repo
