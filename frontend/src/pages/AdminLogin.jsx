@@ -44,6 +44,18 @@ export default function AdminLogin() {
     }
   };
 
+  // Enter moves to the next field instead of submitting mid-form; only the
+  // last field's Enter triggers a real submit (and its validation).
+  const handleKeyDown = (e) => {
+    if (e.key !== 'Enter') return;
+    const inputs = Array.from(e.currentTarget.form?.querySelectorAll('input') ?? []);
+    const next = inputs[inputs.indexOf(e.currentTarget) + 1];
+    if (next) {
+      e.preventDefault();
+      next.focus();
+    }
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-bg-surface-sunken px-4 py-12">
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
@@ -87,6 +99,7 @@ export default function AdminLogin() {
                 <input
                   type="text"
                   {...register('username')}
+                  onKeyDown={handleKeyDown}
                   autoComplete="username"
                   placeholder={t('admin:login.placeholderUsername')}
                   className="input-base w-full ps-9 pe-3 h-10 text-body-sm bg-bg-surface text-bg-text-primary placeholder:text-bg-text-secondary/40"
