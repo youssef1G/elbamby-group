@@ -74,6 +74,18 @@ export default function Register() {
     }
   };
 
+  // Enter moves to the next field instead of submitting mid-form; only the
+  // last field's Enter triggers a real submit (and its validation).
+  const handleKeyDown = (e) => {
+    if (e.key !== 'Enter') return;
+    const inputs = Array.from(e.currentTarget.form?.querySelectorAll('input') ?? []);
+    const next = inputs[inputs.indexOf(e.currentTarget) + 1];
+    if (next) {
+      e.preventDefault();
+      next.focus();
+    }
+  };
+
   return (
     <div className="max-w-md mx-auto px-5 py-12 sm:py-20">
       <SEO titleKey="auth:register.title" />
@@ -104,6 +116,7 @@ export default function Register() {
                 <input
                   type="text"
                   {...registerField('name')}
+                  onKeyDown={handleKeyDown}
                   autoComplete="name"
                   placeholder={t('auth:register.namePlaceholder')}
                   className="input-base w-full ps-9 pe-3 h-10 text-body-sm bg-bg-surface text-bg-text-primary placeholder:text-bg-text-secondary/40"
@@ -126,6 +139,7 @@ export default function Register() {
                 <input
                   type="tel"
                   {...registerField('phone')}
+                  onKeyDown={handleKeyDown}
                   autoComplete="tel"
                   dir="ltr"
                   placeholder="010xxxxxxxx"
@@ -149,6 +163,7 @@ export default function Register() {
                 <input
                   type="password"
                   {...registerField('password')}
+                  onKeyDown={handleKeyDown}
                   autoComplete="new-password"
                   placeholder="••••••••"
                   className="input-base w-full ps-9 pe-4 h-10 text-body-sm bg-bg-surface text-bg-text-primary placeholder:text-bg-text-secondary/40"

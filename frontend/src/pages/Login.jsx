@@ -51,6 +51,18 @@ export default function Login() {
     }
   };
 
+  // Enter moves to the next field instead of submitting mid-form; only the
+  // last field's Enter triggers a real submit (and its validation).
+  const handleKeyDown = (e) => {
+    if (e.key !== 'Enter') return;
+    const inputs = Array.from(e.currentTarget.form?.querySelectorAll('input') ?? []);
+    const next = inputs[inputs.indexOf(e.currentTarget) + 1];
+    if (next) {
+      e.preventDefault();
+      next.focus();
+    }
+  };
+
   return (
     <div className="max-w-md mx-auto px-5 py-12 sm:py-20">
       <SEO titleKey="auth:login.title" />
@@ -80,6 +92,7 @@ export default function Login() {
                 <input
                   type="tel"
                   {...register('phone')}
+                  onKeyDown={handleKeyDown}
                   autoComplete="tel"
                   dir="ltr"
                   placeholder="010xxxxxxxx"
