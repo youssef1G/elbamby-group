@@ -59,13 +59,13 @@ export default {
   "common.toast.notifications": "Notifications",
 
   "common.accessibility.skipToContent": "Skip to content",
-  "common.home.heroLine1": "Genuine. In stock.",
-  "common.home.heroLine2": "Delivered to your door.",
+  "common.home.heroLine1": "Your device deserves",
+  "common.home.heroLine2": "the original.",
   "common.home.heroSubtitle":
-    "Memory cards, flash drives, chargers, power banks, audio, and cables — original, guaranteed, and delivered fast anywhere in Egypt.",
+    "Flash drives, memory cards, chargers, power banks, audio, and cables — everything your phone needs, in one place.",
   "common.home.heroCta": "Shop now",
   "common.home.heroCtaSecondary": "Browse storage",
-  "common.home.heroSerial": "BG · 01",
+  "common.home.heroToken": "BG — El Bamby Group",
 
   "common.home.codDesc": "Pay when you receive",
   "common.home.deliveryDays": "1–3 Day Delivery",

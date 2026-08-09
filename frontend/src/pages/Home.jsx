@@ -76,8 +76,15 @@ function Hero({ products, loading }) {
             </h1>
 
             <motion.span
-              variants={staggerItem}
-              className="mt-6 block h-px w-16 bg-bg-primary-500/80"
+              initial={{ scaleX: 0 }}
+              animate={{ scaleX: 1 }}
+              transition={{
+                duration: 0.6,
+                ease: [0.22, 1, 0.36, 1],
+                delay: 0.55,
+              }}
+              className="mt-6 block h-px w-16 origin-start bg-bg-primary-500/80"
+              style={{ transformOrigin: isAr ? "right" : "left" }}
               aria-hidden="true"
             />
 
@@ -94,7 +101,7 @@ function Hero({ products, loading }) {
             >
               <Link
                 to="/shop"
-                className="rounded-md bg-bg-primary-500 px-8 py-3.5 text-body-sm font-semibold text-white transition-colors hover:bg-bg-primary-600"
+                className="rounded-md bg-bg-primary-500 px-8 py-3.5 text-body-sm font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 hover:bg-bg-primary-600 hover:shadow-card active:translate-y-0"
               >
                 {t("home.heroCta")}
               </Link>

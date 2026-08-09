@@ -57,13 +57,13 @@ export default {
   "common.toast.notifications": "الإشعارات",
 
   "common.accessibility.skipToContent": "تخطَّ إلى المحتوى",
-  "common.home.heroLine1": "أصلي ومتوفّر دائمًا.",
-  "common.home.heroLine2": "ويوصلك لحد بابك.",
+  "common.home.heroLine1": "جهازك يستاهل",
+  "common.home.heroLine2": "الأصلي.",
   "common.home.heroSubtitle":
-    "كروت ذاكرة، فلاشات، شواحن، باور بانك، سماعات وكل الإكسسوارات — أصلية ومضمونة، بتوصيل سريع لكل مصر.",
+    "فلاشات، كروت ذاكرة، شواحن، باور بانك، سماعات وكابلات — كل إكسسوارات جهازك في مكان واحد.",
   "common.home.heroCta": "تسوق الآن",
   "common.home.heroCtaSecondary": "قسم وسائط التخزين",
-  "common.home.heroSerial": "ب ج · ٠١",
+  "common.home.heroToken": "BG — البمبي جروب",
 
   "common.home.codDesc": "ادفع عند الاستلام",
   "common.home.deliveryDays": "توصيل 1–3 أيام",
@@ -146,7 +146,7 @@ export default {
   "support.return.cancel": "إلغاء",
   "support.return.success": "تم إرسال طلب الإرجاع بنجاح. سنتواصل معك قريبًا.",
   "support.return.missingInfo":
-    "رقم الطلب أو رقم الهاتف مفقود — يرجى تحديث طلباتك والمحاولة مرة أخرى.",
+    "رقم الطلب أو رقم الهاتف مفقود يرجى تحديث طلباتك والمحاولة مرة أخرى.",
   "support.return.notFound":
     "لا يوجد طلب مُسلَّم مطابق لهذا الرقم والهاتف. يرجى التحقق والمحاولة مرة أخرى.",
   "support.return.validationFailed": "يرجى إكمال جميع الحقول المطلوبة.",
@@ -244,11 +244,11 @@ export default {
   "checkout.errors.stockConflict":
     "بعض المنتجات غير متوفرة بالكمية المطلوبة. يرجى مراجعة سلة المشتريات:",
   "checkout.errors.stockConflictItem":
-    "{{name}} — المتاح: {{available}}، المطلوب: {{requested}}",
+    "{{name}} المتاح: {{available}}، المطلوب: {{requested}}",
   "checkout.success.pointsEarned":
     "ستحصل على {{points}} نقطة عند تسليم هذا الطلب.",
   "checkout.success.pointsRedeemed":
-    "استخدمت {{points}} نقطة — خصم {{amount}} من هذا الطلب.",
+    "استخدمت {{points}} نقطة خصم {{amount}} من هذا الطلب.",
   "auth.login.title": "تسجيل الدخول",
   "auth.login.subtitle": "سجّل الدخول لمتابعة نقاطك واستخدامها",
   "auth.login.phone": "رقم الهاتف",
@@ -270,9 +270,9 @@ export default {
   "auth.register.email": "البريد الإلكتروني (اختياري)",
   "auth.register.submit": "إنشاء حساب",
   "auth.register.conflict": "يوجد حساب بالفعل لهذا الرقم.",
-  "auth.register.welcomeTitle": "كدا دكا كسبان مع البمبي جروب!",
+  "auth.register.welcomeTitle": "كدا كدا كسبان مع البمبي جروب!",
   "auth.register.welcomeBody":
-    "كهدية ترحيب، أضفنا لك {{points}} نقطة لرصيدك — جاهزة للاستخدام في طلبك الأول.",
+    "كهدية ترحيب، أضفنا لك {{points}} نقطة لرصيدك جاهزة للاستخدام في طلبك الأول.",
   "auth.register.welcomeNext": "الانتقال إلى حسابي",
   "auth.register.loginLink": "سجّل الدخول بدلاً من ذلك",
   "auth.register.haveAccount": "لديك حساب بالفعل؟",
@@ -498,7 +498,7 @@ export default {
   "admin.addPoints.egpPlaceholder": "مثال: 250",
   "admin.addPoints.pointsToDeduct": "النقاط المطلوب خصمها",
   "admin.addPoints.noteLabel": "ملاحظة",
-  "admin.addPoints.notePlaceholder": "مشتريات داخلية — {{amount}} ج.م",
+  "admin.addPoints.notePlaceholder": "مشتريات داخلية {{amount}} ج.م",
   "admin.addPoints.computedPoints":
     "= {{amount}} ج.م × معدل الكسب ({{rate}} نقطة لكل ج.م)",
   "admin.addPoints.confirmGrant":
@@ -658,7 +658,7 @@ export default {
   "admin.categories.errorExists": "يوجد قسم بهذا الاسم بالفعل",
   "admin.categories.errorNotFound": "القسم غير موجود",
   "admin.categories.errorInUse":
-    "لا يمكن حذف قسم ما زال يحتوي على منتجات — انقل أو احذف المنتجات أولاً",
+    "لا يمكن حذف قسم ما زال يحتوي على منتجات انقل أو احذف المنتجات أولاً",
   "admin.categories.nameEnPlaceholder": "الاسم بالإنجليزية",
   "admin.categories.nameArPlaceholder": "الاسم بالعربية",
   "admin.categories.slugPlaceholder": "رابط-القسم",
@@ -667,7 +667,7 @@ export default {
   "admin.settings.loadError": "تعذر تحميل الإعدادات",
   "admin.settings.saveError": "تعذر الحفظ",
   "admin.settings.saveSuccess":
-    "تم حفظ {{label}} — حدّث صفحة إتمام الطلب لترى التغييرات",
+    "تم حفظ {{label}} حدّث صفحة إتمام الطلب لترى التغييرات",
   "admin.settings.saving": "جارٍ الحفظ...",
   "admin.settings.preview": "معاينة السلة",
   "admin.settings.belowThreshold": "الشحن للطلبات الأقل من {{amount}} ج.م:",
@@ -675,11 +675,10 @@ export default {
   "admin.settings.free": "مجاني",
   "admin.settings.shipping": "الشحن",
   "admin.settings.feePerOrder": "جنيه {{fee}} لكل طلب",
-  "admin.settings.noFee": "بدون رسوم — شحن مجاني",
+  "admin.settings.noFee": "بدون رسوم شحن مجاني",
   "admin.settings.thresholdLabel":
     "الطلبات من جنيه {{amount}} فأكثر تشحن مجاناً",
-  "admin.settings.noThreshold":
-    "لا يوجد حد — الرسوم أعلاه تنطبق على كل الطلبات",
+  "admin.settings.noThreshold": "لا يوجد حد الرسوم أعلاه تنطبق على كل الطلبات",
   "admin.settings.pointsTitle": "إعدادات النقاط",
   "admin.settings.pointsSubtitle": "معدلات الكسب والاسترداد لنظام النقاط",
   "admin.settings.pointsEarnRate": "معدل كسب النقاط",
