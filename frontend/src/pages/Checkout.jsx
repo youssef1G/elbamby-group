@@ -99,6 +99,18 @@ export default function Checkout() {
   }
   const totalAfterDiscount = Math.max(0, total - pointsDiscountEgp);
 
+  // Enter moves to the next field instead of submitting mid-form; only the
+  // last field's Enter triggers a real submit (and its validation).
+  const handleKeyDown = (e) => {
+    if (e.key !== 'Enter') return;
+    const inputs = Array.from(e.currentTarget.form?.querySelectorAll('input') ?? []);
+    const next = inputs[inputs.indexOf(e.currentTarget) + 1];
+    if (next) {
+      e.preventDefault();
+      next.focus();
+    }
+  };
+
   const onSubmit = async (data) => {
     try {
       const res = await createOrder({
@@ -193,6 +205,7 @@ export default function Checkout() {
               <Input
                 label={t('checkout:form.nameLabel')}
                 {...register('customer_name')}
+                onKeyDown={handleKeyDown}
                 error={errMsg('customer_name')}
                 id="checkout-name"
               />
@@ -200,6 +213,7 @@ export default function Checkout() {
                 <Input
                   label={t('checkout:form.phoneLabel')}
                   {...register('phone')}
+                  onKeyDown={handleKeyDown}
                   error={errMsg('phone')}
                   id="checkout-phone"
                   dir="ltr"
@@ -209,6 +223,7 @@ export default function Checkout() {
               <Input
                 label={t('checkout:form.emailLabel')}
                 {...register('email')}
+                onKeyDown={handleKeyDown}
                 error={errMsg('email')}
                 id="checkout-email"
                 type="email"
@@ -222,12 +237,14 @@ export default function Checkout() {
               <Input
                 label={t('checkout:form.addressLabel')}
                 {...register('address_line')}
+                onKeyDown={handleKeyDown}
                 error={errMsg('address_line')}
                 id="checkout-address"
               />
               <Input
                 label={t('checkout:form.cityLabel')}
                 {...register('city')}
+                onKeyDown={handleKeyDown}
                 error={errMsg('city')}
                 id="checkout-city"
               />
