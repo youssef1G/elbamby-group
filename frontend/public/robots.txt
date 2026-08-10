@@ -1,6 +1,5 @@
 User-agent: *
 Allow: /
 Disallow: /admin
-Disallow: /*?*
 
-Sitemap: /sitemap.xml
+Sitemap: https://www.elbambygroup.com/sitemap.xml

@@ -56,13 +56,23 @@ export default function SEO({
       const descContent = descriptionKey ? t(descriptionKey) : description;
       setMeta("name", "description", descContent);
       setMeta("property", "og:description", descContent);
+      setMeta("name", "twitter:description", descContent);
     }
-    if (ogImage) setMeta("property", "og:image", ogImage);
+    const resolvedCanonical =
+      canonical ||
+      `${window.location.origin}${window.location.pathname}${window.location.search}`;
+    setLink("canonical", resolvedCanonical);
+    setMeta("property", "og:url", resolvedCanonical);
+    if (ogImage) {
+      setMeta("property", "og:image", ogImage);
+      setMeta("name", "twitter:image", ogImage);
+    }
     setMeta("property", "og:title", resolvedTitle);
-    if (canonical) {
-      setLink("canonical", canonical);
-      setMeta("property", "og:url", canonical);
-    }
+    setMeta("name", "twitter:title", resolvedTitle);
+    setMeta("property", "og:site_name", t("brand.fullName"));
+    setMeta("property", "og:locale", "ar_EG");
+    setMeta("property", "og:locale:alternate", "en_US");
+    setMeta("name", "twitter:card", "summary");
 
     let jsonLdScript = null;
     if (jsonLd) {

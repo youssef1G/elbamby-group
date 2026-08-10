@@ -1,15 +1,23 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url><loc>https://www.bgshop.eg/</loc><changefreq>daily</changefreq><priority>1.0</priority></url>
-  <url><loc>https://www.bgshop.eg/shop</loc><changefreq>daily</changefreq><priority>0.9</priority></url>
-  <url><loc>https://www.bgshop.eg/about</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
-  <url><loc>https://www.bgshop.eg/contact</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
-  <url><loc>https://www.bgshop.eg/my-orders</loc><changefreq>weekly</changefreq><priority>0.4</priority></url>
-  <url><loc>https://www.bgshop.eg/product/silicone-case-iphone-15</loc><changefreq>daily</changefreq><priority>0.9</priority></url>
-  <url><loc>https://www.bgshop.eg/product/test-product</loc><changefreq>daily</changefreq><priority>0.9</priority></url>
-  <url><loc>https://www.bgshop.eg/shop?category=chargers</loc><changefreq>weekly</changefreq><priority>0.6</priority></url>
-  <url><loc>https://www.bgshop.eg/shop?category=screen-protectors</loc><changefreq>weekly</changefreq><priority>0.6</priority></url>
-  <url><loc>https://www.bgshop.eg/shop?category=e2e-cat</loc><changefreq>weekly</changefreq><priority>0.6</priority></url>
-  <url><loc>https://www.bgshop.eg/shop?category=memmory</loc><changefreq>weekly</changefreq><priority>0.6</priority></url>
-  <url><loc>https://www.bgshop.eg/shop?category=phone-case</loc><changefreq>weekly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://www.elbambygroup.com/</loc><changefreq>daily</changefreq><priority>1.0</priority></url>
+  <url><loc>https://www.elbambygroup.com/shop</loc><changefreq>daily</changefreq><priority>0.9</priority></url>
+  <url><loc>https://www.elbambygroup.com/about</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://www.elbambygroup.com/contact</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://www.elbambygroup.com/my-orders</loc><changefreq>weekly</changefreq><priority>0.4</priority></url>
+  <url><loc>https://www.elbambygroup.com/shop?category=Flash%20Drive</loc><changefreq>weekly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://www.elbambygroup.com/shop?category=Memory%20Card</loc><changefreq>weekly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://www.elbambygroup.com/shop?category=Mobile%20Medal</loc><changefreq>weekly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://www.elbambygroup.com/product/hiksemi-flash-drive-classic-2-0-64gb</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
+  <url><loc>https://www.elbambygroup.com/product/hiksemi-flash-drive-classic-2-0-32gb</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
+  <url><loc>https://www.elbambygroup.com/product/hiksemi-metal-usb-flash-drive-16gb-usb2-0</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
+  <url><loc>https://www.elbambygroup.com/product/hiksemi-metal-usb-flash-drive-8gb-usb-2-0</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
+  <url><loc>https://www.elbambygroup.com/product/hiksemi-micro-card-128gb</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
+  <url><loc>https://www.elbambygroup.com/product/hiksemi-micro-card-64gb</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
+  <url><loc>https://www.elbambygroup.com/product/kingston-512gb-micsdxc-canvas-select-plus-100r-a1-c10-card-adp-sdcs2-512gb-black</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
+  <url><loc>https://www.elbambygroup.com/product/kingston-canvas-select-plus-microsd-memory-card-128gb-microsdxc-gen3-100mb-s-a1-card-adapter-sdcs3-128gb</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
+  <url><loc>https://www.elbambygroup.com/product/kingston-canvas-select-plus-microsd-memory-card-64gb-microsdxc-gen3-100mb-s-a1-card-adapter-sdcs3-64gb</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
+  <url><loc>https://www.elbambygroup.com/product/kingston-data-traveler-usb-3-2-256gb</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
+  <url><loc>https://www.elbambygroup.com/product/kingston-data-traveler-usb-3-2-128gb</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
+  <url><loc>https://www.elbambygroup.com/product/kingston-data-traveler-usb-3-2-64gb</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
 </urlset>
