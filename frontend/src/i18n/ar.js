@@ -60,10 +60,10 @@ export default {
   "common.home.heroLine1": "جهازك يستاهل",
   "common.home.heroLine2": "الأصلي.",
   "common.home.heroSubtitle":
-    "فلاشات، كروت ذاكرة، شواحن، باور بانك، سماعات وكابلات — كل إكسسوارات جهازك في مكان واحد.",
+    "فلاشات، كروت ذاكرة، شواحن، باور بانك، سماعات وكابلات: كل إكسسوارات جهازك في مكان واحد.",
   "common.home.heroCta": "تسوق الآن",
   "common.home.heroCtaSecondary": "قسم وسائط التخزين",
-  "common.home.heroToken": "BG — البمبي جروب",
+  "common.home.heroToken": "BG · البمبي جروب",
   "common.home.heroGhost": "ذاكرة",
 
   "common.home.codDesc": "ادفع عند الاستلام",
@@ -207,7 +207,7 @@ export default {
   "checkout.validation.city": "المدينة مطلوبة",
 
   "checkout.form.nameLabel": "الاسم الكامل",
-  "checkout.form.autofilled": "معبّأ من حسابك تلقائيًا — يمكنك تعديله",
+  "checkout.form.autofilled": "معبّأ من حسابك تلقائيًا. يمكنك تعديله",
   "checkout.form.phoneLabel": "رقم الهاتف",
   "checkout.form.emailLabel": "البريد الإلكتروني",
   "checkout.form.addressLabel": "العنوان",
@@ -339,7 +339,7 @@ export default {
   "admin.sidebar.logout": "تسجيل الخروج",
   "admin.sidebar.loggingOut": "جارٍ تسجيل الخروج…",
 
-  "admin.login.subtitle": "— لوحة التحكم —",
+  "admin.login.subtitle": "لوحة التحكم",
   "admin.login.username": "اسم المستخدم",
   "admin.login.placeholderUsername": "اكتب اسم المستخدم",
   "admin.login.password": "كلمة المرور",
@@ -386,10 +386,10 @@ export default {
   "admin.products.create": "منتج جديد",
   "admin.products.edit": "تعديل منتج",
 
-  "admin.products.nameEn": "الاسم (إنجليزي)",
+  "admin.products.nameEn": "الاسم (عربي)",
   "admin.products.nameAr": "الاسم (عربي)",
 
-  "admin.products.descriptionEn": "الوصف (إنجليزي)",
+  "admin.products.descriptionEn": "الوصف (عربي)",
   "admin.products.descriptionAr": "الوصف (عربي)",
   "admin.products.category": "القسم",
   "admin.products.price": "السعر",
@@ -414,7 +414,7 @@ export default {
 
   "admin.categories.productCount": "المنتجات",
   "admin.categories.deleteBlocked":
-    "لا يمكن الحذف — هناك {{count}} منتجاً مرتبطاً بهذا القسم",
+    "لا يمكن الحذف، فهناك {{count}} منتجًا مرتبطًا بهذا القسم",
   "admin.categories.created": "تم إنشاء القسم",
   "admin.categories.updated": "تم تحديث القسم",
   "admin.categories.deleted": "تم حذف القسم",

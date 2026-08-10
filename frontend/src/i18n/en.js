@@ -62,10 +62,10 @@ export default {
   "common.home.heroLine1": "Your device deserves",
   "common.home.heroLine2": "the original.",
   "common.home.heroSubtitle":
-    "Flash drives, memory cards, chargers, power banks, audio, and cables — everything your phone needs, in one place.",
+    "Flash drives, memory cards, chargers, power banks, audio, and cables. Everything your phone needs, in one place.",
   "common.home.heroCta": "Shop now",
   "common.home.heroCtaSecondary": "Browse storage",
-  "common.home.heroToken": "BG — El Bamby Group",
+  "common.home.heroToken": "BG · El Bamby Group",
   "common.home.heroGhost": "MEMORY",
 
   "common.home.codDesc": "Pay when you receive",
@@ -90,7 +90,7 @@ export default {
   "common.about.title": "About Us",
 
   "common.about.storyP1":
-    "بيت الميموري — Bayt Al Memory — was founded with a simple mission: bring high-quality, affordable flash drives and memory cards to every corner of Egypt.",
+    "بيت الميموري (Bayt Al Memory) was founded with a simple mission: bring high-quality, affordable flash drives and memory cards to every corner of Egypt.",
   "common.about.storyP2":
     "We specialize in storage media. Every product is sourced from trusted manufacturers and tested for speed, capacity, and reliability before reaching our shelves.",
 
@@ -152,7 +152,7 @@ export default {
   "support.return.success":
     "Return request submitted successfully. We will contact you soon.",
   "support.return.missingInfo":
-    "Missing order number or phone — please refresh your orders and try again.",
+    "Missing order number or phone. Please refresh your orders and try again.",
   "support.return.notFound":
     "No delivered order matches that number and phone. Please double-check and try again.",
   "support.return.validationFailed": "Please fill in all required fields.",
@@ -214,7 +214,7 @@ export default {
   "checkout.validation.city": "City is required",
 
   "checkout.form.nameLabel": "Full Name",
-  "checkout.form.autofilled": "Filled in from your account — you can change it",
+  "checkout.form.autofilled": "Filled in from your account. You can change it",
   "checkout.form.phoneLabel": "Phone Number",
   "checkout.form.emailLabel": "Email",
   "checkout.form.addressLabel": "Address",
@@ -255,11 +255,11 @@ export default {
   "checkout.errors.stockConflict":
     "Some items are no longer available in the requested quantity. Please review your cart:",
   "checkout.errors.stockConflictItem":
-    "{{name}} — available: {{available}}, requested: {{requested}}",
+    "{{name}} · available: {{available}}, requested: {{requested}}",
   "checkout.success.pointsEarned":
     "You'll earn {{points}} points when this order is delivered.",
   "checkout.success.pointsRedeemed":
-    "You redeemed {{points}} points — {{amount}} off this order.",
+    "You redeemed {{points}} points, {{amount}} off this order.",
   "auth.login.title": "Customer Login",
   "auth.login.subtitle": "Log in to track and redeem your points",
   "auth.login.phone": "Phone Number",
@@ -284,7 +284,7 @@ export default {
   "auth.register.welcomeTitle":
     "No matter what, you're already a winner with El Bamby Group!",
   "auth.register.welcomeBody":
-    "As a welcome gift, we've added {{points}} points to your account — ready to use on your first order.",
+    "As a welcome gift, we've added {{points}} points to your account, ready to use on your first order.",
   "auth.register.welcomeNext": "Go to my account",
   "auth.register.loginLink": "Log in instead",
   "auth.register.haveAccount": "Already have an account?",
@@ -350,7 +350,7 @@ export default {
   "admin.sidebar.logout": "Logout",
   "admin.sidebar.loggingOut": "Logging out…",
 
-  "admin.login.subtitle": "— Admin Panel —",
+  "admin.login.subtitle": "Admin Panel",
   "admin.login.username": "Username",
   "admin.login.placeholderUsername": "Type your username",
   "admin.login.password": "Password",
@@ -426,7 +426,7 @@ export default {
 
   "admin.categories.productCount": "Products",
   "admin.categories.deleteBlocked":
-    "Cannot delete — {{count}} product(s) reference this category",
+    "Cannot delete. {{count}} product(s) reference this category",
   "admin.categories.created": "Category created",
   "admin.categories.updated": "Category updated",
   "admin.categories.deleted": "Category deleted",
@@ -514,7 +514,7 @@ export default {
   "admin.addPoints.egpPlaceholder": "e.g. 250",
   "admin.addPoints.pointsToDeduct": "Points to deduct",
   "admin.addPoints.noteLabel": "Note",
-  "admin.addPoints.notePlaceholder": "In-store purchase — EGP {{amount}}",
+  "admin.addPoints.notePlaceholder": "In-store purchase · EGP {{amount}}",
   "admin.addPoints.computedPoints":
     "= EGP {{amount}} × earn rate ({{rate}} points per EGP)",
   "admin.addPoints.confirmGrant":
@@ -685,7 +685,7 @@ export default {
   "admin.settings.loadError": "Failed to load settings",
   "admin.settings.saveError": "Failed to save",
   "admin.settings.saveSuccess":
-    "{{label}} saved — refresh the checkout to see changes",
+    "{{label}} saved. Refresh the checkout to see changes",
   "admin.settings.saving": "Saving...",
   "admin.settings.preview": "Checkout preview",
   "admin.settings.belowThreshold": "Delivery for orders below EGP {{amount}}:",
@@ -694,7 +694,7 @@ export default {
   "admin.settings.free": "Free",
   "admin.settings.shipping": "Shipping",
   "admin.settings.feePerOrder": "EGP {{fee}} per order.",
-  "admin.settings.noFee": "No fee — free shipping.",
+  "admin.settings.noFee": "No fee. Free shipping.",
   "admin.settings.thresholdLabel":
     "Orders of EGP {{amount}} or more get free shipping.",
   "admin.settings.noThreshold":
