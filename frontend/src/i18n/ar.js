@@ -207,6 +207,7 @@ export default {
   "checkout.validation.city": "المدينة مطلوبة",
 
   "checkout.form.nameLabel": "الاسم الكامل",
+  "checkout.form.autofilled": "معبّأ من حسابك تلقائيًا — يمكنك تعديله",
   "checkout.form.phoneLabel": "رقم الهاتف",
   "checkout.form.emailLabel": "البريد الإلكتروني",
   "checkout.form.addressLabel": "العنوان",

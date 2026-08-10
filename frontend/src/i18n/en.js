@@ -214,6 +214,7 @@ export default {
   "checkout.validation.city": "City is required",
 
   "checkout.form.nameLabel": "Full Name",
+  "checkout.form.autofilled": "Filled in from your account — you can change it",
   "checkout.form.phoneLabel": "Phone Number",
   "checkout.form.emailLabel": "Email",
   "checkout.form.addressLabel": "Address",
