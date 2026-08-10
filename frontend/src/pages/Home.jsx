@@ -49,11 +49,8 @@ function HeroLine({ children, delay = 0 }) {
  * No decorative chrome: a type statement on one side, the flagship product
  * photographed large on the other, and the capacity spec ghosted behind it
  * as background type. The catalog does the selling.
- *
- * Loading/empty states live inside HeroVisual so the hero never fakes a
- * product or breaks while the featured query is in flight.
  */
-function Hero({ products, loading }) {
+function Hero() {
   const { t, isAr } = useLocale();
 
   return (
@@ -115,7 +112,7 @@ function Hero({ products, loading }) {
           </motion.div>
 
           <motion.div
-            className="lg:col-span-7 xl:col-span-6 lg:-me-8"
+            className="lg:col-span-7 xl:col-span-6"
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{
@@ -124,7 +121,7 @@ function Hero({ products, loading }) {
               delay: 0.3,
             }}
           >
-            <HeroVisual products={products} loading={loading} />
+            <HeroVisual />
           </motion.div>
         </div>
       </div>
@@ -328,7 +325,7 @@ export default function Home() {
         }}
       />
 
-      <Hero products={featured} loading={featLoading} />
+      <Hero />
 
       {/* Categories — tiled cards: tinted icon tile, name, slide-in chevron on hover */}
       <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 lg:py-10">

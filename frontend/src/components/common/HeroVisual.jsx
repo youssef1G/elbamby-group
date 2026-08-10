@@ -1,120 +1,86 @@
-import { useEffect, useState } from "react";
-import { motion, animate, useMotionValue } from "motion/react";
-import { Link } from "react-router-dom";
-import { useLocale } from "@/context/LocaleContext.jsx";
-import { formatPrice } from "@/lib/formatters.js";
-import { Cpu } from "lucide-react";
+import { motion } from "motion/react";
+
+const ROWS = [
+  { label: "64GB", cls: "text-2xl sm:text-3xl" },
+  { label: "128GB", cls: "text-4xl sm:text-5xl" },
+  { label: "256GB", cls: "text-6xl sm:text-8xl lg:text-[9rem]", accent: true },
+  { label: "512GB", cls: "text-4xl sm:text-5xl" },
+  { label: "1TB", cls: "text-2xl sm:text-3xl" },
+];
+
+const BARS = [
+  { h: "h-7", dur: 2.2, delay: 0 },
+  { h: "h-12", dur: 2.8, delay: 0.25 },
+  { h: "h-9", dur: 2.4, delay: 0.45 },
+  { h: "h-14", dur: 3.1, delay: 0.6 },
+  { h: "h-8", dur: 2.6, delay: 0.8 },
+];
 
 /**
- * HeroVisual — the flagship product as a printed poster (v6).
+ * HeroVisual — the capacity scale as typography (v7).
  *
- * No card, no frame, no stickers: the product photo fills the whole visual
- * area edge-to-edge, cropped macro-scale. Two motions keep it alive —
- * a spec counter that counts up to the real capacity on load, and a very
- * slow breathing zoom on the photo. A slim ink strip carries the specs and
- * price. The image drifts; nothing else moves.
+ * No photography, no illustration: the brand's own vocabulary — storage
+ * capacities set in mono — stacked as a giant type pyramid, the middle line
+ * in brand color. An equalizer of solid bars underneath reads as data moving.
+ * The stack settles once; the bars keep transferring.
  */
-export default function HeroVisual({ products = [], loading = false }) {
-  const { t, isAr } = useLocale();
-
-  if (loading) {
-    return (
-      <div
-        className="relative h-full min-h-[340px] w-full sm:min-h-[440px]"
-        aria-hidden="true"
-      >
-        <div className="h-full min-h-[340px] w-full animate-pulse bg-bg-surface-sunken sm:min-h-[440px]" />
-      </div>
-    );
-  }
-
-  const product = products[0];
-  const image = product?.productImages?.[0]?.imageUrl || "";
-  const name = product
-    ? isAr && product.nameAr
-      ? product.nameAr
-      : product.nameEn
-    : "";
-  const capacity = product?.capacityGb;
-  const specs = [product?.interfaceType, product?.speedClass]
-    .filter(Boolean)
-    .join(" · ");
-  const fallbackLabel = capacity
-    ? `${capacity}GB`
-    : product?.interfaceType || "BG";
-
-  // The spec counter: counts up to the real capacity once the page loads.
-  const count = useMotionValue(0);
-  const [display, setDisplay] = useState(fallbackLabel);
-  useEffect(() => {
-    if (!capacity) {
-      setDisplay(fallbackLabel);
-      return undefined;
-    }
-    setDisplay("0");
-    const controls = animate(count, capacity, {
-      duration: 1.8,
-      delay: 0.5,
-      ease: [0.22, 1, 0.36, 1],
-      onUpdate: (v) => setDisplay(String(Math.round(v))),
-    });
-    return () => controls.stop();
-  }, [capacity, fallbackLabel, count]);
-
+export default function HeroVisual() {
   return (
     <figure
-      className="relative h-full min-h-[340px] w-full overflow-hidden border border-bg-border sm:min-h-[440px] lg:min-h-[520px]"
-      aria-label={name || t("brand.fullName")}
+      className="relative flex h-full min-h-[340px] w-full select-none flex-col items-center justify-center overflow-hidden sm:min-h-[440px] lg:min-h-[520px]"
+      aria-hidden="true"
     >
-      {image && product ? (
-        <Link
-          to={`/product/${product.slug}`}
-          className="group relative block h-full w-full"
-        >
-          <motion.img
-            src={image}
-            alt={name}
-            initial={{ scale: 1.14, opacity: 0 }}
-            animate={{ scale: [1.09, 1.03, 1.06], opacity: 1 }}
-            transition={{
-              opacity: { duration: 0.8, ease: "easeOut" },
-              scale: { duration: 16, repeat: Infinity, ease: "easeInOut" },
-            }}
-            className="h-full w-full object-cover"
-          />
+      {/* Soft light behind the type */}
+      <div
+        className="pointer-events-none absolute top-1/3 h-80 w-80 rounded-full bg-bg-primary-500/[0.08] blur-3xl"
+        aria-hidden="true"
+      />
 
-          {/* Ink strip — specs and price, on the image */}
-          <figcaption className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-4 bg-bg-ink/85 px-5 py-4 backdrop-blur-sm sm:px-6">
-            <div className="min-w-0">
-              <p className="font-mono text-caption tracking-[0.14em] text-bg-ink-text/70 ltr-nums">
-                {capacity ? `${display} GB` : fallbackLabel}
-                {specs ? ` · ${specs}` : ""}
-              </p>
-              <p className="mt-0.5 truncate text-body-sm font-semibold text-bg-ink-text">
-                {name}
-              </p>
-            </div>
-            <span className="shrink-0 font-mono text-body-sm font-semibold text-bg-ink-text ltr-nums">
-              {formatPrice(product.price)}
-            </span>
-          </figcaption>
-        </Link>
-      ) : (
-        <div className="flex h-full w-full items-center justify-center bg-bg-surface-sunken">
-          <div className="flex flex-col items-center gap-4 text-bg-text-secondary">
-            <Cpu
-              size={44}
-              strokeWidth={1.25}
-              className="text-bg-primary-500"
-              aria-hidden="true"
-              focusable="false"
-            />
-            <span className="font-mono text-caption tracking-[0.2em] uppercase ltr-nums">
-              {fallbackLabel}
-            </span>
-          </div>
-        </div>
-      )}
+      {/* Capacity pyramid */}
+      <div className="relative flex flex-col items-center font-mono leading-none tracking-tight ltr-nums">
+        {ROWS.map((row, i) => (
+          <motion.span
+            key={row.label}
+            initial={{ opacity: 0, y: 18 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{
+              duration: 0.7,
+              ease: [0.22, 1, 0.36, 1],
+              delay: 0.15 + i * 0.09,
+            }}
+            className={`${row.cls} ${row.accent ? "font-semibold text-bg-primary-600" : "font-medium text-bg-text-secondary/70"}`}
+          >
+            {row.label}
+          </motion.span>
+        ))}
+      </div>
+
+      {/* Equalizer — data in motion */}
+      <div className="relative mt-12 flex items-end gap-2" aria-hidden="true">
+        {BARS.map((bar, i) => (
+          <motion.span
+            key={i}
+            animate={{ scaleY: [0.3, 1, 0.45, 0.85, 0.3] }}
+            transition={{
+              duration: bar.dur,
+              repeat: Infinity,
+              ease: "easeInOut",
+              delay: bar.delay,
+            }}
+            className={`${bar.h} w-1.5 origin-bottom rounded-full bg-bg-primary-500`}
+          />
+        ))}
+      </div>
+
+      {/* Caption line */}
+      <motion.p
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.8, delay: 0.9 }}
+        className="relative mt-6 font-mono text-caption uppercase tracking-[0.3em] text-bg-text-secondary ltr-nums"
+      >
+        USB 3.2 · U3 V30 · CLASS 10
+      </motion.p>
     </figure>
   );
 }
