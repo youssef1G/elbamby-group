@@ -115,13 +115,13 @@ function Hero({ products, loading }) {
           </motion.div>
 
           <motion.div
-            className="lg:col-span-7 xl:col-span-6"
-            initial={{ opacity: 0, x: isAr ? -32 : 32 }}
-            animate={{ opacity: 1, x: 0 }}
+            className="lg:col-span-7 xl:col-span-6 lg:-me-8"
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
             transition={{
-              duration: 0.75,
+              duration: 0.8,
               ease: [0.22, 1, 0.36, 1],
-              delay: 0.35,
+              delay: 0.3,
             }}
           >
             <HeroVisual products={products} loading={loading} />
