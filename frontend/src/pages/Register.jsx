@@ -1,32 +1,42 @@
-import { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { Link, Navigate, useNavigate } from 'react-router-dom';
-import { motion } from 'motion/react';
-import { User, Lock, Mail, Phone } from 'lucide-react';
-import { useLocale } from '@/context/LocaleContext.jsx';
-import { useCustomerAuth } from '@/context/CustomerAuthContext.jsx';
-import { normalizePhone } from '@/lib/formatters.js';
-import Button from '@/components/ui/Button.jsx';
-import SEO from '@/components/common/SEO.jsx';
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { Link, Navigate, useNavigate } from "react-router-dom";
+import { motion } from "motion/react";
+import { User, Mail, Phone } from "lucide-react";
+import { useLocale } from "@/context/LocaleContext.jsx";
+import { useCustomerAuth } from "@/context/CustomerAuthContext.jsx";
+import { normalizePhone } from "@/lib/formatters.js";
+import Button from "@/components/ui/Button.jsx";
+import PasswordInput from "@/components/ui/PasswordInput.jsx";
+import SEO from "@/components/common/SEO.jsx";
 
-const WELCOME_BONUS_KEY = 'bg_welcome_bonus';
+const WELCOME_BONUS_KEY = "bg_welcome_bonus";
 
 const phoneRegex = /^01[0-25]\d{8}$/;
 
-const registerSchema = z.object({
-  name: z.string().min(1, 'auth:validation.required'),
-  phone: z.string().transform(normalizePhone).pipe(z.string().regex(phoneRegex, 'auth:validation.phone')),
-  password: z.string().min(6, 'auth:validation.passwordMin'),
-  email: z.string().email('auth:validation.email').optional().or(z.literal('')),
-});
+const registerSchema = z
+  .object({
+    name: z.string().min(1, "auth:validation.required"),
+    phone: z
+      .string()
+      .transform(normalizePhone)
+      .pipe(z.string().regex(phoneRegex, "auth:validation.phone")),
+    password: z.string().min(6, "auth:validation.passwordMin"),
+    confirmPassword: z.string().min(1, "auth:validation.required"),
+    email: z.string().email("auth:validation.email"),
+  })
+  .refine((d) => d.password === d.confirmPassword, {
+    message: "auth:validation.passwordMismatch",
+    path: ["confirmPassword"],
+  });
 
 export default function Register() {
   const { t } = useLocale();
   const navigate = useNavigate();
   const { customer, isLoading: authLoading, register } = useCustomerAuth();
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [isConflict, setIsConflict] = useState(false);
 
   const {
@@ -39,14 +49,14 @@ export default function Register() {
   if (customer) return <Navigate to="/account" replace />;
 
   const onSubmit = async (data) => {
-    setError('');
+    setError("");
     setIsConflict(false);
     try {
       const res = await register({
         name: data.name,
         phone: data.phone,
         password: data.password,
-        email: data.email || undefined,
+        email: data.email,
       });
       const bonus = Number(res?.signup_bonus ?? 0);
       if (bonus > 0) {
@@ -57,18 +67,18 @@ export default function Register() {
           sessionStorage.setItem(WELCOME_BONUS_KEY, String(bonus));
         } catch {}
       }
-      navigate('/account');
+      navigate("/account");
     } catch (err) {
-      if (err.code === 'CONFLICT') {
+      if (err.code === "CONFLICT") {
         setIsConflict(true);
-        setError(t('auth:register.conflict'));
+        setError(t("auth:register.conflict"));
       } else {
         setError(
-          err.code === 'RATE_LIMITED'
-            ? t('auth:errors.rateLimited')
-            : err.code === 'VALIDATION_ERROR'
-              ? t('auth:errors.validationFailed')
-              : err.message || t('errors.generic'),
+          err.code === "RATE_LIMITED"
+            ? t("auth:errors.rateLimited")
+            : err.code === "VALIDATION_ERROR"
+              ? t("auth:errors.validationFailed")
+              : err.message || t("errors.generic"),
         );
       }
     }
@@ -77,8 +87,10 @@ export default function Register() {
   // Enter moves to the next field instead of submitting mid-form; only the
   // last field's Enter triggers a real submit (and its validation).
   const handleKeyDown = (e) => {
-    if (e.key !== 'Enter') return;
-    const inputs = Array.from(e.currentTarget.form?.querySelectorAll('input') ?? []);
+    if (e.key !== "Enter") return;
+    const inputs = Array.from(
+      e.currentTarget.form?.querySelectorAll("input") ?? [],
+    );
     const next = inputs[inputs.indexOf(e.currentTarget) + 1];
     if (next) {
       e.preventDefault();
@@ -92,139 +104,166 @@ export default function Register() {
       <motion.div
         initial={{ opacity: 0, y: 24 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, ease: 'easeOut' }}
+        transition={{ duration: 0.5, ease: "easeOut" }}
       >
         <div className="text-center mb-8">
           <h1 className="font-heading text-h2 font-bold tracking-tight text-bg-text-primary">
-            {t('auth:register.title')}
+            {t("auth:register.title")}
           </h1>
-          <p className="text-caption text-bg-text-secondary mt-2">{t('auth:register.subtitle')}</p>
+          <p className="text-caption text-bg-text-secondary mt-2">
+            {t("auth:register.subtitle")}
+          </p>
         </div>
 
         <>
-            <div className="surface-card p-6 sm:p-8">
-          <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
-            <div>
-              <label className="block text-caption font-semibold text-bg-text-secondary mb-1.5 uppercase tracking-[0.08em]">
-                {t('auth:register.name')}
-              </label>
-              <div className="relative">
-                <User
-                  size={14}
-                  className="absolute start-3 top-1/2 -translate-y-1/2 text-bg-text-secondary pointer-events-none"
-                />
-                <input
-                  type="text"
-                  {...registerField('name')}
-                  onKeyDown={handleKeyDown}
-                  autoComplete="name"
-                  placeholder={t('auth:register.namePlaceholder')}
-                  className="input-base w-full ps-9 pe-3 h-10 text-body-sm bg-bg-surface text-bg-text-primary placeholder:text-bg-text-secondary/40"
-                />
+          <div className="surface-card p-6 sm:p-8">
+            <form
+              onSubmit={handleSubmit(onSubmit)}
+              noValidate
+              className="space-y-4"
+            >
+              <div>
+                <label className="block text-caption font-semibold text-bg-text-secondary mb-1.5 uppercase tracking-[0.08em]">
+                  {t("auth:register.name")}
+                </label>
+                <div className="relative">
+                  <User
+                    size={14}
+                    className="absolute start-3 top-1/2 -translate-y-1/2 text-bg-text-secondary pointer-events-none"
+                  />
+                  <input
+                    type="text"
+                    {...registerField("name")}
+                    onKeyDown={handleKeyDown}
+                    autoComplete="name"
+                    placeholder={t("auth:register.namePlaceholder")}
+                    className="input-base w-full ps-9 pe-3 h-10 text-body-sm bg-bg-surface text-bg-text-primary placeholder:text-bg-text-secondary/40"
+                  />
+                </div>
+                {errors.name?.message && (
+                  <p className="text-body-sm text-bg-error mt-1">
+                    {t(errors.name.message)}
+                  </p>
+                )}
               </div>
-              {errors.name?.message && (
-                <p className="text-body-sm text-bg-error mt-1">{t(errors.name.message)}</p>
-              )}
-            </div>
 
-            <div>
-              <label className="block text-caption font-semibold text-bg-text-secondary mb-1.5 uppercase tracking-[0.08em]">
-                {t('auth:register.phone')}
-              </label>
-              <div className="relative">
-                <Phone
-                  size={14}
-                  className="absolute start-3 top-1/2 -translate-y-1/2 text-bg-text-secondary pointer-events-none"
-                />
-                <input
-                  type="tel"
-                  {...registerField('phone')}
-                  onKeyDown={handleKeyDown}
-                  autoComplete="tel"
-                  dir="ltr"
-                  placeholder="010xxxxxxxx"
-                  className="input-base w-full ps-9 pe-3 h-10 text-body-sm bg-bg-surface text-bg-text-primary placeholder:text-bg-text-secondary/40 ltr-nums"
-                />
+              <div>
+                <label className="block text-caption font-semibold text-bg-text-secondary mb-1.5 uppercase tracking-[0.08em]">
+                  {t("auth:register.phone")}
+                </label>
+                <div className="relative">
+                  <Phone
+                    size={14}
+                    className="absolute start-3 top-1/2 -translate-y-1/2 text-bg-text-secondary pointer-events-none"
+                  />
+                  <input
+                    type="tel"
+                    {...registerField("phone")}
+                    onKeyDown={handleKeyDown}
+                    autoComplete="tel"
+                    dir="ltr"
+                    placeholder="010xxxxxxxx"
+                    className="input-base w-full ps-9 pe-3 h-10 text-body-sm bg-bg-surface text-bg-text-primary placeholder:text-bg-text-secondary/40 ltr-nums"
+                  />
+                </div>
+                {errors.phone?.message && (
+                  <p className="text-body-sm text-bg-error mt-1">
+                    {t(errors.phone.message)}
+                  </p>
+                )}
               </div>
-              {errors.phone?.message && (
-                <p className="text-body-sm text-bg-error mt-1">{t(errors.phone.message)}</p>
-              )}
-            </div>
 
-            <div>
-              <label className="block text-caption font-semibold text-bg-text-secondary mb-1.5 uppercase tracking-[0.08em]">
-                {t('auth:register.password')}
-              </label>
-              <div className="relative">
-                <Lock
-                  size={14}
-                  className="absolute start-3 top-1/2 -translate-y-1/2 text-bg-text-secondary pointer-events-none"
-                />
-                <input
-                  type="password"
-                  {...registerField('password')}
-                  onKeyDown={handleKeyDown}
-                  autoComplete="new-password"
-                  placeholder="••••••••"
-                  className="input-base w-full ps-9 pe-4 h-10 text-body-sm bg-bg-surface text-bg-text-primary placeholder:text-bg-text-secondary/40"
-                />
+              <PasswordInput
+                label={t("auth:register.password")}
+                {...registerField("password")}
+                onKeyDown={handleKeyDown}
+                autoComplete="new-password"
+                placeholder="••••••••"
+                error={
+                  errors.password?.message
+                    ? t(errors.password.message)
+                    : undefined
+                }
+              />
+
+              <PasswordInput
+                label={t("auth:register.confirmPassword")}
+                {...registerField("confirmPassword")}
+                onKeyDown={handleKeyDown}
+                autoComplete="new-password"
+                placeholder="••••••••"
+                error={
+                  errors.confirmPassword?.message
+                    ? t(errors.confirmPassword.message)
+                    : undefined
+                }
+              />
+
+              <div>
+                <label className="block text-caption font-semibold text-bg-text-secondary mb-1.5 uppercase tracking-[0.08em]">
+                  {t("auth:register.email")}
+                </label>
+                <div className="relative">
+                  <Mail
+                    size={14}
+                    className="absolute start-3 top-1/2 -translate-y-1/2 text-bg-text-secondary pointer-events-none"
+                  />
+                  <input
+                    type="email"
+                    {...registerField("email")}
+                    autoComplete="email"
+                    dir="ltr"
+                    className="input-base w-full ps-9 pe-3 h-10 text-body-sm bg-bg-surface text-bg-text-primary placeholder:text-bg-text-secondary/40"
+                  />
+                </div>
+                {errors.email?.message && (
+                  <p className="text-body-sm text-bg-error mt-1">
+                    {t(errors.email.message)}
+                  </p>
+                )}
               </div>
-              {errors.password?.message && (
-                <p className="text-body-sm text-bg-error mt-1">{t(errors.password.message)}</p>
-              )}
-            </div>
 
-            <div>
-              <label className="block text-caption font-semibold text-bg-text-secondary mb-1.5 uppercase tracking-[0.08em]">
-                {t('auth:register.email')}
-              </label>
-              <div className="relative">
-                <Mail
-                  size={14}
-                  className="absolute start-3 top-1/2 -translate-y-1/2 text-bg-text-secondary pointer-events-none"
-                />
-                <input
-                  type="email"
-                  {...registerField('email')}
-                  autoComplete="email"
-                  dir="ltr"
-                  className="input-base w-full ps-9 pe-3 h-10 text-body-sm bg-bg-surface text-bg-text-primary placeholder:text-bg-text-secondary/40"
-                />
-              </div>
-              {errors.email?.message && (
-                <p className="text-body-sm text-bg-error mt-1">{t(errors.email.message)}</p>
+              {error && (
+                <motion.p
+                  initial={{ opacity: 0, y: -4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="text-body-sm text-bg-error bg-bg-error/10 rounded-sm px-3 py-2"
+                  role="alert"
+                >
+                  {error}
+                </motion.p>
               )}
-            </div>
 
-            {error && (
-              <motion.p
-                initial={{ opacity: 0, y: -4 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="text-body-sm text-bg-error bg-bg-error/10 rounded-sm px-3 py-2"
-                role="alert"
+              {isConflict && (
+                <p className="text-body-sm text-bg-text-secondary">
+                  <Link
+                    to="/login"
+                    className="font-semibold text-bg-primary-500 hover:text-bg-primary-600 transition-colors"
+                  >
+                    {t("auth:register.loginLink")}
+                  </Link>
+                </p>
+              )}
+
+              <Button
+                type="submit"
+                variant="primary"
+                className="w-full h-11"
+                loading={isSubmitting}
+                disabled={isSubmitting}
               >
-                {error}
-              </motion.p>
-            )}
-
-            {isConflict && (
-              <p className="text-body-sm text-bg-text-secondary">
-                <Link to="/login" className="font-semibold text-bg-primary-500 hover:text-bg-primary-600 transition-colors">
-                  {t('auth:register.loginLink')}
-                </Link>
-              </p>
-            )}
-
-            <Button type="submit" variant="primary" className="w-full h-11" loading={isSubmitting} disabled={isSubmitting}>
-              {t('auth:register.submit')}
-            </Button>
-          </form>
+                {t("auth:register.submit")}
+              </Button>
+            </form>
           </div>
 
           <p className="text-center text-body-sm text-bg-text-secondary mt-6">
-            {t('auth:register.haveAccount')}{' '}
-            <Link to="/login" className="font-semibold text-bg-primary-500 hover:text-bg-primary-600 transition-colors">
-              {t('auth:register.loginLink')}
+            {t("auth:register.haveAccount")}{" "}
+            <Link
+              to="/login"
+              className="font-semibold text-bg-primary-500 hover:text-bg-primary-600 transition-colors"
+            >
+              {t("auth:register.loginLink")}
             </Link>
           </p>
         </>
