@@ -323,7 +323,7 @@ export default function Home() {
           name: "El Bamby Group",
           alternateName: t("brand.fullName"),
           url: window.location.origin,
-          logo: `${window.location.origin}/logo.png`,
+          logo: `${window.location.origin}/logo.jpg`,
         }}
       />
 
