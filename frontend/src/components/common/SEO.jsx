@@ -27,6 +27,7 @@ function setLink(rel, href) {
  *
  * Props:
  *  - titleKey | title         localized key or raw title (appends brand name)
+ *  - titleRaw                 exact title used verbatim, no brand suffix
  *  - descriptionKey | desc    localized key or raw meta description
  *  - canonical                absolute canonical URL + og:url
  *  - ogImage                  absolute URL for social preview (e.g. product image)
@@ -35,6 +36,7 @@ function setLink(rel, href) {
 export default function SEO({
   titleKey,
   title,
+  titleRaw,
   descriptionKey,
   description,
   canonical,
@@ -45,11 +47,13 @@ export default function SEO({
 
   useEffect(() => {
     const prevTitle = document.title;
-    const resolvedTitle = titleKey
-      ? `${t(titleKey)} · ${t("brand.fullName")}`
-      : title
-        ? `${title} · ${t("brand.fullName")}`
-        : t("brand.fullName");
+    const resolvedTitle = titleRaw
+      ? titleRaw
+      : titleKey
+        ? `${t(titleKey)} · ${t("brand.fullName")}`
+        : title
+          ? `${title} · ${t("brand.fullName")}`
+          : t("brand.fullName");
     document.title = resolvedTitle;
 
     if (descriptionKey || description) {

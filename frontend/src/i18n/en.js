@@ -74,6 +74,8 @@ export default {
   "common.home.quality": "Original & Tested",
   "common.home.qualityDesc": "Every product verified for performance",
   "common.home.shopByCategory": "Shop by Category",
+  "common.home.description":
+    "El Bamby Group (بيت الميموري) — Egypt's store for original flash drives, memory cards and phone accessories from Kingston, HIKSEMI and more. Fast delivery, cash on delivery.",
   "common.home.featuredEyebrow": "Hand-picked",
   "common.home.newEyebrow": "Just in",
   "common.hero.prevSlide": "Previous slide",

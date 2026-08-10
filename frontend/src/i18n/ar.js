@@ -72,6 +72,8 @@ export default {
   "common.home.quality": "أصلي ومختبر",
   "common.home.qualityDesc": "كل منتج تم اختباره للأداء",
   "common.home.shopByCategory": "تسوّق حسب التصنيف",
+  "common.home.description":
+    "البمبي جروب (بيت الميموري) — متجر مصر لشراء الفلاشات وكرت الميموري الأصلية وإكسسوارات الموبايل من كينغستون وHIKSEMI وغيرها. توصيل سريع والدفع عند الاستلام.",
   "common.home.featuredEyebrow": "مختاراتنا",
   "common.home.newEyebrow": "آخر الوصلات",
   "common.hero.prevSlide": "الشريحة السابقة",

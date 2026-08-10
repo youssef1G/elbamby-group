@@ -315,11 +315,13 @@ export default function Home() {
   return (
     <>
       <SEO
-        titleKey="nav.home"
+        titleRaw="El Bamby Group | البمبي جروب"
+        descriptionKey="common:home.description"
         jsonLd={{
           "@context": "https://schema.org",
           "@type": "Organization",
-          name: t("brand.fullName"),
+          name: "El Bamby Group",
+          alternateName: t("brand.fullName"),
           url: window.location.origin,
           logo: `${window.location.origin}/logo.png`,
         }}
