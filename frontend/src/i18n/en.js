@@ -528,6 +528,7 @@ export default {
   "admin.addPoints.emptySearch": "Enter a phone number first",
   "admin.addPoints.deductTooHigh":
     "Cannot deduct more than the current balance",
+  "admin.addPoints.tooLarge": "Amount is too large",
   "admin.addPoints.required": "This field is required",
   "admin.settings.title": "Shipping",
   "admin.settings.defaultShippingFee": "Default Shipping Fee",

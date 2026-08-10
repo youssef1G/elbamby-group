@@ -137,6 +137,10 @@ export default function AddPointsModal({ isOpen, onClose, initialCustomer, onAdj
         setSubmitError(t('admin:addPoints.required'));
         return;
       }
+      if (Number(amount) > 10000000) {
+        setSubmitError(t('admin:addPoints.tooLarge'));
+        return;
+      }
     } else {
       if (!pointsInput || Number(pointsInput) <= 0) {
         setSubmitError(t('admin:addPoints.required'));
@@ -298,6 +302,7 @@ export default function AddPointsModal({ isOpen, onClose, initialCustomer, onAdj
                 label={t('admin:addPoints.egpAmount')}
                 type="number"
                 min="0"
+                max="10000000"
                 step="0.01"
                 dir="ltr"
                 value={amount}
@@ -311,6 +316,7 @@ export default function AddPointsModal({ isOpen, onClose, initialCustomer, onAdj
                 label={t('admin:addPoints.pointsToDeduct')}
                 type="number"
                 min="0"
+                max="2000000000"
                 step="1"
                 dir="ltr"
                 value={pointsInput}

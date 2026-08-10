@@ -390,10 +390,14 @@ const adminCreateCustomerSchema = z.object({
 
 // direction-specific requirement (egp_amount for grant, points for deduct) is
 // enforced inline in the handler (same pattern as the inline status checks).
+// Upper bounds keep points inside Postgres int4 (2,147,483,647) — an uncapped
+// amount previously slipped through and surfaced as a raw 500 (22003).
+const MAX_POINTS_ADJUST = 2_000_000_000;
+const MAX_GRANT_EGP = 10_000_000;
 const pointsAdjustSchema = z.object({
   direction: z.enum(['grant', 'deduct']),
-  egp_amount: z.number().positive().optional(),
-  points: z.number().int().positive().optional(),
+  egp_amount: z.number().positive().max(MAX_GRANT_EGP).optional(),
+  points: z.number().int().positive().max(MAX_POINTS_ADJUST).optional(),
   note: z.string().min(1, 'Note is required'),
 });
 
@@ -1625,6 +1629,11 @@ async function adminAdjustCustomerPoints(req, res, next) {
       if (signedPoints <= 0) {
         return res.status(400).json({
           error: { message: 'Grant amount converts to 0 points', code: 'VALIDATION_ERROR' },
+        });
+      }
+      if (signedPoints > MAX_POINTS_ADJUST) {
+        return res.status(400).json({
+          error: { message: 'Grant amount converts to too many points', code: 'VALIDATION_ERROR' },
         });
       }
     } else {

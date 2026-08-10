@@ -513,6 +513,7 @@ export default {
   "admin.addPoints.error": "تعذر تحديث النقاط. حاول مرة أخرى.",
   "admin.addPoints.emptySearch": "أدخل رقم الهاتف أولاً",
   "admin.addPoints.deductTooHigh": "لا يمكن الخصم أكثر من الرصيد الحالي",
+  "admin.addPoints.tooLarge": "القيمة كبيرة جداً",
   "admin.addPoints.required": "هذا الحقل مطلوب",
   "admin.settings.title": "الشحن",
   "admin.settings.defaultShippingFee": "رسوم الشحن الافتراضية",
