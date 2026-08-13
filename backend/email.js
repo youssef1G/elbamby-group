@@ -366,3 +366,94 @@ export async function sendOrderEmail({ email, order, items = [], status = 'pendi
     console.error('Failed to send order email:', err.message);
   }
 }
+
+/**
+ * Points-balance change notification (manual admin grant/deduct) — the
+ * email fallback for when WhatsApp isn't configured. Compact branded card.
+ */
+export async function sendPointsChangeEmail({ email, customerName, type, points, note, balanceAfter }) {
+  if (!transporter || !email) return;
+  const isGrant = type === 'manual_grant';
+  const amount = Math.abs(Number(points || 0));
+  const verb = isGrant ? 'added to' : 'deducted from';
+  const changeColor = isGrant ? '#15803D' : '#B91C1C';
+  const accountHref = FRONTEND_ORIGIN ? `${FRONTEND_ORIGIN}/account` : null;
+
+  const rows = [
+    detailRow(isGrant ? 'Points added' : 'Points deducted', `${isGrant ? '+' : '-'}${amount}`, {
+      mono: true,
+      strong: true,
+    }),
+    detailRow('New balance', `${Number(balanceAfter || 0)} points`, { mono: true, strong: true }),
+    ...(note ? [detailRow('Note', note)] : []),
+  ].join('');
+
+  const html = `<!doctype html>
+<html>
+<body style="margin:0;padding:0;background-color:${SURFACE};font-family:${SANS};">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:${SURFACE};padding:32px 16px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background-color:${SURFACE_RAISED};border:1px solid ${BORDER};border-radius:16px;overflow:hidden;">
+          <tr>
+            <td style="padding:26px 24px;border-bottom:1px solid ${BORDER};">
+              <div style="font-size:12px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:${ACCENT};">${esc(BRAND.shortName)} Points</div>
+              <div style="font-size:20px;font-weight:800;color:${TEXT_PRIMARY};margin-top:6px;">
+                Your balance changed
+              </div>
+              <div style="font-size:13px;color:${TEXT_MUTED};margin-top:4px;">
+                Hi ${esc(customerName || 'there')}, ${esc(verb)} your BG points account.
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:6px 24px 0;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td style="padding:18px 0;border-bottom:1px solid ${BORDER};">
+                    <div style="font-size:26px;font-weight:800;font-family:${MONO};color:${changeColor};">
+                      ${isGrant ? '+' : '-'}${amount} pts
+                    </div>
+                  </td>
+                </tr>
+                ${rows}
+              </table>
+            </td>
+          </tr>
+          ${accountHref ? `
+          <tr>
+            <td style="padding:18px 24px;">
+              <a href="${esc(accountHref)}" style="display:inline-block;background-color:${ACCENT};color:#FFFFFF;text-decoration:none;font-size:14px;font-weight:700;padding:12px 22px;border-radius:8px;">
+                View my balance
+              </a>
+            </td>
+          </tr>` : ''}
+          <tr>
+            <td style="background-color:${INK};padding:22px 24px;text-align:center;">
+              <div style="color:#FFFFFF;font-size:14px;font-weight:800;">${esc(BRAND.name)}</div>
+              <div style="color:${INK_MUTED};font-size:12px;margin-top:4px;">${esc(BRAND.subtitle)}</div>
+              <div style="color:#8A8680;font-size:11px;margin-top:10px;">
+                This is an automated balance notification. Please do not reply to this email.
+              </div>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+
+  try {
+    const info = await transporter.sendMail({
+      from: `"${BRAND.name}" <${SENDER_EMAIL}>`,
+      to: email,
+      subject: `Your BG points balance changed (${isGrant ? '+' : '-'}${amount})`,
+      html,
+      attachments: LOGO_ATTACHMENT ? [LOGO_ATTACHMENT] : undefined,
+    });
+    console.log(`Points-change email sent to ${email} (messageId: ${info.messageId})`);
+  } catch (err) {
+    console.error('Failed to send points-change email:', err.message);
+  }
+}

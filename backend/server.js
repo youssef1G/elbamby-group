@@ -87,6 +87,7 @@ import {
 } from './db.js';
 import { signToken, verifyToken, requireAdmin, requireSuperAdmin } from './auth.js';
 import { sendOrderEmail } from './email.js';
+import { sendPointsChangeNotification } from './wa.js';
 import {
   requireCustomer,
   optionalCustomer,
@@ -1665,6 +1666,19 @@ async function adminAdjustCustomerPoints(req, res, next) {
     if (txErr) return next(txErr);
 
     const { data: updated } = await getCustomerById(customerId);
+
+    // Notify the customer of the change (WhatsApp Cloud API when configured,
+    // email otherwise). Fire-and-forget with internal error handling — a
+    // notification problem must never fail or slow down the points ledger.
+    if (updated) {
+      sendPointsChangeNotification({
+        customer: updated,
+        type,
+        points: signedPoints,
+        note,
+        balanceAfter: updated.points_balance,
+      }).catch((err) => console.error('Points notification error:', err.message));
+    }
 
     res.status(201).json({
       transaction: toCamelCase(transaction),
