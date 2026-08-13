@@ -432,8 +432,9 @@ export async function sendPointsChangeEmail({ email, customerName, type, points,
             <td style="background-color:${INK};padding:22px 24px;text-align:center;">
               <div style="color:#FFFFFF;font-size:14px;font-weight:800;">${esc(BRAND.name)}</div>
               <div style="color:${INK_MUTED};font-size:12px;margin-top:4px;">${esc(BRAND.subtitle)}</div>
-              <div style="color:#8A8680;font-size:11px;margin-top:10px;">
-                This is an automated balance notification. Please do not reply to this email.
+              <div style="color:#8A8680;font-size:11px;margin-top:10px;line-height:1.6;">
+                This is an automated balance notification. Please do not reply to this email.<br />
+                Developed by <a href="${esc(BRAND.linkedin)}" style="color:#FFD7EC;text-decoration:none;" target="_blank" rel="noopener noreferrer">${esc(BRAND.developedBy)}</a> · <a href="${esc(BRAND.linkedin)}" style="color:#8A8680;text-decoration:underline;" target="_blank" rel="noopener noreferrer">LinkedIn</a>
               </div>
             </td>
           </tr>
@@ -450,7 +451,6 @@ export async function sendPointsChangeEmail({ email, customerName, type, points,
       to: email,
       subject: `Your BG points balance changed (${isGrant ? '+' : '-'}${amount})`,
       html,
-      attachments: LOGO_ATTACHMENT ? [LOGO_ATTACHMENT] : undefined,
     });
     console.log(`Points-change email sent to ${email} (messageId: ${info.messageId})`);
   } catch (err) {
