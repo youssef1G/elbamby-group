@@ -86,8 +86,7 @@ import {
   reverseOrderEarnedPoints,
 } from './db.js';
 import { signToken, verifyToken, requireAdmin, requireSuperAdmin } from './auth.js';
-import { sendOrderEmail } from './email.js';
-import { sendPointsChangeNotification } from './wa.js';
+import { sendOrderEmail, sendPointsChangeEmail } from './email.js';
 import {
   requireCustomer,
   optionalCustomer,
@@ -1667,17 +1666,18 @@ async function adminAdjustCustomerPoints(req, res, next) {
 
     const { data: updated } = await getCustomerById(customerId);
 
-    // Notify the customer of the change (WhatsApp Cloud API when configured,
-    // email otherwise). Fire-and-forget with internal error handling — a
-    // notification problem must never fail or slow down the points ledger.
+    // Notify the customer of the change by email. Fire-and-forget with
+    // internal error handling — a notification problem must never fail or
+    // slow down the points ledger.
     if (updated) {
-      sendPointsChangeNotification({
-        customer: updated,
+      sendPointsChangeEmail({
+        email: updated.email,
+        customerName: updated.name,
         type,
         points: signedPoints,
         note,
         balanceAfter: updated.points_balance,
-      }).catch((err) => console.error('Points notification error:', err.message));
+      });
     }
 
     res.status(201).json({
