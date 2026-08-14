@@ -31,7 +31,7 @@ import Skeleton from "@/components/ui/Skeleton.jsx";
  */
 function HeroLine({ children, delay = 0 }) {
   return (
-    <span className="block overflow-hidden">
+    <span className="block overflow-hidden pb-[0.14em] -mb-[0.14em]">
       <motion.span
         className="block"
         initial={{ y: "115%" }}
@@ -63,7 +63,9 @@ function Hero() {
             animate="show"
             variants={staggerContainer}
           >
-            <h1 className="font-heading text-display font-bold leading-[1.08] tracking-tight text-bg-text-primary">
+            <h1
+              className={`font-heading text-display font-bold tracking-tight text-bg-text-primary ${isAr ? "leading-[1.35]" : "leading-[1.08]"}`}
+            >
               <HeroLine delay={0.05}>{t("home.heroLine1")}</HeroLine>
               <HeroLine delay={0.18}>
                 <span className="text-bg-text-secondary">
