@@ -2,13 +2,13 @@ import { motion, useReducedMotion } from "motion/react";
 import { useLocale } from "@/context/LocaleContext.jsx";
 
 /**
- * HeroVisual — logo medallion + store title (v11).
+ * HeroVisual — logo medallion + store title (v12).
  *
- * Same concept: the logo in a perfect circle, lit by breathing brand
- * light with one slow sweeping accent, and the store name in the active
- * language revealed word-by-word. Refinements: layered bloom for depth,
- * a breathing outer hairline, a trailing glow behind the sweeping dot,
- * and em-based mask padding so Arabic descenders never clip.
+ * The mark now sits on a raised badge disc (white chip in both themes)
+ * with an inner top sheen and a slow light arc sweeping around it, above
+ * the breathing bloom and the single sweeping dot ring. The figure grows
+ * with its content (no absolute positioning) so nothing can ever be
+ * clipped. Store name in the active language only, revealed word by word.
  */
 export default function HeroVisual() {
   const { isAr } = useLocale();
@@ -19,7 +19,7 @@ export default function HeroVisual() {
   const title = isAr ? ["البمبي", "جروب"] : ["El", "Bamby", "Group"];
 
   return (
-    <figure className="relative h-full min-h-[340px] w-full select-none overflow-hidden sm:min-h-[440px] lg:min-h-[540px]">
+    <figure className="relative flex w-full select-none flex-col items-center justify-center overflow-hidden px-6 py-12 text-center min-h-[340px] sm:min-h-[440px] lg:min-h-[540px]">
       {/* Layered ambient bloom — wide soft wash + tighter hot core */}
       <motion.div
         className="pointer-events-none absolute left-1/2 top-[36%] h-72 w-72 -translate-x-1/2 -translate-y-1/2 rounded-full bg-bg-primary-500/15 blur-3xl sm:h-[24rem] sm:w-[24rem]"
@@ -45,30 +45,45 @@ export default function HeroVisual() {
         }}
       />
 
-      <div className="absolute inset-0 flex flex-col items-center justify-center gap-8 px-6 text-center sm:gap-10">
-        {/* Logo medallion */}
+      <div className="relative z-10 flex flex-col items-center gap-8 sm:gap-10">
+        {/* Logo badge — raised disc with sheen, sweeping light arc, dot ring */}
         <motion.div
-          initial={{ opacity: 0, scale: reduceMotion ? 1 : 0.9 }}
+          initial={{ opacity: 0, scale: reduceMotion ? 1 : 0.88 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.8, ease: EASE, delay: 0.15 }}
           className="relative flex items-center justify-center"
         >
-          {/* Sweeping ring with a glowing dot + soft trail */}
+          {/* Sweeping ring with glowing dot */}
           <motion.div
-            className="pointer-events-none absolute h-36 w-36 rounded-full border border-bg-border/80 sm:h-44 sm:w-44"
+            className="pointer-events-none absolute h-40 w-40 rounded-full border border-bg-border/80 sm:h-48 sm:w-48"
             animate={reduceMotion ? undefined : { rotate: 360 }}
             transition={{ duration: 22, repeat: Infinity, ease: "linear" }}
           >
             <span className="absolute -top-2 left-1/2 h-1.5 w-1.5 -translate-x-1/2 rounded-full bg-bg-primary-500 shadow-[0_0_14px_var(--bg-primary-500)]" />
             <span className="absolute -top-7 left-1/2 h-6 w-8 -translate-x-1/2 rounded-full bg-bg-primary-500/25 blur-md" />
           </motion.div>
-          {/* Static hairline — breathes slowly instead of sitting dead */}
+
+          {/* Light arc sweeping around the badge */}
           <motion.div
-            className="pointer-events-none absolute h-32 w-32 rounded-full border border-bg-border/40 sm:h-40 sm:w-40"
+            className="pointer-events-none absolute h-[7.25rem] w-[7.25rem] rounded-full sm:h-[9.25rem] sm:w-[9.25rem]"
+            style={{
+              background:
+                "conic-gradient(from 0deg, transparent 0deg, transparent 300deg, color-mix(in srgb, var(--bg-primary-500) 35%, transparent) 340deg, transparent 360deg)",
+              mask: "radial-gradient(farthest-side, transparent calc(100% - 6px), #000 calc(100% - 5px))",
+              WebkitMask:
+                "radial-gradient(farthest-side, transparent calc(100% - 6px), #000 calc(100% - 5px))",
+            }}
+            animate={reduceMotion ? undefined : { rotate: 360 }}
+            transition={{ duration: 9, repeat: Infinity, ease: "linear" }}
+          />
+
+          {/* Breathing hairline */}
+          <motion.div
+            className="pointer-events-none absolute h-36 w-36 rounded-full border border-bg-border/40 sm:h-44 sm:w-44"
             animate={
               reduceMotion
                 ? undefined
-                : { scale: [1, 1.035, 1], opacity: [0.6, 1, 0.6] }
+                : { scale: [1, 1.03, 1], opacity: [0.6, 1, 0.6] }
             }
             transition={{
               duration: 5.5,
@@ -78,19 +93,24 @@ export default function HeroVisual() {
             }}
           />
 
-          {/* The mark itself — gentle float */}
+          {/* The badge itself — raised disc, gentle float */}
           <motion.div
             animate={reduceMotion ? undefined : { y: [0, -6, 0] }}
             transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-            className="relative"
+            className="relative h-28 w-28 sm:h-36 sm:w-36"
           >
-            <div className="h-24 w-24 overflow-hidden rounded-full border border-bg-border bg-bg-surface ring-1 ring-bg-border/60 shadow-card shadow-[0_0_55px_-10px_var(--bg-primary-500)] sm:h-32 sm:w-32">
-              <img
-                src="/logo.jpg"
-                alt={isAr ? "البمبي جروب" : "El Bamby Group"}
-                className="h-full w-full object-cover"
-                loading="eager"
-              />
+            <div className="absolute inset-0 rounded-full bg-bg-primary-500/25 blur-lg" />
+            <div className="relative h-full w-full overflow-hidden rounded-full border border-bg-border bg-bg-surface-raised p-1.5 shadow-card">
+              {/* Inner top sheen */}
+              <span className="pointer-events-none absolute inset-x-0 top-0 h-1/2 rounded-t-full bg-gradient-to-b from-white/45 to-transparent" />
+              <div className="h-full w-full overflow-hidden rounded-full">
+                <img
+                  src="/logo.jpg"
+                  alt={isAr ? "البمبي جروب" : "El Bamby Group"}
+                  className="h-full w-full object-cover"
+                  loading="eager"
+                />
+              </div>
             </div>
           </motion.div>
         </motion.div>
@@ -110,10 +130,10 @@ export default function HeroVisual() {
             {title.map((word, i) => (
               <span
                 key={word}
-                className="inline-block overflow-hidden pb-[0.15em] -mb-[0.15em]"
+                className="inline-block overflow-hidden pb-[0.2em] -mb-[0.2em]"
               >
                 <motion.span
-                  className="inline-block text-4xl leading-[1.15] sm:text-5xl lg:text-6xl"
+                  className="inline-block text-4xl leading-[1.25] sm:text-5xl lg:text-6xl"
                   initial={
                     reduceMotion ? { opacity: 0 } : { opacity: 0, y: "110%" }
                   }

@@ -31,7 +31,7 @@ import Skeleton from "@/components/ui/Skeleton.jsx";
  */
 function HeroLine({ children, delay = 0 }) {
   return (
-    <span className="block overflow-hidden pb-[0.14em] -mb-[0.14em]">
+    <span className="block overflow-hidden pb-[0.2em] -mb-[0.2em]">
       <motion.span
         className="block"
         initial={{ y: "115%" }}
