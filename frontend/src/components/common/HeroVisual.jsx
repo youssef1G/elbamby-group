@@ -6,9 +6,8 @@ import { useLocale } from "@/context/LocaleContext.jsx";
  *
  * The badge: a raised white disc carrying the mark, floating on a pink
  * under-glow with a clearly visible sweeping light arc, a glowing dot on
- * a slow ring, and a gentle idle tilt. The title reveals with a classic
- * mask rise (v11 style) — the mask pads generously below the baseline and
- * the figure grows with content, so Arabic descenders can never be cropped.
+ * a slow ring, and a gentle idle tilt. The title reveals with a blur-rise
+ * — no overflow masks anywhere, so Arabic descenders can never be cropped.
  * Store name in the active language only.
  */
 export default function HeroVisual() {
@@ -154,23 +153,27 @@ export default function HeroVisual() {
 
           <h2 className="flex flex-wrap items-baseline justify-center gap-x-3 font-heading font-bold tracking-tight text-bg-text-primary">
             {title.map((word, i) => (
-              <span
+              <motion.span
                 key={word}
-                className="inline-block overflow-hidden pb-[0.2em] -mb-[0.2em]"
+                className="inline-block text-4xl leading-[1.35] sm:text-5xl lg:text-6xl"
+                initial={
+                  reduceMotion
+                    ? { opacity: 0 }
+                    : { opacity: 0, y: "0.55em", filter: "blur(8px)" }
+                }
+                animate={
+                  reduceMotion
+                    ? { opacity: 1 }
+                    : { opacity: 1, y: "0em", filter: "blur(0px)" }
+                }
+                transition={{
+                  duration: 0.8,
+                  ease: EASE,
+                  delay: 0.55 + i * 0.12,
+                }}
               >
-                <motion.span
-                  className="inline-block text-4xl leading-[1.35] sm:text-5xl lg:text-6xl"
-                  initial={reduceMotion ? { opacity: 0 } : { y: "110%" }}
-                  animate={reduceMotion ? { opacity: 1 } : { y: "0%" }}
-                  transition={{
-                    duration: 0.8,
-                    ease: EASE,
-                    delay: 0.55 + i * 0.12,
-                  }}
-                >
-                  {word}
-                </motion.span>
-              </span>
+                {word}
+              </motion.span>
             ))}
           </h2>
 
