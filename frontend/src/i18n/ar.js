@@ -188,6 +188,7 @@ export default {
   "shop.product.relatedProducts": "منتجات ذات صلة",
 
   "shop.categories": "التصنيفات",
+  "shop.all": "الكل",
   "shop.noCategories": "لا توجد تصنيفات بعد",
   "shop.featured": "مميزة",
   "shop.newArrivals": "وصل حديثاً",

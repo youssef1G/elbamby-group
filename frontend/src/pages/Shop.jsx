@@ -168,6 +168,44 @@ export default function Shop() {
         <h1 className="text-display text-bg-text-primary mb-2">{t('nav.shop')}</h1>
       </motion.div>
 
+      {categories.length > 0 && (
+        <div className="lg:hidden -mx-5 px-5 mb-5">
+          <div
+            role="tablist"
+            aria-label={t('shop:categories')}
+            className="flex gap-2 overflow-x-auto pb-1 snap-x"
+          >
+            <button
+              role="tab"
+              aria-selected={!category}
+              onClick={() => updateParam('category', '')}
+              className={`shrink-0 snap-start whitespace-nowrap rounded-full px-4 py-2 text-body-sm font-medium transition-colors ${
+                !category
+                  ? 'bg-bg-primary-500 text-white shadow-sm'
+                  : 'bg-bg-surface border border-bg-border text-bg-text-secondary hover:text-bg-text-primary'
+              }`}
+            >
+              {t('shop:all')}
+            </button>
+            {categories.map((cat) => (
+              <button
+                key={cat.id}
+                role="tab"
+                aria-selected={category === cat.slug}
+                onClick={() => updateParam('category', cat.slug === category ? '' : cat.slug)}
+                className={`shrink-0 snap-start whitespace-nowrap rounded-full px-4 py-2 text-body-sm font-medium transition-colors ${
+                  category === cat.slug
+                    ? 'bg-bg-primary-500 text-white shadow-sm'
+                    : 'bg-bg-surface border border-bg-border text-bg-text-secondary hover:text-bg-text-primary'
+                }`}
+              >
+                {isAr ? cat.nameAr : cat.nameEn}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="flex gap-8">
         <aside className="hidden lg:block w-56 shrink-0">
           <FiltersSidebar

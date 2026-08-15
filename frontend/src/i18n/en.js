@@ -194,6 +194,7 @@ export default {
   "shop.product.relatedProducts": "Related Products",
 
   "shop.categories": "Categories",
+  "shop.all": "All",
   "shop.noCategories": "No categories yet",
   "shop.featured": "Featured",
   "shop.newArrivals": "New Arrivals",
