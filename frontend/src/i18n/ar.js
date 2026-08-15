@@ -62,6 +62,7 @@ export default {
   "common.home.heroSubtitle":
     "فلاشات، كروت ذاكرة، شواحن، باور بانك، سماعات وكابلات: كل إكسسوارات جهازك في مكان واحد.",
   "common.home.heroCta": "تسوق الآن",
+  "common.home.heroCtaStory": "قصتنا",
   "common.home.heroToken": "BG · البمبي جروب",
   "common.home.heroGhost": "ذاكرة",
 

@@ -64,6 +64,7 @@ export default {
   "common.home.heroSubtitle":
     "Flash drives, memory cards, chargers, power banks, audio, and cables. Everything your phone needs, in one place.",
   "common.home.heroCta": "Shop now",
+  "common.home.heroCtaStory": "Our Story",
   "common.home.heroToken": "BG · El Bamby Group",
   "common.home.heroGhost": "MEMORY",
 

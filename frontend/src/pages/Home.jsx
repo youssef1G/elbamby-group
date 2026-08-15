@@ -108,7 +108,7 @@ function Hero() {
                 to="/about"
                 className="text-body-sm font-medium text-bg-text-secondary underline decoration-bg-border underline-offset-4 transition hover:text-bg-text-primary hover:decoration-bg-primary-500"
               >
-                {t("common.nav.about")}
+                {t("home.heroCtaStory")}
               </Link>
             </motion.div>
           </motion.div>
