@@ -104,12 +104,6 @@ function Hero() {
               >
                 {t("home.heroCta")}
               </Link>
-              <Link
-                to="/shop?category=storage"
-                className="text-body-sm font-medium text-bg-text-secondary underline decoration-bg-border underline-offset-4 transition hover:text-bg-text-primary hover:decoration-bg-primary-500"
-              >
-                {t("home.heroCtaSecondary")}
-              </Link>
             </motion.div>
           </motion.div>
 
