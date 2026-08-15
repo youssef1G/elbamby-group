@@ -53,6 +53,14 @@ function Hero() {
 
   return (
     <section className="relative overflow-hidden border-b border-bg-border">
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 -z-10"
+        style={{
+          background:
+            "radial-gradient(60% 65% at 78% 50%, color-mix(in srgb, var(--bg-primary-500) 14%, transparent) 0%, transparent 70%)",
+        }}
+      />
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 items-center gap-12 py-14 sm:py-16 lg:grid-cols-12 lg:gap-16 lg:py-20">
           <motion.div
@@ -121,7 +129,8 @@ function Hero() {
               delay: 0.2,
             }}
           >
-            <HeroVisual />\n          </motion.div>
+            <HeroVisual />
+          </motion.div>
         </div>
       </div>
     </section>

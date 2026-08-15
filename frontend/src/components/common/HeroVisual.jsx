@@ -17,8 +17,6 @@ export default function HeroVisual() {
   const ref = useRef(null);
 
   const titleWords = isAr ? ["البمبي", "جروب"] : ["EL", "BAMBY", "GROUP"];
-  const eyebrow = isAr ? "بيت الميموري · مصر" : "MEMORY · EST. EGYPT";
-  const caption = isAr ? "BG-001 · المتجر الرسمي" : "BG-001 · OFFICIAL STORE";
 
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
@@ -47,63 +45,15 @@ export default function HeroVisual() {
     mouseY.set(0);
   };
 
-  const eyebrowFont = isAr ? "font-arabic tracking-normal" : "font-mono";
-  const captionFont = isAr ? "font-arabic tracking-normal" : "font-mono";
-
   return (
     <figure
       ref={ref}
       onMouseMove={handleMouseMove}
       onMouseLeave={resetMouse}
-      className="relative isolate flex w-full select-none flex-col items-center justify-center overflow-hidden"
-      style={{ minHeight: "min(72vh, 560px)" }}
+      className="relative isolate flex w-full select-none flex-col items-center justify-center"
+      style={{ minHeight: "min(64vh, 520px)" }}
     >
-      <div className="pointer-events-none absolute inset-0 -z-20 flex items-center justify-center">
-        <motion.div
-          className="h-[30rem] w-[30rem] rounded-full blur-3xl"
-          style={{ background: "var(--bg-primary-500)" }}
-          initial={reduceMotion ? { opacity: 0.1 } : { opacity: 0, scale: 0.8 }}
-          animate={
-            reduceMotion
-              ? { opacity: 0.1, scale: 1 }
-              : { opacity: [0.1, 0.18, 0.1], scale: [1, 1.04, 1] }
-          }
-          transition={{
-            opacity: reduceMotion
-              ? { duration: 1.4, ease: EASE, delay: 0.2 }
-              : {
-                  duration: 7,
-                  repeat: Infinity,
-                  ease: "easeInOut",
-                  delay: 0.4,
-                },
-            scale: reduceMotion
-              ? { duration: 1.4, ease: EASE, delay: 0.2 }
-              : {
-                  duration: 7,
-                  repeat: Infinity,
-                  ease: "easeInOut",
-                  delay: 0.4,
-                },
-          }}
-        />
-      </div>
-
-      <div
-        className="pointer-events-none absolute inset-0 -z-10 opacity-[0.022]"
-        style={{
-          backgroundImage:
-            "linear-gradient(var(--bg-border) 1px, transparent 1px), linear-gradient(90deg, var(--bg-border) 1px, transparent 1px)",
-          backgroundSize: "28px 28px",
-          maskImage:
-            "radial-gradient(ellipse at center, #000 55%, transparent 88%)",
-          WebkitMaskImage:
-            "radial-gradient(ellipse at center, #000 55%, transparent 88%)",
-        }}
-        aria-hidden
-      />
-
-      <div className="relative z-10 flex flex-col items-center gap-8 sm:gap-10">
+      <div className="relative z-10 flex flex-col items-center gap-7 sm:gap-9">
         <motion.div
           className="relative"
           style={{
@@ -133,11 +83,11 @@ export default function HeroVisual() {
         >
           <span
             aria-hidden
-            className="absolute -bottom-3 left-1/2 h-9 w-3/5 -translate-x-1/2 rounded-full bg-bg-primary-500/20 blur-2xl"
+            className="absolute -bottom-3 left-1/2 h-9 w-3/5 -translate-x-1/2 rounded-full bg-bg-primary-500/25 blur-2xl"
           />
 
           <div
-            className="absolute -inset-4 rounded-full border border-bg-border/50"
+            className="absolute -inset-4 rounded-full border border-bg-border/40"
             aria-hidden
           />
 
@@ -146,21 +96,18 @@ export default function HeroVisual() {
             style={{ border: "1px dashed var(--bg-border)" }}
             aria-hidden
             animate={reduceMotion ? undefined : { rotate: 360 }}
-            transition={{
-              duration: 60,
-              repeat: Infinity,
-              ease: "linear",
-            }}
+            transition={{ duration: 60, repeat: Infinity, ease: "linear" }}
           />
 
           <motion.div
             className="absolute -inset-4 rounded-full"
             style={{
-              background: `conic-gradient(from 0deg, transparent 0deg, var(--bg-primary-500) 18deg, transparent 36deg, transparent 360deg)`,
+              background:
+                "conic-gradient(from 0deg, transparent 0deg, var(--bg-primary-500) 18deg, transparent 36deg, transparent 360deg)",
               mask: "radial-gradient(farthest-side, transparent calc(100% - 2px), #000 calc(100% - 1px))",
               WebkitMask:
                 "radial-gradient(farthest-side, transparent calc(100% - 2px), #000 calc(100% - 1px))",
-              opacity: 0.7,
+              opacity: 0.6,
             }}
             aria-hidden
             animate={reduceMotion ? undefined : { rotate: -360 }}
@@ -210,87 +157,38 @@ export default function HeroVisual() {
           </motion.div>
         </motion.div>
 
-        <div className="flex flex-col items-center gap-3">
-          <motion.div
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, ease: EASE, delay: 0.5 }}
-            className={`flex items-center gap-2.5 text-[10px] uppercase tracking-[0.4em] text-bg-text-secondary ${eyebrowFont}`}
-          >
-            <motion.span
-              className="h-1 w-1 rounded-full bg-bg-primary-500"
-              animate={
-                reduceMotion
-                  ? undefined
-                  : { opacity: [0.35, 1, 0.35], scale: [0.85, 1.2, 0.85] }
-              }
-              transition={{
-                duration: 2,
-                repeat: Infinity,
-                ease: "easeInOut",
-              }}
-            />
-            <span>{eyebrow}</span>
-          </motion.div>
-
-          <h2
-            className={`flex flex-wrap items-baseline justify-center ${
-              isAr ? "gap-x-4" : "gap-x-3 sm:gap-x-4"
-            }`}
-          >
-            {titleWords.map((word, i) => (
-              <span
-                key={word}
-                className="inline-block overflow-hidden pb-[0.22em] -mb-[0.22em]"
+        <h2
+          className={`flex flex-wrap items-baseline justify-center ${
+            isAr ? "gap-x-4" : "gap-x-3 sm:gap-x-4"
+          }`}
+        >
+          {titleWords.map((word, i) => (
+            <span
+              key={word}
+              className="inline-block overflow-hidden pb-[0.22em] -mb-[0.22em]"
+            >
+              <motion.span
+                className={`inline-block font-heading font-bold text-bg-text-primary ${
+                  isAr
+                    ? "font-arabic text-4xl leading-[1.3] sm:text-5xl lg:text-6xl"
+                    : "text-3xl leading-[1.02] tracking-[-0.025em] sm:text-5xl lg:text-6xl"
+                }`}
+                initial={reduceMotion ? { opacity: 0 } : { y: "110%" }}
+                animate={reduceMotion ? { opacity: 1 } : { y: "0%" }}
+                transition={{
+                  duration: 0.85,
+                  ease: EASE,
+                  delay: 0.6 + i * 0.1,
+                }}
               >
-                <motion.span
-                  className={`inline-block font-heading font-bold text-bg-text-primary ${
-                    isAr
-                      ? "font-arabic text-4xl leading-[1.3] sm:text-5xl lg:text-6xl"
-                      : "text-3xl leading-[1.02] tracking-[-0.025em] sm:text-5xl lg:text-6xl"
-                  }`}
-                  initial={reduceMotion ? { opacity: 0 } : { y: "110%" }}
-                  animate={reduceMotion ? { opacity: 1 } : { y: "0%" }}
-                  transition={{
-                    duration: 0.85,
-                    ease: EASE,
-                    delay: 0.6 + i * 0.1,
-                  }}
-                >
-                  {word}
-                </motion.span>
-              </span>
-            ))}
-          </h2>
-
-          <motion.span
-            initial={{ scaleX: 0, opacity: 0 }}
-            animate={{ scaleX: 1, opacity: 1 }}
-            transition={{ duration: 0.9, ease: EASE, delay: 1.0 }}
-            className="block h-[2px] w-20 origin-center rounded-full"
-            style={{
-              background:
-                "linear-gradient(90deg, transparent, var(--bg-primary-300), var(--bg-primary-500), var(--bg-primary-700), var(--bg-primary-500), var(--bg-primary-300), transparent)",
-            }}
-            aria-hidden
-          />
-
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.6, ease: EASE, delay: 1.2 }}
-            className={`text-[10px] uppercase tracking-[0.5em] text-bg-text-secondary/60 ${captionFont}`}
-          >
-            {caption}
-          </motion.p>
-        </div>
+                {word}
+              </motion.span>
+            </span>
+          ))}
+        </h2>
       </div>
 
-      <span className="sr-only">
-        {isAr
-          ? "البمبي جروب — المتجر الرسمي"
-          : "El Bamby Group — official store"}
-      </span>
+      <span className="sr-only">{isAr ? "البمبي جروب" : "El Bamby Group"}</span>
     </figure>
   );
 }
