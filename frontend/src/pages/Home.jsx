@@ -100,7 +100,7 @@ function Hero() {
             >
               <Link
                 to="/shop"
-                className="rounded-md bg-bg-primary-500 px-8 py-3.5 text-body-sm font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 hover:bg-bg-primary-600 hover:shadow-card active:translate-y-0"
+                className="rounded-sm bg-bg-primary-500 h-11 px-8 flex items-center text-body-sm font-semibold text-white transition-all duration-200 hover:bg-bg-primary-600 hover:shadow-card active:scale-[0.98]"
               >
                 {t("home.heroCta")}
               </Link>
