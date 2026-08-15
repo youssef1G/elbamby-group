@@ -45,10 +45,8 @@ function HeroLine({ children, delay = 0 }) {
 }
 
 /**
- * Hero — "the product is the poster" (v4).
- * No decorative chrome: a type statement on one side, the flagship product
- * photographed large on the other, and the capacity spec ghosted behind it
- * as background type. The catalog does the selling.
+ * Hero — clean two-column: type statement left, brand emblem right.
+ * The visual is restrained; the catalog does the selling.
  */
 function Hero() {
   const { t, isAr } = useLocale();
@@ -56,9 +54,9 @@ function Hero() {
   return (
     <section className="relative overflow-hidden border-b border-bg-border">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 items-center gap-14 py-14 sm:py-16 lg:grid-cols-12 lg:gap-12 lg:py-24">
+        <div className="grid grid-cols-1 items-center gap-12 py-14 sm:py-16 lg:grid-cols-12 lg:gap-16 lg:py-20">
           <motion.div
-            className="lg:col-span-5 xl:col-span-6"
+            className="lg:col-span-6"
             initial="hidden"
             animate="show"
             variants={staggerContainer}
@@ -82,7 +80,7 @@ function Hero() {
                 ease: [0.22, 1, 0.36, 1],
                 delay: 0.55,
               }}
-              className="mt-6 block h-px w-16 origin-start bg-bg-primary-500/80"
+              className="mt-6 block h-px w-16 origin-start bg-bg-primary-500/60"
               style={{ transformOrigin: isAr ? "right" : "left" }}
               aria-hidden="true"
             />
@@ -114,17 +112,16 @@ function Hero() {
           </motion.div>
 
           <motion.div
-            className="lg:col-span-7 xl:col-span-6"
-            initial={{ opacity: 0, y: 24 }}
+            className="lg:col-span-6"
+            initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{
               duration: 0.8,
               ease: [0.22, 1, 0.36, 1],
-              delay: 0.3,
+              delay: 0.2,
             }}
           >
-            <HeroVisual />
-          </motion.div>
+            <HeroVisual />\n          </motion.div>
         </div>
       </div>
     </section>
