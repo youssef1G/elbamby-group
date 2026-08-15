@@ -134,6 +134,9 @@ export function OrderCard({ order, onRefresh, autoOpen }) {
             quantity: i.quantity,
             stock,
             unlimitedStock: unlimited,
+            variantId: i.variantId || null,
+            variantLabelEn: i.variantLabelEn || '',
+            variantLabelAr: i.variantLabelAr || '',
             skip: !live || (!unlimited && stock <= 0),
           };
         })
@@ -181,7 +184,13 @@ export function OrderCard({ order, onRefresh, autoOpen }) {
 
   const currentIdx = STATUS_IDX[order.status] ?? 0;
   const cancelled = order.status === 'cancelled';
-  const itemName = (item) => isAr ? (item.nameAr || item.nameEn || item.productNameSnapshot || '—') : (item.nameEn || item.nameAr || item.productNameSnapshot || '—');
+  const itemName = (item) => {
+    const base = isAr
+      ? item.nameAr || item.nameEn || item.productNameSnapshot || '—'
+      : item.nameEn || item.nameAr || item.productNameSnapshot || '—';
+    const v = isAr ? item.variantLabelAr : item.variantLabelEn;
+    return v ? `${base} — ${v}` : base;
+  };
   const itemTotal = (item) => item.lineTotal ?? item.price * item.quantity;
 
   return (

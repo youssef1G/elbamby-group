@@ -156,6 +156,11 @@ export default function AdminOrderDetail() {
                 <p className="text-body-sm font-medium text-bg-text-primary truncate">
                   {item.productNameSnapshot}
                 </p>
+                {item.variantLabelEn && (
+                  <p className="text-caption text-bg-text-secondary truncate">
+                    {isAr ? item.variantLabelAr : item.variantLabelEn}
+                  </p>
+                )}
                 <p className="text-caption text-bg-text-secondary">
                   {item.quantity} × {formatPrice(item.unitPriceSnapshot)}
                 </p>

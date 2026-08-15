@@ -201,6 +201,7 @@ export default {
   "shop.gallery.prev": "Previous image",
   "shop.gallery.next": "Next image",
   "shop.gallery.image": "Image {{n}}",
+  "shop.gallery.close": "Close",
   "shop.searchPlaceholder": "Search products...",
   "shop.searchClear": "Clear search",
 
@@ -239,6 +240,8 @@ export default {
     "Estimated delivery within 1–3 business days.",
   "checkout.success.trackOrder": "Track Order",
   "checkout.success.continueShopping": "Continue Shopping",
+  "checkout.success.orderSummary": "Order summary",
+  "checkout.success.noVariant": "No color selected",
 
   "checkout.errors.generic": "Something went wrong. Please try again.",
   "checkout.redeem.title": "Use your points",
@@ -606,6 +609,7 @@ export default {
   "admin.form.uploadClick": "Click to upload",
   "admin.form.uploadMultiple": "Multiple images supported",
   "admin.form.mainPhotoHint": "The first image is the cover photo",
+  "admin.form.mainPhotoNotRequired": "Cover photo not required — each color variant has its own photo",
   "admin.form.specs": "Storage Specs",
   "admin.form.specsSubtitle": "For flash drives & memory cards",
   "admin.form.storageProduct": "Storage product",
@@ -761,4 +765,33 @@ export default {
   "errors.boundary.message":
     "An unexpected error occurred while loading this page. Reloading usually fixes it.",
   "errors.boundary.reload": "Reload page",
+
+  // ── Product variants (docs/14-product-variants.md §7) ──
+  "variant.color": "Color",
+  "variant.selectColor": "Select a color",
+  "variant.noVariants": "No color options available",
+  "variant.selected": "Selected: {{label}}",
+
+  "admin.form.variants": "Variants",
+  "admin.form.variantsSubtitle": "Color options for this product (optional).",
+  "admin.form.addVariant": "Add color variant",
+  "admin.form.variantLabelEn": "Label (English)",
+  "admin.form.variantLabelAr": "Label (Arabic)",
+  "admin.form.variantValue": "Value (slug)",
+  "admin.form.variantHex": "Color code",
+  "admin.form.variantImage": "Variant image",
+  "admin.form.variantImages": "Photos (first photo is the cover)",
+  "admin.form.variantRemovePhoto": "Remove photo",
+  "admin.form.coverPhoto": "COVER",
+  "admin.form.variantMain": "Main color",
+  "admin.form.variantImageRequired": "Each variant needs an image",
+  "admin.form.variantDefault": "Default",
+  "admin.form.variantActive": "Active",
+  "admin.form.variantMoveUp": "Move up",
+  "admin.form.variantMoveDown": "Move down",
+  "admin.form.variantDelete": "Delete",
+  "admin.form.variantSave": "Save variants",
+  "admin.form.variantSaved": "Variants saved",
+  "admin.form.variantDeleted": "Variant deleted",
+  "admin.form.variantDeleteConfirm": "Remove this color variant? Historical orders will still show the snapshot.",
 };

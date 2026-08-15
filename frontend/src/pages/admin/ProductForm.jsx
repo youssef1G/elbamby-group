@@ -5,8 +5,11 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { motion } from "motion/react";
-import { X, Upload, ChevronLeft, ChevronRight, Save, Search, ChevronDown, Check, Infinity as InfinityIcon, Loader2 } from "lucide-react";
-import { fetchAdminCategories, createProduct, updateProduct, fetchAdminProduct, deleteProduct } from "@/api.js";
+import { X, Upload, ChevronLeft, ChevronRight, Save, Search, ChevronDown, Check, Infinity as InfinityIcon, ChevronUp, Plus, Loader2, Star } from "lucide-react";
+import {
+  fetchAdminCategories, createProduct, updateProduct, fetchAdminProduct, deleteProduct,
+  createVariant, updateVariant, deleteVariant, reorderVariants,
+} from "@/api.js";
 import { uploadImages } from "@/lib/cloudinary.js";
 import Button from "@/components/ui/Button.jsx";
 import Skeleton from "@/components/ui/Skeleton.jsx";
@@ -23,10 +26,6 @@ const productSchema = z.object({
   price: z.coerce.number().positive("Must be > 0"),
   stock_quantity: z.coerce.number().int().min(0),
   low_stock_threshold: z.coerce.number().int().min(0),
-  capacity_gb: z.union([z.literal(""), z.coerce.number().int().positive()]).optional(),
-  speed_class: z.string().optional(),
-  interface_type: z.string().optional(),
-  form_factor: z.string().optional(),
 });
 
 const inputCls = (error) =>
@@ -46,7 +45,6 @@ export default function ProductForm() {
   const [loading, setLoading] = useState(false);
   const [fetchLoading, setFetchLoading] = useState(isEdit);
   const [unlimitedStock, setUnlimitedStock] = useState(false);
-  const [showSpecs, setShowSpecs] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -55,6 +53,16 @@ export default function ProductForm() {
   const fileInputRef = useRef(null);
   const [origSlug, setOrigSlug] = useState("");
   const origNameEn = useRef("");
+
+  // ── Product variants (docs/14-product-variants.md §5) ────────────────
+  const [variants, setVariants] = useState([]);
+  const [variantsDirty, setVariantsDirty] = useState(false);
+  const [variantsSaving, setVariantsSaving] = useState(false);
+  const variantFileInputRef = useRef(null);
+  const variantFileRowRef = useRef(null);
+  const originalVariantIds = useRef(new Set());
+  const [deleteVariantOpen, setDeleteVariantOpen] = useState(false);
+  const deleteVariantIdxRef = useRef(null);
 
   const [catOpen, setCatOpen] = useState(false);
   const [catQuery, setCatQuery] = useState("");
@@ -65,6 +73,11 @@ export default function ProductForm() {
     resolver: zodResolver(productSchema),
     defaultValues: { stock_quantity: 0, low_stock_threshold: DEFAULT_LOW_STOCK_THRESHOLD },
   });
+
+  const switchKnobCls = (on) =>
+    `absolute top-1/2 h-[14px] w-[14px] -translate-y-1/2 rounded-full bg-white shadow transition-all duration-200 ${
+      on ? "start-[3px]" : "end-[3px]"
+    }`;
 
   const watchCategory = watch("category_id");
 
@@ -77,10 +90,14 @@ export default function ProductForm() {
   }, []);
 
   useEffect(() => {
-    const handler = (e) => { if (!isDirty) return; e.preventDefault(); e.returnValue = ""; };
+    const handler = (e) => {
+      if (!isDirty && !variantsDirty) return;
+      e.preventDefault();
+      e.returnValue = "";
+    };
     window.addEventListener("beforeunload", handler);
     return () => window.removeEventListener("beforeunload", handler);
-  }, [isDirty]);
+  }, [isDirty, variantsDirty]);
 
   useEffect(() => {
     if (!isEdit) return;
@@ -89,7 +106,6 @@ export default function ProductForm() {
         const res = await fetchAdminProduct(id);
         const p = res.data || res;
         setUnlimitedStock(!!p.unlimitedStock);
-        setShowSpecs(!!(p.capacityGb || p.speedClass || p.interfaceType || p.formFactor));
         setOrigSlug(p.slug || "");
         origNameEn.current = p.nameEn || "";
         reset({
@@ -98,10 +114,23 @@ export default function ProductForm() {
           description_en: p.descriptionEn || "", description_ar: p.descriptionAr || "",
           price: p.price || 0, stock_quantity: p.stockQuantity ?? 0,
           low_stock_threshold: p.lowStockThreshold ?? DEFAULT_LOW_STOCK_THRESHOLD,
-          capacity_gb: p.capacityGb || "", speed_class: p.speedClass || "",
-          interface_type: p.interfaceType || "", form_factor: p.formFactor || "",
         });
         setImages((p.productImages || []).map((img) => ({ url: img.imageUrl })));
+        const vlist = Array.isArray(p.productVariants) ? p.productVariants : [];
+        originalVariantIds.current = new Set(vlist.map((v) => v.id).filter(Boolean));
+        setVariants(
+          vlist.map((v) => ({
+            id: v.id,
+            labelEn: v.labelEn || "",
+            labelAr: v.labelAr || "",
+            images: [
+              v.imageUrl,
+              ...(Array.isArray(v.productVariantImages) ? v.productVariantImages.map((img) => img.imageUrl) : []),
+            ].filter(Boolean),
+            isDefault: Boolean(v.isDefault),
+          }))
+        );
+        setVariantsDirty(false);
       } catch {
         toast(t("common:common.error"), "error");
         navigate("/admin/products");
@@ -138,7 +167,10 @@ export default function ProductForm() {
     else if (e.key === "Escape") { setCatOpen(false); }
   };
 
-  const generateSlug = (name) => name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  const generateSlug = (name) => {
+    const slug = (name || "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+    return slug || `product-${Date.now()}`;
+  };
 
   const handleUploadClick = () => fileInputRef.current?.click();
 
@@ -173,8 +205,149 @@ export default function ProductForm() {
     finally { setDeleting(false); setDeleteConfirmOpen(false); }
   };
 
+  const generateValue = (label) =>
+    (label || "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+
+  const preventSubmit = (e) => { if (e.key === "Enter") e.preventDefault(); };
+
+  const patchVariant = (idx, patch) => {
+    setVariants((prev) => prev.map((v, i) => (i === idx ? { ...v, ...patch } : v)));
+    setVariantsDirty(true);
+  };
+
+  const moveVariant = (from, to) => {
+    setVariants((prev) => {
+      const next = [...prev];
+      const [m] = next.splice(from, 1);
+      next.splice(to, 0, m);
+      return next;
+    });
+    setVariantsDirty(true);
+  };
+
+  const addVariant = () => {
+    const v = {
+      id: null,
+      labelEn: "",
+      labelAr: "",
+      images: [],
+      isDefault: false,
+    };
+    setVariants((prev) => [...prev, v]);
+    setVariantsDirty(true);
+  };
+
+  const removeVariant = (idx) => {
+    const v = variants[idx];
+    if (v?.id && originalVariantIds.current.has(v.id)) {
+      deleteVariantIdxRef.current = idx;
+      setDeleteVariantOpen(true);
+    } else {
+      setVariants((prev) => prev.filter((_, i) => i !== idx));
+      setVariantsDirty(true);
+    }
+  };
+
+  const confirmDeleteVariant = () => {
+    const idx = deleteVariantIdxRef.current;
+    setVariants((prev) => prev.filter((_, i) => i !== idx));
+    setVariantsDirty(true);
+    setDeleteVariantOpen(false);
+    deleteVariantIdxRef.current = null;
+  };
+
+  const pickVariantImage = (idx) => {
+    variantFileRowRef.current = idx;
+    variantFileInputRef.current?.click();
+  };
+
+  // One variant is the "main color" — its photo becomes the product cover.
+  const setMainColor = (idx) => {
+    setVariants((prev) => prev.map((v, i) => ({ ...v, isDefault: i === idx })));
+    setVariantsDirty(true);
+  };
+
+  const onVariantFileChange = async (e) => {
+    const files = e.target.files ? Array.from(e.target.files) : [];
+    if (files.length === 0) return;
+    const row = variantFileRowRef.current;
+    setUploading(true);
+    try {
+      const urls = await uploadImages(files, (p) => setUploadProgress(p));
+      setVariants((prev) =>
+        prev.map((v, i) => (i === row ? { ...v, images: [...v.images, ...urls] } : v))
+      );
+      setVariantsDirty(true);
+    } catch (err) {
+      setUploadError(err.message || t("common:common.error"));
+    } finally {
+      setUploading(false);
+      setUploadProgress(0);
+      if (variantFileInputRef.current) variantFileInputRef.current.value = "";
+    }
+  };
+
+  const removeVariantPhoto = (idx, photoIdx) => {
+    setVariants((prev) =>
+      prev.map((v, i) =>
+        i === idx ? { ...v, images: v.images.filter((_, p) => p !== photoIdx) } : v
+      )
+    );
+    setVariantsDirty(true);
+  };
+
+  const saveVariants = async (productId) => {
+    if (!productId || variants.length === 0) return { ok: true };
+    setVariantsSaving(true);
+    try {
+      const list = variants.map((v) => ({ ...v }));
+      const missing = list.find((v) => !v.labelEn?.trim() || v.images.length === 0);
+      if (missing) throw new Error(t("admin.form.variantRequiredFields"));
+
+      // deletions (existing variants removed from the list)
+      const currentIds = new Set(list.map((v) => v.id).filter(Boolean));
+      for (const id of originalVariantIds.current) {
+        if (!currentIds.has(id)) await deleteVariant(id);
+      }
+
+      // create / update in current order
+      const resolved = [];
+      for (let i = 0; i < list.length; i++) {
+        const v = list[i];
+        const payload = {
+          variant_group: "color",
+          label_en: v.labelEn || "",
+          label_ar: v.labelAr || "",
+          images: v.images.map((url, pi) => ({ image_url: url, sort_order: pi })),
+          is_default: v.isDefault || i === 0,
+          is_active: true,
+        };
+        let saved;
+        if (v.id) {
+          saved = await updateVariant(v.id, payload);
+        } else {
+          const base = generateValue(v.labelEn) || "color";
+          payload.value = `${base}-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
+          saved = await createVariant(productId, payload);
+        }
+        const variantId = saved?.id || saved?.data?.id || v.id;
+        if (!variantId) continue;
+        resolved.push({ id: variantId, sort_order: i });
+      }
+
+      if (resolved.length > 1) await reorderVariants(productId, resolved.map((r) => r.id));
+      setVariantsDirty(false);
+      return { ok: true };
+    } catch (err) {
+      return { ok: false, message: err.message || t("common:common.error") };
+    } finally {
+      setVariantsSaving(false);
+    }
+  };
+
   const onSubmit = async (data) => {
-    if (images.length === 0) { toast(t("admin.form.atLeastOneImage"), "error"); return; }
+    const hasVariantImages = variants.some((v) => v.images.length > 0);
+    if (images.length === 0 && !hasVariantImages) { toast(t("admin.form.atLeastOneImage"), "error"); return; }
     setLoading(true);
     try {
       const slug = isEdit && data.name_en.trim() === origNameEn.current && origSlug ? origSlug : generateSlug(data.name_en);
@@ -185,14 +358,21 @@ export default function ProductForm() {
         stock_quantity: unlimitedStock ? 0 : Math.max(0, Number(data.stock_quantity) || 0),
         unlimited_stock: unlimitedStock,
         low_stock_threshold: Number(data.low_stock_threshold ?? DEFAULT_LOW_STOCK_THRESHOLD),
-        capacity_gb: showSpecs ? (data.capacity_gb || null) : null,
-        speed_class: showSpecs ? (data.speed_class || null) : null,
-        interface_type: showSpecs ? (data.interface_type || null) : null,
-        form_factor: showSpecs ? (data.form_factor || null) : null,
-        images: images.map((img, i) => ({ image_url: img.url, sort_order: i })),
+        images: images.length ? images.map((img, i) => ({ image_url: img.url, sort_order: i })) : undefined,
       };
-      if (isEdit) { await updateProduct(id, payload); toast(t("admin:products.updated"), "success"); }
-      else { await createProduct(payload); toast(t("admin:products.created"), "success"); }
+      let productId = isEdit ? id : null;
+      if (isEdit) {
+        await updateProduct(id, payload);
+        toast(t("admin:products.updated"), "success");
+      } else {
+        const created = await createProduct(payload);
+        productId = created?.id || null;
+        toast(t("admin:products.created"), "success");
+      }
+      if (productId && variants.length > 0) {
+        const result = await saveVariants(productId);
+        if (!result.ok) { toast(result.message, "error"); return; }
+      }
       reset(data);
       navigate("/admin/products");
     } catch (err) {
@@ -295,7 +475,7 @@ export default function ProductForm() {
                   <button type="button" role="switch" aria-checked={unlimitedStock}
                     onClick={() => { const next = !unlimitedStock; setUnlimitedStock(next); if (next) setValue("stock_quantity", 0); }}
                     className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors ${unlimitedStock ? "bg-bg-primary-500" : "bg-bg-neutral-300"}`}>
-                    <span className={`inline-block h-[14px] w-[14px] transform rounded-full bg-white shadow transition-transform ${unlimitedStock ? "translate-x-[19px]" : "translate-x-[3px]"}`} />
+                    <span className={switchKnobCls(unlimitedStock)} />
                   </button>
                 </label>
               </div>
@@ -314,39 +494,10 @@ export default function ProductForm() {
           </div>
         </Section>
 
-        <Section
-          title={t("admin.form.specs")}
-          subtitle={t("admin.form.specsSubtitle")}
-          action={
-            <label className="flex items-center gap-2 text-xs text-bg-text-secondary cursor-pointer select-none shrink-0">
-              {t("admin.form.storageProduct")}
-              <button type="button" role="switch" aria-checked={showSpecs}
-                onClick={() => setShowSpecs((v) => !v)}
-                className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors ${showSpecs ? "bg-bg-primary-500" : "bg-bg-neutral-300"}`}>
-                <span className={`inline-block h-[14px] w-[14px] transform rounded-full bg-white shadow transition-transform ${showSpecs ? "translate-x-[19px]" : "translate-x-[3px]"}`} />
-              </button>
-            </label>
-          }
-        >
-          <Field label={t("admin:products.lowStockThreshold")} helper={t("admin.form.thresholdHint", { n: DEFAULT_LOW_STOCK_THRESHOLD })}>
+        <Section title={t("admin:products.lowStockThreshold")}>
+          <Field helper={t("admin.form.thresholdHint", { n: DEFAULT_LOW_STOCK_THRESHOLD })}>
             <input type="number" min="0" {...register("low_stock_threshold")} className={inputCls()} />
           </Field>
-          {showSpecs && (
-            <div className="grid sm:grid-cols-2 gap-4">
-              <Field label={t("admin.form.capacity")}>
-                <input type="number" {...register("capacity_gb")} placeholder="256" className={inputCls()} />
-              </Field>
-              <Field label={t("admin.form.speedClass")}>
-                <input type="text" {...register("speed_class")} placeholder="U3, V30, A2" className={inputCls()} />
-              </Field>
-              <Field label={t("admin.form.interfaceType")}>
-                <input type="text" {...register("interface_type")} placeholder="USB 3.2, NVMe PCIe 4.0" className={inputCls()} />
-              </Field>
-              <Field label={t("admin.form.formFactor")}>
-                <input type="text" {...register("form_factor")} placeholder='M.2 2280, microSD, 2.5"' className={inputCls()} />
-              </Field>
-            </div>
-          )}
         </Section>
 
         <Section title={t("admin:products.images")}>
@@ -403,6 +554,9 @@ export default function ProductForm() {
           </div>
 
           {uploadError && <p className="text-caption text-bg-error mt-2">{uploadError}</p>}
+          {variants.some((v) => v.images.length > 0) && (
+            <p className="text-caption text-bg-text-secondary mt-2">{t("admin.form.mainPhotoNotRequired")}</p>
+          )}
           {images.length > 0 && <p className="text-caption text-bg-text-secondary">{t("admin.form.mainPhotoHint")}</p>}
         </Section>
 
@@ -414,6 +568,108 @@ export default function ProductForm() {
             <Field label={t("admin:products.descriptionAr")}>
               <textarea {...register("description_ar")} rows={4} dir="rtl" className={`${inputCls()} resize-y`} />
             </Field>
+          </div>
+        </Section>
+
+        <Section title={t("admin.form.variants")} subtitle={t("admin.form.variantsSubtitle")}>
+          <div className="flex flex-col gap-4">
+            {variants.map((v, idx) => (
+              <div key={idx} className="rounded-2xl border border-bg-border p-4">
+                <div className="grid grid-cols-12 gap-3 items-end">
+                  <div className="col-span-12 sm:col-span-5">
+                    <Field label={t("admin.form.variantLabelEn")}>
+                      <input type="text" value={v.labelEn}
+                        onChange={(e) => patchVariant(idx, { labelEn: e.target.value })}
+                        onKeyDown={preventSubmit}
+                        placeholder="e.g. Red" className={inputCls()} />
+                    </Field>
+                  </div>
+                  <div className="col-span-12 sm:col-span-5">
+                    <Field label={t("admin.form.variantLabelAr")}>
+                      <input type="text" value={v.labelAr} dir="rtl"
+                        onChange={(e) => patchVariant(idx, { labelAr: e.target.value })}
+                        onKeyDown={preventSubmit}
+                        placeholder="مثال: أحمر" className={inputCls()} />
+                    </Field>
+                  </div>
+                  <div className="col-span-12 sm:col-span-2 flex justify-end pb-1">
+                    <button
+                      type="button"
+                      onClick={() => setMainColor(idx)}
+                      aria-pressed={v.isDefault}
+                      title={t("admin.form.variantMain")}
+                      className={`inline-flex items-center gap-1.5 text-caption font-semibold px-2.5 py-1.5 rounded-lg border transition-colors ${
+                        v.isDefault
+                          ? "bg-bg-primary-500 text-white border-bg-primary-500"
+                          : "border-bg-border text-bg-text-secondary hover:border-bg-primary-500/40 hover:text-bg-primary-500"
+                      }`}
+                    >
+                      <Star size={12} className={v.isDefault ? "fill-current" : ""} />
+                      {t("admin.form.variantMain")}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="mt-3">
+                  <Field label={t("admin.form.variantImages")}>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {v.images.map((url, pi) => (
+                        <div key={url + pi} className="relative group w-16 h-16 rounded-lg overflow-hidden border border-bg-border">
+                          <img src={url} alt={v.labelEn || "variant"} className="w-full h-full object-cover" loading="lazy" />
+                          {pi === 0 && (
+                            <span className="absolute top-0.5 start-0.5 bg-bg-primary-500 text-white text-[9px] font-bold px-1 rounded">
+                              {t("admin.form.coverPhoto")}
+                            </span>
+                          )}
+                          <button type="button" onClick={() => removeVariantPhoto(idx, pi)}
+                            aria-label={t("admin.form.variantRemovePhoto")}
+                            className="absolute top-0.5 end-0.5 w-5 h-5 rounded-full bg-bg-error text-white opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <X size={10} />
+                          </button>
+                        </div>
+                      ))}
+                      <button type="button" onClick={() => pickVariantImage(idx)}
+                        aria-label={t("admin.form.variantImage")}
+                        className="flex items-center justify-center w-16 h-16 rounded-lg border border-dashed border-bg-border bg-bg-surface hover:border-bg-primary-500/40 hover:text-bg-primary-500 transition">
+                        {variantFileRowRef.current === idx && uploading
+                          ? <Loader2 size={16} className="animate-spin text-bg-primary-500" />
+                          : <Upload size={16} className="text-bg-text-secondary" />}
+                      </button>
+                    </div>
+                  </Field>
+                </div>
+
+                <div className="flex items-center gap-3 mt-3">
+                  {variants.length > 1 && (
+                    <>
+                      <button type="button" onClick={() => moveVariant(idx, idx - 1)} disabled={idx === 0}
+                        aria-label={t("admin.form.variantMoveUp")}
+                        className="w-7 h-7 rounded border border-bg-border flex items-center justify-center text-bg-text-secondary hover:text-bg-text-primary disabled:opacity-40 disabled:cursor-not-allowed">
+                        <ChevronUp size={12} />
+                      </button>
+                      <button type="button" onClick={() => moveVariant(idx, idx + 1)} disabled={idx === variants.length - 1}
+                        aria-label={t("admin.form.variantMoveDown")}
+                        className="w-7 h-7 rounded border border-bg-border flex items-center justify-center text-bg-text-secondary hover:text-bg-text-primary disabled:opacity-40 disabled:cursor-not-allowed">
+                        <ChevronDown size={12} />
+                      </button>
+                    </>
+                  )}
+                  <button type="button" onClick={() => removeVariant(idx)}
+                    aria-label={t("admin.form.variantDelete")}
+                    className="ms-auto text-bg-text-secondary hover:text-bg-error transition w-7 h-7 rounded border border-bg-border flex items-center justify-center">
+                    <X size={14} />
+                  </button>
+                </div>
+              </div>
+            ))}
+
+            <button type="button" onClick={addVariant}
+              className="self-start border border-dashed border-bg-border rounded-xl px-4 py-2.5 text-sm text-bg-text-primary hover:border-bg-primary-500/40 hover:text-bg-primary-500 transition-colors inline-flex items-center gap-2">
+              <Plus size={14} className="text-bg-primary-500" />
+              {t("admin.form.addVariant")}
+            </button>
+
+            <input type="file" accept="image/*" multiple ref={variantFileInputRef} className="hidden" onChange={onVariantFileChange} />
           </div>
         </Section>
 
@@ -436,6 +692,10 @@ export default function ProductForm() {
 
       <ConfirmDialog isOpen={deleteConfirmOpen} onClose={() => setDeleteConfirmOpen(false)} onConfirm={handleDelete}
         title={t("admin.form.deleteConfirm")} confirmLabel={t("admin:common.yesDelete")} loading={deleting} />
+
+      <ConfirmDialog isOpen={deleteVariantOpen} onClose={() => setDeleteVariantOpen(false)} onConfirm={confirmDeleteVariant}
+        title={t("admin.form.variantDelete")}
+        description={t("admin.form.variantDeleteConfirm")} confirmLabel={t("admin.form.variantDelete")} loading={false} />
     </div>
   );
 }

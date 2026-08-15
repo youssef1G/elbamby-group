@@ -9,7 +9,11 @@ export default function ProductCard({ product }) {
   const { addItem, openCartDrawer } = useCart();
 
   const name = isAr ? product.nameAr || product.nameEn : product.nameEn;
-  const image = (product.productImages?.[0]?.imageUrl) || '';
+  const variantImage =
+    product.productVariants?.find((v) => v.isDefault)?.imageUrl ||
+    product.productVariants?.[0]?.imageUrl ||
+    '';
+  const image = product.productImages?.[0]?.imageUrl || variantImage;
   const imgAlt = product.productImages?.[0]?.altText || product.nameEn || '';
   const stock = product.stockQuantity ?? 0;
   const unlimitedStock = Boolean(product.unlimitedStock);

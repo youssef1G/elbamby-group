@@ -20,6 +20,8 @@ const TABLE = {
   CATEGORIES: 'categories',
   PRODUCTS: 'products',
   PRODUCT_IMAGES: 'product_images',
+  PRODUCT_VARIANTS: 'product_variants',
+  PRODUCT_VARIANT_IMAGES: 'product_variant_images',
   ORDERS: 'orders',
   ORDER_ITEMS: 'order_items',
   BANNERS: 'banners',
@@ -189,6 +191,15 @@ const PRODUCT_SELECT = `
   product_images (id, image_url, sort_order)
 `;
 
+// List queries additionally embed the first color-variant photo so cards keep
+// a visual for variant-only products (no cover photo needed — see ProductForm).
+// NOT used by getProductById: that query embeds the full variant row set itself.
+const PRODUCT_LIST_SELECT = `
+  *,
+  product_images (id, image_url, sort_order),
+  product_variants (id, image_url, sort_order, is_default)
+`;
+
 /**
  * Sanitizes free-text search before it is interpolated into a PostgREST
  * `or(ilike)` filter string. The Supabase client parameterizes values, but
@@ -216,8 +227,8 @@ export async function listProducts({
   embedCategory = false,
 } = {}) {
   const select = embedCategory
-    ? `${PRODUCT_SELECT}, category:categories(id, name_en, name_ar, slug)`
-    : PRODUCT_SELECT;
+    ? `${PRODUCT_LIST_SELECT}, category:categories(id, name_en, name_ar, slug)`
+    : PRODUCT_LIST_SELECT;
   let q = _from(TABLE.PRODUCTS).select(select, { count: 'exact' });
 
   if (category_id) q = q.eq('category_id', category_id);
@@ -288,7 +299,10 @@ export async function getProductBySlug(slug) {
 
 export async function getProductById(id) {
   return _from(TABLE.PRODUCTS)
-    .select(`${PRODUCT_SELECT}, category:categories(id, name_en, name_ar, slug)`)
+    .select(
+      `${PRODUCT_SELECT}, category:categories(id, name_en, name_ar, slug), ` +
+      'product_variants (id, variant_group, value, label_en, label_ar, hex_code, image_url, is_default, sort_order, is_active, created_at, updated_at, product_variant_images (id, image_url, sort_order))'
+    )
     .eq('id', id)
     .single();
 }
@@ -350,6 +364,191 @@ export async function getOrderItemCountByProductId(productId) {
 }
 
 // ──────────────────────────────────────────────
+//  PRODUCT VARIANTS (docs/14-product-variants.md §3)
+//  Generic color/size/style variants. Stock & pricing stay on `products`
+//  (one number) per §2 "out of scope" — no per-variant stock columns touched.
+//  The "one is_default per (product, variant_group)" rule is enforced in app
+//  code here (NOT a DB trigger) per §3 Notes.
+// ──────────────────────────────────────────────
+
+// `variant_images` = extra photos per variant (cover lives in image_url).
+// Embed name is the canonical table name (PostgREST to-many naming).
+const VARIANT_SELECT =
+  'id, variant_group, value, label_en, label_ar, hex_code, image_url, is_default, sort_order, is_active, created_at, updated_at, ' +
+  'product_variant_images (id, image_url, sort_order)';
+
+// Public: active variants for a product, ordered for display.
+export async function getVariantsForProduct(productId) {
+  return _from(TABLE.PRODUCT_VARIANTS)
+    .select(VARIANT_SELECT)
+    .eq('product_id', productId)
+    .eq('is_active', true)
+    .order('sort_order', { ascending: true });
+}
+
+// Admin: includes inactive variants.
+export async function getAllVariantsForProductAdmin(productId) {
+  return _from(TABLE.PRODUCT_VARIANTS)
+    .select(VARIANT_SELECT)
+    .eq('product_id', productId)
+    .order('sort_order', { ascending: true });
+}
+
+// Batch lookup by id (used at order-creation time to snapshot labels).
+// `select('*')` so callers also get `product_id` for ownership checks.
+export async function getVariantsByIds(ids = []) {
+  if (!ids.length) return { data: [], error: null };
+  return _from(TABLE.PRODUCT_VARIANTS).select('*').in('id', ids);
+}
+
+// Enforce "one is_default per (product, variant_group)" in app code (§3 Notes).
+async function clearOtherDefaults(productId, variantGroup, exceptId = null) {
+  let q = _from(TABLE.PRODUCT_VARIANTS)
+    .update({ is_default: false })
+    .eq('product_id', productId)
+    .eq('variant_group', variantGroup);
+  if (exceptId) q = q.neq('id', exceptId);
+  return q;
+}
+
+export async function createVariant(productId, data) {
+  const {
+    variant_group = 'color',
+    value,
+    label_en,
+    label_ar,
+    hex_code = null,
+    image_url,
+    images,
+    is_default = false,
+    sort_order = 0,
+    is_active = true,
+  } = data;
+
+  // images = ordered photo list; the first becomes the cover (image_url),
+  // the rest go to product_variant_images. Falls back to the legacy
+  // single-image `image_url` field.
+  const photoUrls = Array.isArray(images)
+    ? images.map((img) => img.image_url).filter(Boolean)
+    : [];
+  const cover = photoUrls[0] || image_url || null;
+
+  if (is_default) {
+    const { error } = await clearOtherDefaults(productId, variant_group);
+    if (error) return { data: null, error };
+  }
+
+  const { data: variant, error } = await _from(TABLE.PRODUCT_VARIANTS)
+    .insert({
+      product_id: productId,
+      variant_group,
+      value,
+      label_en,
+      label_ar,
+      hex_code: hex_code || null,
+      image_url: cover,
+      is_default,
+      sort_order,
+      is_active,
+    })
+    .select('*')
+    .single();
+
+  if (error) return { data: null, error };
+
+  if (photoUrls.length > 1) {
+    const { error: imgError } = await setVariantImages(variant.id, photoUrls.slice(1));
+    if (imgError) return { data: null, error: imgError };
+  }
+
+  return { data: variant, error: null };
+}
+
+// Insert extra photos (2nd, 3rd, ...) for a variant. The cover lives in
+// product_variants.image_url — never duplicated here.
+async function setVariantImages(variantId, urls = []) {
+  if (urls.length === 0) return { error: null };
+  const rows = urls.map((url, i) => ({
+    variant_id: variantId,
+    image_url: url,
+    sort_order: i,
+  }));
+  return _from(TABLE.PRODUCT_VARIANT_IMAGES).insert(rows);
+}
+
+// Wipe and re-insert the extra photos for a variant (admin edit).
+async function replaceVariantImages(variantId, urls = []) {
+  const { error: delErr } = await _from(TABLE.PRODUCT_VARIANT_IMAGES)
+    .delete()
+    .eq('variant_id', variantId);
+  if (delErr) return { error: delErr };
+  return setVariantImages(variantId, urls);
+}
+
+export async function updateVariant(variantId, data) {
+  const update = { ...data };
+  delete update.product_id; // immutable FK
+
+  const { data: existing, error: fetchErr } = await _from(TABLE.PRODUCT_VARIANTS)
+    .select('product_id, variant_group')
+    .eq('id', variantId)
+    .single();
+
+  if (fetchErr || !existing) {
+    return { data: null, error: fetchErr || { code: 'PGRST116', message: 'Variant not found' } };
+  }
+
+  if (update.is_default === true) {
+    const { error } = await clearOtherDefaults(existing.product_id, existing.variant_group, variantId);
+    if (error) return { data: null, error };
+  }
+
+  // Rebuild the photo list: first photo → cover, the rest → variant_images.
+  let imgSync = null;
+  if (Array.isArray(update.images)) {
+    const photoUrls = update.images.map((img) => img.image_url).filter(Boolean);
+    update.image_url = photoUrls[0] || null;
+    delete update.images;
+    imgSync = replaceVariantImages(variantId, photoUrls.slice(1));
+  }
+
+  const { data: variant, error } = await _from(TABLE.PRODUCT_VARIANTS)
+    .update(update)
+    .eq('id', variantId)
+    .select('*')
+    .single();
+
+  if (error) return { data: null, error };
+  if (imgSync) {
+    const { error: imgError } = await imgSync;
+    if (imgError) return { data: null, error: imgError };
+  }
+
+  return { data: variant, error: null };
+}
+
+export async function deleteVariant(variantId) {
+  return _from(TABLE.PRODUCT_VARIANTS).delete().eq('id', variantId);
+}
+
+// §4: reorderVariants(productId, orderedIds[]) — array of UUID strings in
+// their desired display order. sort_order is set to the array index.
+export async function reorderVariants(productId, orderedIds) {
+  if (!Array.isArray(orderedIds) || orderedIds.length === 0) {
+    return { data: null, error: null };
+  }
+
+  for (let idx = 0; idx < orderedIds.length; idx++) {
+    const { error } = await _from(TABLE.PRODUCT_VARIANTS)
+      .update({ sort_order: idx })
+      .eq('id', orderedIds[idx]);
+    if (error) return { data: null, error };
+  }
+
+  return getAllVariantsForProductAdmin(productId);
+}
+
+// ──────────────────────────────────────────────
 //  ORDERS
 // ──────────────────────────────────────────────
 
@@ -365,7 +564,7 @@ export async function listOrders({
     .select(
       `
       *,
-      order_items (id, product_id, product_name_snapshot, unit_price_snapshot, quantity, line_total)
+       order_items (id, product_id, product_name_snapshot, variant_id, variant_label_en, variant_label_ar, unit_price_snapshot, quantity, line_total)
     `,
       { count: 'exact' }
     )
@@ -429,8 +628,8 @@ export async function getOrderByNumberAndPhone(orderNumber, phone) {
       points_earned,
       points_redeemed,
       points_discount_egp,
-      order_items (product_id, product_name_snapshot, product_image_snapshot, unit_price_snapshot, quantity, line_total),
-      order_status_history (status, created_at)
+       order_items (product_id, product_name_snapshot, product_image_snapshot, variant_id, variant_label_en, variant_label_ar, unit_price_snapshot, quantity, line_total),
+       order_status_history (status, created_at)
     `
     )
     .eq('order_number', orderNumber)
@@ -450,7 +649,7 @@ export async function getOrdersByPhone(phone) {
       phone,
       address_line,
       city,
-      order_items (product_id, product_name_snapshot, product_image_snapshot, quantity, line_total)
+         order_items (product_id, product_name_snapshot, product_image_snapshot, variant_id, variant_label_en, variant_label_ar, quantity, line_total)
     `
     )
     .eq('phone', phone)
@@ -480,7 +679,7 @@ export async function getOrdersByPhone(phone) {
  *   subtotal: number,
  *   shipping_fee: number,
  *   total: number,
- *   items: Array<{ product_id: string, quantity: number, unit_price_snapshot: number, product_name_snapshot: string, product_image_snapshot?: string }>,
+   *   items: Array<{ product_id: string, quantity: number, unit_price_snapshot: number, product_name_snapshot: string, product_image_snapshot?: string, variant_id?: string|null, variant_label_en?: string|null, variant_label_ar?: string|null }>,
  *   customer_id?: string|null,
  *   points_to_redeem?: number,
  *   points_discount_egp?: number
@@ -612,6 +811,9 @@ export async function createOrder({
     unit_price_snapshot: i.unit_price_snapshot,
     quantity: i.quantity,
     line_total: i.unit_price_snapshot * i.quantity,
+    variant_id: i.variant_id || null,
+    variant_label_en: i.variant_label_en || null,
+    variant_label_ar: i.variant_label_ar || null,
   }));
 
   const { data: insertedItems, error: itemsError } = await _from(TABLE.ORDER_ITEMS)
@@ -918,7 +1120,7 @@ export async function listOrdersByCustomer(customerId, { page = 1, limit = 20 } 
         phone,
         address_line,
         city,
-order_items (product_id, product_name_snapshot, product_image_snapshot, quantity, line_total)
+ order_items (product_id, product_name_snapshot, product_image_snapshot, variant_id, variant_label_en, variant_label_ar, quantity, line_total)
       `
       )
       .eq('customer_id', customerId)

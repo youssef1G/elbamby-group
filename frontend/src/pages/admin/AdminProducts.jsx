@@ -199,8 +199,16 @@ export default function AdminProducts() {
       render: (row) => (
         <div className="flex items-center gap-3 min-w-0">
           <div className="w-10 h-10 rounded-lg overflow-hidden bg-bg-surface-sunken shrink-0">
-            {row.productImages?.[0]?.imageUrl ? <img src={row.productImages[0].imageUrl} alt="" className="w-full h-full object-cover" />
-              : <div className="w-full h-full flex items-center justify-center text-caption text-bg-text-secondary">—</div>}
+            {(() => {
+              const fallback =
+                row.productVariants?.find((v) => v.isDefault)?.imageUrl ||
+                row.productVariants?.[0]?.imageUrl ||
+                '';
+              const src = row.productImages?.[0]?.imageUrl || fallback;
+              return src
+                ? <img src={src} alt="" className="w-full h-full object-cover" />
+                : <div className="w-full h-full flex items-center justify-center text-caption text-bg-text-secondary">—</div>;
+            })()}
           </div>
           <div className="min-w-0">
             <span className="font-semibold text-bg-text-primary truncate block">{productName(row)}</span>

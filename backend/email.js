@@ -141,10 +141,14 @@ function invoiceHtml({ order, items = [], status = 'pending' }) {
         : '';
       const lineTotal =
         i.line_total ?? Number(i.unit_price_snapshot || 0) * Number(i.quantity || 0);
+      // Variant snapshot (docs/14 §6): "Victory Medal — Gold" when present.
+      const displayName = i.variant_label_en
+        ? `${esc(i.product_name_snapshot)} \u2014 ${esc(i.variant_label_en)}`
+        : esc(i.product_name_snapshot);
       return `
         <tr style="border-top:1px solid ${BORDER};">
           <td style="padding:14px 14px;vertical-align:middle;">
-            ${thumb}<span style="font-size:14px;font-weight:600;color:${TEXT_PRIMARY};line-height:1.35;">${esc(i.product_name_snapshot)}</span>
+            ${thumb}<span style="font-size:14px;font-weight:600;color:${TEXT_PRIMARY};line-height:1.35;">${displayName}</span>
             <div style="font-size:12px;color:${TEXT_MUTED};margin-top:2px;">${egp(i.unit_price_snapshot)} each</div>
           </td>
           <td align="center" style="padding:14px 6px;vertical-align:middle;font-size:14px;color:${TEXT_PRIMARY};white-space:nowrap;">× ${Number(i.quantity || 0)}</td>

@@ -1,14 +1,15 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { useLocale } from '@/context/LocaleContext.jsx';
 import { useCart } from '@/context/CartContext.jsx';
+import { trackOrder } from '@/api.js';
 import { scaleIn } from '@/lib/animations.js';
 import { formatPrice } from '@/lib/formatters.js';
 import SEO from '@/components/common/SEO.jsx';
 
 export default function CheckoutSuccess() {
-  const { t } = useLocale();
+  const { t, isAr } = useLocale();
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const { clearCart } = useCart();
@@ -18,6 +19,10 @@ export default function CheckoutSuccess() {
   const discount = Number(params.get('discount') || 0);
   const earn = Number(params.get('earn') || 0);
 
+  const [order, setOrder] = useState(null);
+  const [orderLoading, setOrderLoading] = useState(false);
+  const [orderError, setOrderError] = useState(null);
+
   useEffect(() => {
     if (!orderId) {
       navigate('/', { replace: true });
@@ -25,6 +30,19 @@ export default function CheckoutSuccess() {
     }
     clearCart();
   }, [orderId]);
+
+  useEffect(() => {
+    if (!orderId || !phone) return;
+    let cancelled = false;
+    setOrderLoading(true);
+    trackOrder(orderId, phone)
+      .then((res) => { if (!cancelled) setOrder(res); })
+      .catch(() => { if (!cancelled) setOrderError(true); })
+      .finally(() => { if (!cancelled) setOrderLoading(false); });
+    return () => { cancelled = true; };
+  }, [orderId, phone]);
+
+  const items = order?.orderItems || order?.order_items || [];
 
   return (
     <motion.div className="max-w-lg mx-auto px-5 py-24 text-center" {...scaleIn}>
@@ -68,6 +86,49 @@ export default function CheckoutSuccess() {
               })}
             </p>
           )}
+        </div>
+      )}
+      {items.length > 0 && (
+        <div className="max-w-sm mx-auto text-start bg-bg-neutral-50 border border-bg-neutral-200 rounded-2xl px-5 py-4 mb-8">
+          <p className="text-xs font-semibold text-bg-text-primary mb-3">
+            {t('checkout:success.orderSummary')}
+          </p>
+          <ul className="space-y-2">
+            {items.map((item, idx) => {
+              const name = isAr ? (item.productNameAr || item.product_name_snapshot) : (item.productNameEn || item.product_name_snapshot);
+              const variantLabel = isAr ? (item.variantLabelAr || item.variant_label_ar) : (item.variantLabelEn || item.variant_label_en);
+              return (
+                <li key={item.productId || item.product_id || idx} className="flex justify-between text-xs text-bg-text-secondary">
+                  <span className="flex-1 min-w-0">
+                    <span className="text-bg-text-primary font-medium">{name || t('checkout:success.noVariant')}</span>
+                    {variantLabel && (
+                      <span className="ms-1 text-bg-text-secondary">
+                        {isAr ? `— ${variantLabel}` : `— ${variantLabel}`}
+                      </span>
+                    )}
+                    <span className="ms-1 text-bg-text-tertiary">× {item.quantity}</span>
+                  </span>
+                  <span className="ms-3 shrink-0 text-bg-text-primary font-medium tabular-nums">
+                    {formatPrice(item.lineTotal ?? item.line_total ?? (item.unitPriceSnapshot ?? item.unit_price_snapshot) * item.quantity)}
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+          <div className="flex justify-between text-xs font-semibold text-bg-text-primary mt-3 pt-2 border-t border-bg-neutral-200">
+            <span>{t('checkout:summary.total')}</span>
+            <span className="tabular-nums">
+              {formatPrice(
+                items.reduce((sum, i) => sum + (i.lineTotal ?? i.line_total ?? (i.unitPriceSnapshot ?? i.unit_price_snapshot) * i.quantity), 0),
+              )}
+            </span>
+          </div>
+        </div>
+      )}
+      {orderLoading && (
+        <div className="max-w-sm mx-auto mb-8">
+          <div className="h-4 w-32 bg-bg-neutral-100 rounded mx-auto mb-2 animate-pulse" />
+          <div className="h-3 w-48 bg-bg-neutral-100 rounded mx-auto animate-pulse" />
         </div>
       )}
       <div className="flex flex-col sm:flex-row gap-3 justify-center">

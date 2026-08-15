@@ -195,6 +195,7 @@ export default {
   "shop.gallery.prev": "الصورة السابقة",
   "shop.gallery.next": "الصورة التالية",
   "shop.gallery.image": "الصورة {{n}}",
+  "shop.gallery.close": "إغلاق",
   "shop.searchPlaceholder": "ابحث عن منتجات...",
   "shop.searchClear": "مسح البحث",
 
@@ -230,6 +231,8 @@ export default {
   "checkout.success.estimatedDelivery": "التوصيل المتوقع خلال 1–3 أيام عمل.",
   "checkout.success.trackOrder": "تتبع الطلب",
   "checkout.success.continueShopping": "مواصلة التسوق",
+  "checkout.success.orderSummary": "ملخص الطلب",
+  "checkout.success.noVariant": "لم يتم اختيار لون",
 
   "checkout.errors.generic": "حدث خطأ ما. يرجى المحاولة مرة أخرى.",
   "checkout.redeem.title": "استخدم نقاطك",
@@ -590,6 +593,7 @@ export default {
   "admin.form.uploadClick": "اضغط للرفع",
   "admin.form.uploadMultiple": "يدعم عدة صور",
   "admin.form.mainPhotoHint": "الصورة الأولى هي الصورة الرئيسية",
+  "admin.form.mainPhotoNotRequired": "الصورة الرئيسية غير مطلوبة — كل لون له صورته الخاصة",
   "admin.form.specs": "مواصفات التخزين",
   "admin.form.specsSubtitle": "خاص بمنتجات الفلاشات والميموري",
   "admin.form.storageProduct": "منتج تخزين",
@@ -742,4 +746,33 @@ export default {
   "errors.boundary.message":
     "حدث خطأ غير متوقع أثناء تحميل هذه الصفحة. إعادة التحميل عادةً ما تُصلح ذلك.",
   "errors.boundary.reload": "إعادة تحميل الصفحة",
+
+  // ── Product variants (docs/14-product-variants.md §7) ──
+  "variant.color": "اللون",
+  "variant.selectColor": "اختر اللون",
+  "variant.noVariants": "لا توجد خيارات لون غير متاحة",
+  "variant.selected": "تم اختيار: {{label}}",
+
+  "admin.form.variants": "الألوان",
+  "admin.form.variantsSubtitle": "خيارات اللون لهذا المنتج (اختياري).",
+  "admin.form.addVariant": "إضافة لون",
+  "admin.form.variantLabelEn": "التسمية (إنجليزي)",
+  "admin.form.variantLabelAr": "التسمية (عربي)",
+  "admin.form.variantValue": "القيمة (سلوك URL)",
+  "admin.form.variantHex": "كود اللون",
+  "admin.form.variantImage": "صورة اللون",
+  "admin.form.variantImages": "الصور (الصورة الأولى هي الرئيسية)",
+  "admin.form.variantRemovePhoto": "حذف الصورة",
+  "admin.form.coverPhoto": "الرئيسية",
+  "admin.form.variantMain": "اللون الرئيسي",
+  "admin.form.variantImageRequired": "كل لون يحتاج صورة",
+  "admin.form.variantDefault": "افتراضي",
+  "admin.form.variantActive": "نشط",
+  "admin.form.variantMoveUp": "نقل للأعلى",
+  "admin.form.variantMoveDown": "نقل للأسفل",
+  "admin.form.variantDelete": "حذف",
+  "admin.form.variantSave": "حفظ الألوان",
+  "admin.form.variantSaved": "تم حفظ الألوان",
+  "admin.form.variantDeleted": "تم حذف اللون",
+  "admin.form.variantDeleteConfirm": "حذف هذا اللون؟ ستظل الطلبات السابقة تُظهر التسمية المخزنة.",
 };

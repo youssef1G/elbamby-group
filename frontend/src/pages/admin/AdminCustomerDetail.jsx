@@ -8,7 +8,7 @@ import Skeleton from '@/components/ui/Skeleton.jsx';
 import EmptyState from '@/components/ui/EmptyState.jsx';
 import AddPointsModal from '@/components/admin/AddPointsModal.jsx';
 import { formatDate } from '@/lib/formatters.js';
-import { ArrowRight, Plus, Minus, Mail } from 'lucide-react';
+import { ArrowLeft, Plus, Minus, Mail } from 'lucide-react';
 
 const TYPE_KEYS = {
   earn: 'admin:customerDetail.typeEarn',
@@ -61,7 +61,7 @@ export default function AdminCustomerDetail() {
           onClick={() => navigate('/admin/customers')}
           className="btn-ghost !min-h-0 h-9 px-4 text-body-sm"
         >
-          <ArrowRight size={15} className="rtl:-scale-x-100" aria-hidden="true" />
+          <ArrowLeft size={15} className="rtl:-scale-x-100" aria-hidden="true" />
           {t('admin:customerDetail.back')}
         </button>
         <EmptyState message={t('admin:customerDetail.loadError')} />
@@ -83,7 +83,7 @@ export default function AdminCustomerDetail() {
         onClick={() => navigate('/admin/customers')}
         className="btn-ghost !min-h-0 h-9 px-4 text-body-sm"
       >
-        <ArrowRight size={15} className="rtl:-scale-x-100" aria-hidden="true" focusable="false" />
+        <ArrowLeft size={15} className="rtl:-scale-x-100" aria-hidden="true" focusable="false" />
         {t('admin:customerDetail.back')}
       </button>
 

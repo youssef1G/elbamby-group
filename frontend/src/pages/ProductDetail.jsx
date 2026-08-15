@@ -6,10 +6,11 @@ import { useLocale } from '@/context/LocaleContext.jsx';
 import { useCart } from '@/context/CartContext.jsx';
 import ProductCard from '@/components/shop/ProductCard.jsx';
 import ProductGallery from '@/components/shop/ProductGallery.jsx';
+import VariantSelector from '@/components/product/VariantSelector.jsx';
 import Badge from '@/components/ui/Badge.jsx';
 import NotFound from '@/pages/NotFound.jsx';
 import SEO from '@/components/common/SEO.jsx';
-import { fetchProduct, fetchProducts, getSettings } from '@/api.js';
+import { fetchProduct, fetchProductVariants, fetchProducts, getSettings } from '@/api.js';
 import { formatPrice } from '@/lib/formatters.js';
 import { fadeUp, staggerContainer, staggerItem } from '@/lib/animations.js';
 
@@ -28,6 +29,8 @@ export default function ProductDetail() {
   const { addItem } = useCart();
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
+  const [variants, setVariants] = useState([]);
+  const [selectedVariantId, setSelectedVariantId] = useState(null);
 
   const [productData, setProductData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -47,6 +50,33 @@ export default function ProductDetail() {
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
   }, [slug]);
+
+  useEffect(() => {
+    const prod = productData ? (productData.data ? productData.data : productData) : null;
+    const pid = prod?.id;
+    if (!pid) {
+      setVariants([]);
+      setSelectedVariantId(null);
+      return;
+    }
+    let cancelled = false;
+    setVariants([]);
+    setSelectedVariantId(null);
+    fetchProductVariants(pid)
+      .then((res) => {
+        if (cancelled) return;
+        const active = Array.isArray(res) ? res : (res?.data || []);
+        setVariants(active);
+        if (active.length) {
+          const def = active.find((v) => v.isDefault) || active[0];
+          setSelectedVariantId(def ? def.id : null);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setVariants([]);
+      });
+    return () => { cancelled = true; };
+  }, [productData]);
 
   useEffect(() => {
     let cancelled = false;
@@ -97,6 +127,20 @@ export default function ProductDetail() {
   const lowStock = !unlimitedStock && stock > 0 && stock <= 5;
   const maxQty = unlimitedStock ? 999 : stock;
   const images = product.productImages || [];
+  // Resolve the currently-selected variant (if any) for image swap + cart snapshot.
+  const selectedVariant = selectedVariantId
+    ? variants.find((v) => v.id === selectedVariantId) || null
+    : null;
+  // With color variants, the variant photos ARE the gallery — no main photo
+  // needed. Without variants, fall back to the product's own images.
+  const hasVariants = variants.length > 0;
+  const variantPhotos = selectedVariant
+    ? [
+        selectedVariant.imageUrl,
+        ...(selectedVariant.productVariantImages || []).map((img) => img.imageUrl),
+      ].filter(Boolean)
+    : [];
+  const displayImages = hasVariants ? variantPhotos : images;
   const discountPct = getDiscountPct(product.price, product.compareAtPrice);
 
   const specs = [];
@@ -107,7 +151,7 @@ export default function ProductDetail() {
 
   const handleAdd = () => {
     if (outOfStock) return;
-    addItem(product, quantity); // opens the drawer itself now
+    addItem(product, quantity, selectedVariant); // opens the drawer itself now
     setAdded(true);
     setTimeout(() => setAdded(false), 1500);
   };
@@ -177,7 +221,11 @@ export default function ProductDetail() {
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.6, ease: [0.25, 0.1, 0.25, 1], delay: 0.1 }}
         >
-          <ProductGallery images={images} name={name} />
+          <ProductGallery
+            images={displayImages}
+            name={name}
+            key={selectedVariantId ? `v-${selectedVariantId}` : 'base'}
+          />
         </motion.div>
 
         <motion.div
@@ -220,6 +268,16 @@ export default function ProductDetail() {
           <p className="mt-5 text-sm text-bg-text-secondary leading-relaxed">
             {isAr ? product.descriptionAr || product.descriptionEn : product.descriptionEn}
           </p>
+
+          {variants.length > 0 && (
+            <div className="mt-6">
+              <VariantSelector
+                variants={variants}
+                selectedId={selectedVariantId}
+                onSelect={setSelectedVariantId}
+              />
+            </div>
+          )}
 
           <div className="mt-8 flex items-center gap-4 flex-wrap">
             <div

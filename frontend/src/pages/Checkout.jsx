@@ -140,6 +140,7 @@ export default function Checkout() {
         items: items.map((i) => ({
           product_id: i.productId,
           quantity: i.quantity,
+          variant_id: i.variantId || undefined,
         })),
         customer_name: data.customer_name,
         phone: data.phone,
@@ -412,6 +413,11 @@ export default function Checkout() {
                       <p className="text-xs font-semibold text-bg-text-primary truncate">
                         {name}
                       </p>
+                      {item.variantLabelEn && (
+                        <p className="text-[10px] text-bg-text-secondary truncate">
+                          {isAr ? item.variantLabelAr : item.variantLabelEn}
+                        </p>
+                      )}
                       <p className="text-[11px] text-bg-text-secondary">
                         x{item.quantity}
                       </p>

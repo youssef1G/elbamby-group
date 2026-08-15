@@ -36,6 +36,13 @@ import {
   getOrderItemCountByProductId,
   deleteProductImagesByProductId,
   getProductsWithImagesByIds,
+  getVariantsByIds,
+  getVariantsForProduct,
+  getAllVariantsForProductAdmin,
+  createVariant,
+  updateVariant,
+  deleteVariant,
+  reorderVariants,
   createOrder,
   cancelOrderAndRestock,
   listOrders,
@@ -274,6 +281,9 @@ const createOrderSchema = z.object({
     z.object({
       product_id: z.string().uuid(),
       quantity: z.number().int().min(1, 'Quantity must be at least 1'),
+      // Optional color/size variant selected on PDP (docs/14 §5). Verified
+      // server-side in submitOrder — never trust the frontend as the boundary.
+      variant_id: z.string().uuid().optional().nullable(),
     }),
   ).min(1, 'At least one item is required'),
   // ── points (docs/13-points-system.md 3.2 / 4) — additive, optional ──
@@ -304,12 +314,35 @@ const createProductSchema = z.object({
   is_new_arrival: z.boolean().default(false),
   is_active: z.boolean().default(true),
   sort_order: z.number().int().default(0),
+  // Optional: variant products may have no cover photo (their variant photos
+  // ARE the visuals — docs/14 §5). When provided, must be non-empty.
   images: z
     .array(z.object({ image_url: z.string().url(), sort_order: z.number().int() }))
-    .min(1, 'At least one image is required'),
+    .min(1, 'At least one image is required')
+    .optional(),
 });
 
 const updateProductSchema = createProductSchema.partial();
+
+// ── Product variants (docs/14-product-variants.md §4) ──
+const createVariantSchema = z.object({
+  variant_group: z.string().default('color'),
+  value: z.string().min(1, 'Value (slug) is required'),
+  label_en: z.string().min(1, 'Label (English) is required'),
+  label_ar: z.string().min(1, 'Label (Arabic) is required'),
+  hex_code: z.string().optional().nullable(),
+  // Ordered photo list — the first photo becomes the variant cover.
+  images: z
+    .array(z.object({ image_url: z.string().url(), sort_order: z.number().int() }))
+    .min(1, 'At least one image per variant is required'),
+  is_default: z.boolean().default(false),
+  sort_order: z.number().int().default(0),
+  is_active: z.boolean().default(true),
+});
+const updateVariantSchema = createVariantSchema.partial();
+const reorderVariantsSchema = z.object({
+  order: z.array(z.string().uuid()).min(1),
+});
 
 const returnRequestSchema = z.object({
   order_number: z.string().trim().min(1, 'Order number is required'),
@@ -851,9 +884,75 @@ async function adminToggleProduct(req, res, next) {
   }
 }
 
+// ──────────────────────────────────────────────
+//  PRODUCT VARIANTS (docs/14-product-variants.md §4)
+// ──────────────────────────────────────────────
+
+// Public: active variants for a product, used by ProductDetail to render the
+// color selector + swap the gallery image.
+async function getPublicProductVariants(req, res, next) {
+  try {
+    const { id } = req.params;
+    const { data: variants, error } = await getVariantsForProduct(id);
+    if (error) return next(error);
+    res.json({ data: (variants || []).map((v) => toCamelCase(v)) });
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function adminCreateVariant(req, res, next) {
+  try {
+    const { id } = req.params;
+    const { data: variant, error } = await createVariant(id, req.validatedBody);
+    if (error) return next(error);
+    res.status(201).json(toCamelCase(variant));
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function adminUpdateVariant(req, res, next) {
+  try {
+    const { variantId } = req.params;
+    const { data: variant, error } = await updateVariant(variantId, req.validatedBody);
+    if (error) return next(error);
+    if (!variant) {
+      return res.status(404).json({ error: { message: 'Variant not found', code: 'NOT_FOUND' } });
+    }
+    res.json(toCamelCase(variant));
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function adminDeleteVariant(req, res, next) {
+  try {
+    const { variantId } = req.params;
+    const { error } = await deleteVariant(variantId);
+    if (error) return next(error);
+    res.json({ message: 'Variant deleted', deleted: true });
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function adminReorderVariants(req, res, next) {
+  try {
+    const { id } = req.params;
+    const { order } = req.validatedBody;
+    const { data: variants, error } = await reorderVariants(id, order);
+    if (error) return next(error);
+    res.json({ data: (variants || []).map((v) => toCamelCase(v)) });
+  } catch (err) {
+    next(err);
+  }
+}
+
 app.use('/api/products', publicGetLimiter());
 app.get('/api/products', listPublicProducts);
 app.get('/api/products/:slug', getPublicProduct);
+app.get('/api/products/:id/variants', getPublicProductVariants);
 
 app.use('/api/admin/products', requireAdmin);
 app.get('/api/admin/products', adminListProducts);
@@ -862,6 +961,14 @@ app.post('/api/admin/products', validate(createProductSchema), adminCreateProduc
 app.put('/api/admin/products/:id', validate(updateProductSchema), adminUpdateProduct);
 app.delete('/api/admin/products/:id', adminDeleteProduct);
 app.patch('/api/admin/products/:id/toggle', adminToggleProduct);
+// Variant CRUD. POST/reorder live under products/:id (needs requireAdmin above);
+// PUT/DELETE live under a dedicated /variants prefix (also admin-gated).
+app.post('/api/admin/products/:id/variants', validate(createVariantSchema), adminCreateVariant);
+app.put('/api/admin/products/:id/variants/reorder', validate(reorderVariantsSchema), adminReorderVariants);
+
+app.use('/api/admin/variants', requireAdmin);
+app.put('/api/admin/variants/:variantId', validate(updateVariantSchema), adminUpdateVariant);
+app.delete('/api/admin/variants/:variantId', adminDeleteVariant);
 
 // ──────────────────────────────────────────────
 //  CATEGORIES
@@ -1004,6 +1111,17 @@ async function submitOrder(req, res, next) {
     if (productsError) return next(productsError);
 
     const productMap = new Map(products.map((p) => [p.id, p]));
+
+    // Look up any selected variants so we can snapshot their labels onto the
+    // order_item (docs/14 §4). Server-side lookup — never trust the cart.
+    const variantIds = [...new Set(items.map((i) => i.variant_id).filter(Boolean))];
+    let variantMap = new Map();
+    if (variantIds.length) {
+      const { data: variants, error: variantsError } = await getVariantsByIds(variantIds);
+      if (variantsError) return next(variantsError);
+      for (const v of variants || []) variantMap.set(v.id, v);
+    }
+
     const lineItems = [];
 
     for (const item of items) {
@@ -1017,6 +1135,36 @@ async function submitOrder(req, res, next) {
           },
         });
       }
+
+      let variantId = null;
+      let variantLabelEn = null;
+      let variantLabelAr = null;
+      if (item.variant_id) {
+        const v = variantMap.get(item.variant_id);
+        if (!v) {
+          return res.status(409).json({
+            error: {
+              message: `Variant ${item.variant_id} not found`,
+              code: 'VARIANT_NOT_FOUND',
+              items: [{ productId: item.product_id, variantId: item.variant_id, error: 'VARIANT_NOT_FOUND' }],
+            },
+          });
+        }
+        // Server-side ownership check — a cart can't splice another product's variant.
+        if (v.product_id !== item.product_id) {
+          return res.status(409).json({
+            error: {
+              message: 'Variant does not belong to this product',
+              code: 'VARIANT_MISMATCH',
+              items: [{ productId: item.product_id, variantId: item.variant_id, error: 'VARIANT_MISMATCH' }],
+            },
+          });
+        }
+        variantId = v.id;
+        variantLabelEn = v.label_en;
+        variantLabelAr = v.label_ar;
+      }
+
       const primaryImage = (p.product_images || []).sort((a, b) => a.sort_order - b.sort_order)[0];
       lineItems.push({
         product_id: p.id,
@@ -1024,6 +1172,9 @@ async function submitOrder(req, res, next) {
         unit_price_snapshot: Number(p.price),
         product_name_snapshot: p.name_en,
         product_image_snapshot: primaryImage?.image_url || null,
+        variant_id: variantId,
+        variant_label_en: variantLabelEn,
+        variant_label_ar: variantLabelAr,
       });
     }
 

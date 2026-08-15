@@ -279,7 +279,10 @@ export default function AdminOrders() {
                     <ul className="space-y-1">
                       {(order.orderItems || []).map((item, i) => (
                         <li key={item.id || i} className="flex justify-between gap-3 text-body-sm text-bg-text-secondary">
-                          <span>{item.productNameSnapshot} × {item.quantity}</span>
+                          <span>
+                            {item.productNameSnapshot}
+                            {item.variantLabelEn ? ` (${isAr ? item.variantLabelAr : item.variantLabelEn})` : ''} × {item.quantity}
+                          </span>
                           <span className="ltr-nums shrink-0" dir="ltr">
                             {formatPrice(item.lineTotal ?? (item.unitPriceSnapshot * item.quantity || 0))}
                           </span>

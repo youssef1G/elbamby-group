@@ -27,39 +27,67 @@ export function CartProvider({ children }) {
 
   useEffect(() => { saveCart(items); }, [items]);
 
-  const addItem = useCallback((product, quantity = 1) => {
+  const addItem = useCallback((product, quantity = 1, variant = null) => {
     setItems((prev) => {
-      const existing = prev.find((i) => i.productId === product.id);
       const image = product.productImages?.[0]?.imageUrl || '';
       const unlimitedStock = Boolean(product.unlimitedStock);
       const stock = product.stockQuantity || 0;
       const qty = unlimitedStock ? quantity : Math.min(quantity, stock);
+      const variantId = variant?.id || null;
+      // Two line items for the same product but different colors are distinct.
+      const matches = (i) => i.productId === product.id && (i.variantId || null) === variantId;
+      const existing = prev.find(matches);
       if (existing) {
         return prev.map((i) =>
-          i.productId === product.id
+          matches(i)
             ? { ...i, quantity: Math.min(i.quantity + qty, unlimitedStock ? Infinity : stock) }
             : i,
         );
       }
-      return [...prev, { productId: product.id, nameEn: product.nameEn || '', nameAr: product.nameAr || '', image, price: product.price, quantity: qty, stock, unlimitedStock }];
+      return [
+        ...prev,
+        {
+          productId: product.id,
+          nameEn: product.nameEn || '',
+          nameAr: product.nameAr || '',
+          image,
+          price: product.price,
+          quantity: qty,
+          stock,
+          unlimitedStock,
+          variantId,
+          variantLabelEn: variant?.labelEn || '',
+          variantLabelAr: variant?.labelAr || '',
+        },
+      ];
     });
     // Every add opens the drawer — single source of truth, all callers
     // (ProductCard quick-add, ProductDetail) get this for free.
     setIsCartOpen(true);
   }, []);
 
-  const removeItem = useCallback((productId) => {
-    setItems((prev) => prev.filter((i) => i.productId !== productId));
+  const removeItem = useCallback((productId, variantId = null) => {
+    setItems((prev) =>
+      prev.filter((i) => !(i.productId === productId && (i.variantId || null) === variantId)),
+    );
   }, []);
 
-  const updateQuantity = useCallback((productId, quantity) => {
+  const updateQuantity = useCallback((productId, quantity, variantId = null) => {
     setItems((prev) => {
-      const item = prev.find((i) => i.productId === productId);
+      const item = prev.find(
+        (i) => i.productId === productId && (i.variantId || null) === variantId,
+      );
       if (!item) return prev;
-      if (quantity <= 0) return prev.filter((i) => i.productId !== productId);
+      if (quantity <= 0) {
+        return prev.filter(
+          (i) => !(i.productId === productId && (i.variantId || null) === variantId),
+        );
+      }
       const cap = item.unlimitedStock ? Infinity : (item.stock ?? Infinity);
       return prev.map((i) =>
-        i.productId === productId ? { ...i, quantity: Math.min(quantity, cap) } : i,
+        i.productId === productId && (i.variantId || null) === variantId
+          ? { ...i, quantity: Math.min(quantity, cap) }
+          : i,
       );
     });
   }, []);

@@ -32,9 +32,16 @@ export default function CartItem({ item }) {
 
         <div className="flex-1 min-w-0 flex flex-col justify-between">
           <div className="flex items-start justify-between gap-2">
-            <p className="text-body-sm font-medium text-bg-text-primary truncate">{name}</p>
+            <div className="flex flex-col min-w-0">
+              <p className="text-body-sm font-medium text-bg-text-primary truncate">{name}</p>
+              {item.variantLabelEn && (
+                <span className="text-caption text-bg-text-secondary truncate">
+                  {isAr ? item.variantLabelAr : item.variantLabelEn}
+                </span>
+              )}
+            </div>
             <button
-              onClick={() => removeItem(item.productId)}
+              onClick={() => removeItem(item.productId, item.variantId)}
               className="shrink-0 text-bg-text-secondary opacity-60 hover:text-bg-error transition-colors p-0.5"
               aria-label={t('common.remove')}
             >
@@ -50,7 +57,7 @@ export default function CartItem({ item }) {
             {hasStock ? (
               <div className="flex items-center gap-1">
                 <button
-                  onClick={() => updateQuantity(item.productId, item.quantity - 1)}
+                  onClick={() => updateQuantity(item.productId, item.quantity - 1, item.variantId)}
                   disabled={item.quantity <= 1}
                   className="w-6 h-6 flex items-center justify-center rounded border border-bg-border text-bg-text-secondary hover:text-bg-text-primary disabled:opacity-40 disabled:cursor-not-allowed transition"
                   aria-label={t('common.decrease')}
@@ -61,7 +68,7 @@ export default function CartItem({ item }) {
                   {item.quantity}
                 </span>
                 <button
-                  onClick={() => updateQuantity(item.productId, item.quantity + 1)}
+                  onClick={() => updateQuantity(item.productId, item.quantity + 1, item.variantId)}
                   disabled={item.quantity >= available}
                   className="w-6 h-6 flex items-center justify-center rounded border border-bg-border text-bg-text-secondary hover:text-bg-text-primary disabled:opacity-40 disabled:cursor-not-allowed transition"
                   aria-label={t('common.increase')}

@@ -12,6 +12,9 @@ export function fetchProducts(params = {}) {
   return apiClient(`/products${qs ? `?${qs}` : ''}`);
 }
 export function fetchProduct(slug) { return apiClient(`/products/${slug}`); }
+export function fetchProductVariants(productId) {
+  return apiClient(`/products/${productId}/variants`).then((res) => res?.data || []);
+}
 export function fetchAdminProducts(params = {}) {
   const qs = new URLSearchParams(params).toString();
   return apiClient(`/admin/products${qs ? `?${qs}` : ''}`);
@@ -28,6 +31,23 @@ export function deleteProduct(id, hard = false) {
 }
 export function toggleProduct(id, field, value) {
   return apiClient(`/admin/products/${id}/toggle`, { method: 'PATCH', body: JSON.stringify({ field, value }) });
+}
+
+// ── Product variants (docs/14-product-variants.md §4) ──
+export function fetchAdminVariants(productId) {
+  return apiClient(`/admin/products/${productId}/variants`);
+}
+export function createVariant(productId, data) {
+  return apiClient(`/admin/products/${productId}/variants`, { method: 'POST', body: JSON.stringify(data) });
+}
+export function updateVariant(variantId, data) {
+  return apiClient(`/admin/variants/${variantId}`, { method: 'PUT', body: JSON.stringify(data) });
+}
+export function deleteVariant(variantId) {
+  return apiClient(`/admin/variants/${variantId}`, { method: 'DELETE' });
+}
+export function reorderVariants(productId, order) {
+  return apiClient(`/admin/products/${productId}/variants/reorder`, { method: 'PUT', body: JSON.stringify({ order }) });
 }
 
 // ─── Categories ──────────────────────────────────────────────────────────────
