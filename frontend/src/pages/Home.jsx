@@ -27,6 +27,7 @@ import Skeleton from "@/components/ui/Skeleton.jsx";
  * HeroLine — line-based reveal for the headline.
  * Each line sits in an overflow mask and slides up into place once; the
  * headline reads as type on a page, not as an FX demo. Works identically
+ * help me youssef
  * in Arabic (no mono, no uppercase applied).
  */
 function HeroLine({ children, delay = 0 }) {
