@@ -468,7 +468,7 @@ export async function sendPointsChangeEmail({ email, customerName, type, points,
  * server-side; this email is its one plaintext copy.
  */
 export async function sendPasswordResetEmail({ email, customerName, code }) {
-  if (!transporter || !email || !code) return;
+  if (!transporter || !email || !code) return false;
 
   const html = `<!doctype html>
 <html>
@@ -524,15 +524,23 @@ export async function sendPasswordResetEmail({ email, customerName, code }) {
 </body>
 </html>`;
 
-  try {
-    const info = await transporter.sendMail({
-      from: `"${BRAND.name}" <${SENDER_EMAIL}>`,
-      to: email,
-      subject: `Your BG password reset code: ${code}`,
-      html,
-    });
-    console.log(`Password-reset email sent to ${email} (messageId: ${info.messageId})`);
-  } catch (err) {
-    console.error('Failed to send password-reset email:', err.message);
+  // Cold SMTP connections to Zoho intermittently fail on the first send —
+  // retry once before giving up. The caller MUST know whether the code went
+  // out: claiming success on a failed send leaves the user waiting forever.
+  const mail = {
+    from: `"${BRAND.name}" <${SENDER_EMAIL}>`,
+    to: email,
+    subject: `Your BG password reset code: ${code}`,
+    html,
+  };
+  for (let attempt = 1; attempt <= 2; attempt += 1) {
+    try {
+      const info = await transporter.sendMail(mail);
+      console.log(`Password-reset email sent to ${email} (messageId: ${info.messageId}, attempt: ${attempt})`);
+      return true;
+    } catch (err) {
+      console.error(`Failed to send password-reset email (attempt ${attempt}):`, err.message);
+    }
   }
+  return false;
 }

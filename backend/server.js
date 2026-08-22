@@ -2253,13 +2253,19 @@ async function customerForgotPassword(req, res, next) {
 
     if (insertErr) return next(insertErr);
 
-    // Fire-and-forget with internal error handling — email trouble must not
-    // change the (deliberately uniform) HTTP response or slow it down.
-    sendPasswordResetEmail({
+    // AWAITED (not fire-and-forget): the response must reflect reality. A
+    // silently failed send is exactly how users end up stuck on the code step.
+    const sent = await sendPasswordResetEmail({
       email: customer.email,
       customerName: customer.name,
       code,
     });
+
+    if (!sent) {
+      return res.status(502).json({
+        error: { message: 'Failed to send the reset email', code: 'EMAIL_SEND_FAILED' },
+      });
+    }
 
     res.json({ message: genericMessage, maskedEmail: maskEmail(customer.email) });
   } catch (err) {

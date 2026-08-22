@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Link, Navigate } from "react-router-dom";
 import { motion, AnimatePresence } from "motion/react";
-import { User, ShieldCheck, CheckCircle2 } from "lucide-react";
+import { User, ShieldCheck, CheckCircle2, Check, Loader2 } from "lucide-react";
 import { useLocale } from "@/context/LocaleContext.jsx";
 import { useCustomerAuth } from "@/context/CustomerAuthContext.jsx";
 import { normalizePhone } from "@/lib/formatters.js";
@@ -54,31 +54,63 @@ const handleKeyDown = (e) => {
 function mapError(err, t) {
   if (err.code === "INVALID_CODE") return t("auth:forgot.invalidCode");
   if (err.code === "CODE_LOCKED") return t("auth:forgot.codeLocked");
+  if (err.code === "EMAIL_SEND_FAILED") return t("auth:forgot.emailSendFailed");
   if (err.code === "RATE_LIMITED") return t("auth:errors.rateLimited");
   if (err.code === "VALIDATION_ERROR") return t("auth:errors.validationFailed");
   return err.message || t("errors.generic");
 }
 
-function StepProgress({ current }) {
-  // current: 0 | 1 | 2 — segments before it are done, current pulses.
+const STEPS = ["auth:forgot.stepIdentifier", "auth:forgot.stepCode", "auth:forgot.stepPassword"];
+
+function Stepper({ current }) {
+  const { t, isAr } = useLocale();
+  // current: 0 | 1 | 2 — steps before it show a checkmark, the connector
+  // lines fill as they're passed. Flex follows the document direction, so
+  // the whole strip mirrors correctly in RTL.
   return (
-    <div
-      className="flex items-center gap-2 mb-8"
-      role="progressbar"
-      aria-valuemin={1}
-      aria-valuemax={3}
-      aria-valuenow={current + 1}
-    >
-      {[0, 1, 2].map((i) => (
-        <div key={i} className="flex-1 h-1 rounded-full bg-bg-border overflow-hidden">
-          <motion.div
-            className="h-full rounded-full bg-bg-primary-500"
-            initial={false}
-            animate={{ width: i < current ? "100%" : i === current ? "50%" : "0%" }}
-            transition={{ duration: 0.35, ease: "easeOut" }}
-          />
-        </div>
-      ))}
+    <div className="flex items-start mb-10" aria-hidden="true">
+      {STEPS.map((key, i) => {
+        const done = i < current;
+        const active = i === current;
+        return (
+          <div key={key} className="contents">
+            {i > 0 && (
+              <div className="flex-1 h-px bg-bg-border mt-4 mx-2 relative overflow-hidden rounded-full">
+                <motion.div
+                  className="absolute inset-y-0 start-0 w-full bg-bg-primary-500"
+                  initial={false}
+                  animate={{ scaleX: done ? 1 : 0 }}
+                  style={{ transformOrigin: isAr ? "right" : "left" }}
+                  transition={{ duration: 0.35, ease: "easeOut" }}
+                />
+              </div>
+            )}
+            <div className="flex flex-col items-center gap-1.5 shrink-0 w-14">
+              <motion.div
+                initial={false}
+                animate={{ scale: active ? 1.08 : 1 }}
+                transition={{ duration: 0.2, ease: "easeOut" }}
+                className={`w-8 h-8 rounded-full flex items-center justify-center text-caption font-bold border transition-colors ${
+                  done
+                    ? "bg-bg-primary-500 border-bg-primary-500 text-white"
+                    : active
+                      ? "bg-bg-primary-500/10 border-bg-primary-500 text-bg-primary-500"
+                      : "bg-bg-surface border-bg-border text-bg-text-secondary"
+                }`}
+              >
+                {done ? <Check size={14} strokeWidth={3} /> : i + 1}
+              </motion.div>
+              <span
+                className={`text-[10px] uppercase tracking-[0.08em] font-semibold text-center leading-tight ${
+                  active ? "text-bg-primary-500" : "text-bg-text-secondary"
+                }`}
+              >
+                {t(key)}
+              </span>
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -197,6 +229,15 @@ function CodeStep({ identifier, maskedEmail, onVerified }) {
   const [masked, setMasked] = useState(maskedEmail);
   const [resentNote, setResentNote] = useState(false);
   const [isResending, setIsResending] = useState(false);
+  // Cooldown between resends — starts fresh on mount (a code was just sent
+  // by the previous screen) and after every successful resend.
+  const [cooldown, setCooldown] = useState(60);
+
+  useEffect(() => {
+    if (cooldown <= 0) return undefined;
+    const id = setInterval(() => setCooldown((s) => s - 1), 1000);
+    return () => clearInterval(id);
+  }, [cooldown > 0]);
 
   const schema = z.object({
     code: z.string().regex(/^\d{6}$/, "auth:forgot.invalidCode"),
@@ -224,8 +265,11 @@ function CodeStep({ identifier, maskedEmail, onVerified }) {
     setIsResending(true);
     try {
       const res = await requestPasswordReset(identifier);
+      // The backend only answers success when the email ACTUALLY went out
+      // (it retries once server-side), so this note is trustworthy.
+      setMasked(res?.maskedEmail || masked);
+      setCooldown(60);
       setResentNote(true);
-      if (res?.maskedEmail) setMasked(res.maskedEmail);
     } catch (err) {
       setError(mapError(err, t));
     } finally {
@@ -276,16 +320,21 @@ function CodeStep({ identifier, maskedEmail, onVerified }) {
                 {t(errors.code.message)}
               </p>
             )}
+            <p className="text-caption text-bg-text-secondary mt-1.5">
+              {t("auth:forgot.useLatestCode")}
+            </p>
           </div>
 
           {error && <ErrorBanner message={error} />}
           {resentNote && !error && (
-            <p
+            <motion.p
+              initial={{ opacity: 0, y: -4 }}
+              animate={{ opacity: 1, y: 0 }}
               className="text-body-sm text-bg-success bg-bg-success/10 rounded-sm px-3 py-2"
               role="status"
             >
               {t("auth:forgot.resent")}
-            </p>
+            </motion.p>
           )}
 
           <Button
@@ -301,10 +350,23 @@ function CodeStep({ identifier, maskedEmail, onVerified }) {
           <button
             type="button"
             onClick={handleResend}
-            disabled={isResending}
-            className="w-full text-caption font-semibold uppercase tracking-[0.08em] text-bg-text-secondary hover:text-bg-primary-500 transition-colors disabled:opacity-50 cursor-pointer"
+            disabled={isResending || cooldown > 0}
+            className={`w-full h-9 flex items-center justify-center gap-2 rounded-sm border border-transparent transition-colors cursor-pointer ${
+              isResending
+                ? "text-bg-primary-500"
+                : "text-caption font-semibold uppercase tracking-[0.08em] hover:text-bg-primary-500 disabled:hover:text-current disabled:cursor-not-allowed"
+            } ${!isResending && cooldown > 0 ? "text-bg-text-secondary/50" : "text-bg-text-secondary"}`}
           >
-            {t("auth:forgot.resend")}
+            {isResending ? (
+              <>
+                <Loader2 size={13} className="animate-spin" />
+                {t("auth:forgot.resending")}
+              </>
+            ) : cooldown > 0 ? (
+              t("auth:forgot.resendIn", { seconds: cooldown })
+            ) : (
+              t("auth:forgot.resend")
+            )}
           </button>
         </form>
       </div>
@@ -464,7 +526,7 @@ export default function ForgotPassword() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: "easeOut" }}
       >
-        {step !== "done" && <StepProgress current={stepIndex} />}
+        {step !== "done" && <Stepper current={stepIndex} />}
 
         <AnimatePresence mode="wait">
           <motion.div
