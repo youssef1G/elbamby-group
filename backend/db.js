@@ -24,7 +24,6 @@ const TABLE = {
   PRODUCT_VARIANT_IMAGES: 'product_variant_images',
   ORDERS: 'orders',
   ORDER_ITEMS: 'order_items',
-  BANNERS: 'banners',
   SETTINGS: 'settings',
   ORDER_STATUS_HISTORY: 'order_status_history',
   COMPLAINTS: 'complaints',
@@ -1474,19 +1473,6 @@ export async function createStatusHistoryEntry({ order_id, status, changed_by, n
     .insert({ order_id, status, changed_by: changed_by || null, note: note || null })
     .select('*')
     .single();
-}
-
-// ──────────────────────────────────────────────
-//  BANNERS
-// ──────────────────────────────────────────────
-
-export async function listBanners({ position, is_active } = {}) {
-  let q = _from(TABLE.BANNERS)
-    .select('*')
-    .order('sort_order', { ascending: true });
-  if (position) q = q.eq('position', position);
-  if (is_active !== undefined) q = q.eq('is_active', is_active);
-  return q;
 }
 
 // ──────────────────────────────────────────────

@@ -60,7 +60,6 @@ import {
   getOrdersSince,
   getItemsWithOrdersSince,
   getProductsByIds,
-  listBanners,
   getSettings,
   upsertSettings,
   createComplaint,
@@ -2344,29 +2343,6 @@ app.get('/api/customers/me/points-history', requireCustomer, customerPointsHisto
 app.get('/api/customers/me/orders', requireCustomer, customerOrders);
 app.patch('/api/customers/me', requireCustomer, validate(customerProfileUpdateSchema), customerUpdateProfile);
 app.put('/api/customers/me/password', requireCustomer, validate(customerPasswordSchema), customerChangePassword);
-
-// ──────────────────────────────────────────────
-//  BANNERS
-// ──────────────────────────────────────────────
-
-async function listPublicBanners(req, res, next) {
-  try {
-    const { position } = req.query;
-    const { data: rows, error } = await listBanners({
-      position: position || undefined,
-      is_active: true,
-    });
-
-    if (error) return next(error);
-
-    res.json({ data: (rows || []).map((r) => toCamelCase(r)) });
-  } catch (err) {
-    next(err);
-  }
-}
-
-app.use('/api/banners', publicGetLimiter());
-app.get('/api/banners', listPublicBanners);
 
 // ──────────────────────────────────────────────
 //  SETTINGS

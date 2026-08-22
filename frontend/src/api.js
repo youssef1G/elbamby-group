@@ -120,12 +120,6 @@ export function updateOrderNote(id, note) {
   return apiClient(`/admin/orders/${id}/note`, { method: 'PATCH', body: JSON.stringify({ admin_note: note }) });
 }
 
-// ─── Banners ─────────────────────────────────────────────────────────────────
-export function fetchBanners(params = {}) {
-  const qs = new URLSearchParams(params).toString();
-  return apiClient(`/banners${qs ? `?${qs}` : ''}`);
-}
-
 // ─── Settings ────────────────────────────────────────────────────────────────
 export function getSettings() { return apiClient('/settings'); }
 export function fetchAdminSettings() { return apiClient('/admin/settings'); }

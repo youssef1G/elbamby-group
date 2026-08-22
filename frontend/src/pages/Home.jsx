@@ -15,42 +15,20 @@ import {
   Headphones,
   MemoryStick,
 } from "lucide-react";
-import { fetchCategories, fetchProducts, fetchBanners } from "@/api.js";
-import { fadeUp, staggerContainer, staggerItem } from "@/lib/animations.js";
+import { fetchCategories, fetchProducts } from "@/api.js";
+import { fadeUp } from "@/lib/animations.js";
 import ProductGrid from "@/components/shop/ProductGrid.jsx";
 import SEO from "@/components/common/SEO.jsx";
-import HeroVisual from "@/components/common/HeroVisual.jsx";
 import EmptyState from "@/components/ui/EmptyState.jsx";
 import Skeleton from "@/components/ui/Skeleton.jsx";
 
 /**
- * HeroLine — line-based reveal for the headline.
- * Each line sits in an overflow mask and slides up into place once; the
- * headline reads as type on a page, not as an FX demo. Works identically
- * help me youssef
- * in Arabic (no mono, no uppercase applied).
+ * BrandStrip — slim store title band (Jumia/Amazon-style landing: products
+ * come first, branding gets one compact row). Single row on desktop, stacks
+ * on mobile.
  */
-function HeroLine({ children, delay = 0 }) {
-  return (
-    <span className="block overflow-hidden pb-[0.2em] -mb-[0.2em]">
-      <motion.span
-        className="block"
-        initial={{ y: "115%" }}
-        animate={{ y: 0 }}
-        transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1], delay }}
-      >
-        {children}
-      </motion.span>
-    </span>
-  );
-}
-
-/**
- * Hero — clean two-column: type statement left, brand emblem right.
- * The visual is restrained; the catalog does the selling.
- */
-function Hero() {
-  const { t, isAr } = useLocale();
+function BrandStrip() {
+  const { t } = useLocale();
 
   return (
     <section className="relative overflow-hidden border-b border-bg-border">
@@ -59,81 +37,33 @@ function Hero() {
         className="pointer-events-none absolute inset-0 -z-10"
         style={{
           background:
-            "radial-gradient(60% 65% at 78% 50%, color-mix(in srgb, var(--bg-primary-500) 14%, transparent) 0%, transparent 70%)",
+            "radial-gradient(50% 120% at 80% 0%, color-mix(in srgb, var(--bg-primary-500) 10%, transparent) 0%, transparent 70%)",
         }}
       />
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 items-center gap-12 py-14 sm:py-16 lg:grid-cols-12 lg:gap-16 lg:py-20">
-          <motion.div
-            className="lg:col-span-6"
-            initial="hidden"
-            animate="show"
-            variants={staggerContainer}
-          >
-            <h1
-              className={`font-heading text-display font-bold tracking-tight text-bg-text-primary ${isAr ? "leading-[1.35]" : "leading-[1.08]"}`}
-            >
-              <HeroLine delay={0.05}>{t("home.heroLine1")}</HeroLine>
-              <HeroLine delay={0.18}>
-                <span className="text-bg-text-secondary">
-                  {t("home.heroLine2")}
-                </span>
-              </HeroLine>
-            </h1>
-
-            <motion.span
-              initial={{ scaleX: 0 }}
-              animate={{ scaleX: 1 }}
-              transition={{
-                duration: 0.6,
-                ease: [0.22, 1, 0.36, 1],
-                delay: 0.55,
-              }}
-              className="mt-6 block h-px w-16 origin-start bg-bg-primary-500/60"
-              style={{ transformOrigin: isAr ? "right" : "left" }}
-              aria-hidden="true"
-            />
-
-            <motion.p
-              variants={staggerItem}
-              className="mt-6 max-w-md text-body-lg text-bg-text-secondary"
-            >
-              {t("home.heroSubtitle")}
-            </motion.p>
-
-            <motion.div
-              variants={staggerItem}
-              className="mt-9 flex flex-wrap items-center gap-4"
-            >
-              <Link
-                to="/shop"
-                className="rounded-sm bg-bg-primary-500 h-11 px-8 flex items-center text-body-sm font-semibold text-white transition-all duration-200 hover:bg-bg-primary-600 hover:shadow-card active:scale-[0.98]"
-              >
-                {t("home.heroCta")}
-              </Link>
-              <Link
-                to="/about"
-                className="text-body-sm font-medium text-bg-text-secondary underline decoration-bg-border underline-offset-4 transition hover:text-bg-text-primary hover:decoration-bg-primary-500"
-              >
-                {t("home.heroCtaStory")}
-              </Link>
-            </motion.div>
-          </motion.div>
-
-          <motion.div
-            className="lg:col-span-6"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{
-              duration: 0.8,
-              ease: [0.22, 1, 0.36, 1],
-              delay: 0.2,
-            }}
-          >
-            <HeroVisual />
-          </motion.div>
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+        className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-6 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8 lg:py-8"
+      >
+        <div>
+          <h1 className="font-heading text-h3 font-bold tracking-tight text-bg-text-primary sm:text-h2">
+            {t("home.heroLine1")}{" "}
+            <span className="text-bg-text-secondary">
+              {t("home.heroLine2")}
+            </span>
+          </h1>
+          <p className="mt-1 max-w-xl text-caption text-bg-text-secondary">
+            {t("home.heroSubtitle")}
+          </p>
         </div>
-      </div>
+        <Link
+          to="/shop"
+          className="inline-flex h-10 shrink-0 items-center self-start rounded-sm bg-bg-primary-500 px-6 text-body-sm font-semibold text-white transition-all duration-200 hover:bg-bg-primary-600 hover:shadow-card active:scale-[0.98] sm:self-center"
+        >
+          {t("home.heroCta")}
+        </Link>
+      </motion.div>
     </section>
   );
 }
@@ -150,97 +80,6 @@ const CATEGORY_ICONS = {
   earbuds: Headphones,
   headphones: Headphones,
 };
-
-function SecondaryBanners() {
-  const { t, isAr } = useLocale();
-  const [banners, setBanners] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isError, setIsError] = useState(false);
-  const [reload, setReload] = useState(0);
-
-  useEffect(() => {
-    let cancelled = false;
-    setIsLoading(true);
-    setIsError(false);
-    fetchBanners({ position: "home_secondary" })
-      .then((res) => {
-        if (!cancelled) setBanners(res?.data || []);
-      })
-      .catch(() => {
-        if (!cancelled) setIsError(true);
-      })
-      .finally(() => {
-        if (!cancelled) setIsLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [reload]);
-
-  if (isLoading) {
-    return (
-      <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
-        <div className="h-48 rounded-xl animate-pulse bg-bg-surface-sunken" />
-      </section>
-    );
-  }
-  if (isError) {
-    return (
-      <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
-        <EmptyState
-          message={t("common.common.error")}
-          action={{
-            label: t("common.common.retry"),
-            onClick: () => setReload((v) => v + 1),
-          }}
-        />
-      </section>
-    );
-  }
-  if (banners.length === 0) return null;
-
-  return (
-    <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 lg:gap-6">
-        {banners.map((b, i) => (
-          <motion.div
-            key={b.id}
-            initial={{ opacity: 0, y: 16 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-80px" }}
-            transition={{ duration: 0.4, delay: i * 0.1 }}
-          >
-            <Link
-              to={b.linkUrl || "#"}
-              className={`group relative block aspect-[2/1] overflow-hidden rounded-xl ${b.linkUrl ? "" : "pointer-events-none"}`}
-            >
-              <img
-                src={b.imageUrl}
-                alt={isAr && b.titleAr ? b.titleAr : b.titleEn}
-                className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
-                loading="lazy"
-              />
-              {(b.titleEn || b.subtitleEn) && (
-                <div className="absolute inset-0 flex flex-col justify-end bg-gradient-to-t from-black/55 to-transparent p-4 text-white sm:p-6">
-                  {b.titleEn && (
-                    <h3 className="text-h3 font-bold">
-                      {isAr && b.titleAr ? b.titleAr : b.titleEn}
-                    </h3>
-                  )}
-                  {b.subtitleEn && (
-                    <p className="mt-1 text-body-sm opacity-90">
-                      {isAr && b.subtitleAr ? b.subtitleAr : b.subtitleEn}
-                    </p>
-                  )}
-                </div>
-              )}
-            </Link>
-          </motion.div>
-        ))}
-      </div>
-    </section>
-  );
-}
 
 export default function Home() {
   const { t, isAr } = useLocale();
@@ -336,12 +175,12 @@ export default function Home() {
         }}
       />
 
-      <Hero />
+      <BrandStrip />
 
-      {/* Categories — tiled cards: tinted icon tile, name, slide-in chevron on hover */}
-      <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 lg:py-10">
+      {/* Categories — compact tiles so the product grid stays near the fold */}
+      <section className="mx-auto max-w-7xl px-4 pt-6 sm:px-6 lg:px-8 lg:pt-8">
         <motion.div {...fadeUp}>
-          <div className="mb-5 flex items-end justify-between">
+          <div className="mb-4 flex items-end justify-between">
             <p className="font-mono text-caption uppercase tracking-[0.2em] text-bg-text-secondary">
               {t("home.shopByCategory")}
             </p>
@@ -353,9 +192,9 @@ export default function Home() {
             </Link>
           </div>
           {catLoading && (
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 sm:gap-4">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <Skeleton key={i} className="h-[68px] w-full rounded-md" />
+            <div className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-4 xl:grid-cols-5">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <Skeleton key={i} className="h-[56px] w-full rounded-md" />
               ))}
             </div>
           )}
@@ -369,43 +208,39 @@ export default function Home() {
             />
           )}
           {!catLoading && !catError && categories.length > 0 && (
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 sm:gap-4">
+            <div className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-4 xl:grid-cols-5">
               {categories.map((cat, i) => {
                 const CategoryIcon = CATEGORY_ICONS[cat.slug] || Package;
-                const isHiddenOnMobile = i >= 4;
                 return (
                   <motion.div
                     key={cat.id}
                     initial={{ opacity: 0, y: 10 }}
                     whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true, margin: "-80px" }}
-                    transition={{ duration: 0.3, delay: i * 0.05 }}
-                    className={isHiddenOnMobile ? "hidden sm:block" : ""}
+                    viewport={{ once: true, margin: "-40px" }}
+                    transition={{ duration: 0.3, delay: i * 0.04 }}
                   >
                     <Link
                       to={`/shop?category=${cat.slug}`}
-                      className="group flex items-center gap-4 rounded-md border border-bg-border bg-bg-surface px-4 py-3.5 transition-all duration-300 hover:-translate-y-0.5 hover:border-bg-primary-300 hover:shadow-card"
+                      className="group flex items-center gap-2.5 rounded-md border border-bg-border bg-bg-surface px-3 py-2.5 transition-all duration-300 hover:-translate-y-0.5 hover:border-bg-primary-300 hover:shadow-card sm:gap-3 sm:px-4 sm:py-3"
                     >
                       <span
-                        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md"
+                        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md sm:h-10 sm:w-10"
                         style={{
                           background:
                             "color-mix(in srgb, var(--bg-primary-500) 10%, transparent)",
                         }}
                       >
                         <CategoryIcon
-                          size={20}
+                          size={18}
                           strokeWidth={1.5}
                           className="text-bg-primary-500"
                         />
                       </span>
-                      <span className="min-w-0 flex-1">
-                        <span className="block truncate text-body-sm font-medium text-bg-text-primary transition-colors duration-300 group-hover:text-bg-primary-500">
-                          {isAr ? cat.nameAr : cat.nameEn}
-                        </span>
+                      <span className="min-w-0 flex-1 truncate text-body-sm font-medium text-bg-text-primary transition-colors duration-300 group-hover:text-bg-primary-500">
+                        {isAr ? cat.nameAr : cat.nameEn}
                       </span>
                       <ChevronRight
-                        size={16}
+                        size={15}
                         strokeWidth={2}
                         className="hidden shrink-0 -translate-x-2 text-bg-primary-500 opacity-0 transition-all duration-300 group-hover:translate-x-0 group-hover:opacity-100 rtl:rotate-180 rtl:translate-x-2 rtl:group-hover:translate-x-0 sm:block"
                       />
@@ -418,10 +253,10 @@ export default function Home() {
         </motion.div>
       </section>
 
-      {/* Featured */}
-      <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pb-12 lg:pb-16">
+      {/* Featured — first product grid, right below the fold line */}
+      <section className="mx-auto max-w-7xl px-4 pt-8 sm:px-6 lg:px-8 lg:pt-10">
         <motion.div {...fadeUp}>
-          <div className="flex items-end justify-between mb-6 lg:mb-8">
+          <div className="mb-6 flex items-end justify-between">
             <div>
               <p className="mb-1 font-mono text-caption uppercase tracking-[0.2em] text-bg-primary-500">
                 {t("home.featuredEyebrow")}
@@ -447,12 +282,10 @@ export default function Home() {
         </motion.div>
       </section>
 
-      <SecondaryBanners />
-
       {/* New Arrivals */}
-      <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pb-12 lg:pb-16">
+      <section className="mx-auto max-w-7xl px-4 pb-12 pt-10 sm:px-6 lg:px-8 lg:pb-16">
         <motion.div {...fadeUp}>
-          <div className="flex items-end justify-between mb-6 lg:mb-8">
+          <div className="mb-6 flex items-end justify-between lg:mb-8">
             <div>
               <p className="mb-1 font-mono text-caption uppercase tracking-[0.2em] text-bg-primary-500">
                 {t("home.newEyebrow")}
