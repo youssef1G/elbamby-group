@@ -151,6 +151,15 @@ export default function Login() {
             >
               {t("auth:login.submit")}
             </Button>
+
+            <p className="text-center">
+              <Link
+                to="/forgot-password"
+                className="text-body-sm font-semibold text-bg-text-secondary hover:text-bg-primary-500 transition-colors"
+              >
+                {t("auth:login.forgotPassword")}
+              </Link>
+            </p>
           </form>
         </div>
 

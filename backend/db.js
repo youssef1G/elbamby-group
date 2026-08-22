@@ -31,6 +31,7 @@ const TABLE = {
   RETURN_REQUESTS: 'return_requests',
   CUSTOMERS: 'customers',
   POINTS_TRANSACTIONS: 'points_transactions',
+  PASSWORD_RESET_CODES: 'password_reset_codes',
 };
 
 const _from = (table) => {
@@ -935,6 +936,11 @@ export async function getCustomerByPhone(phone) {
   return _from(TABLE.CUSTOMERS).select('*').eq('phone', phone).single();
 }
 
+/** Lookup by the optional email field — forgot-password identifier path. */
+export async function getCustomerByEmail(email) {
+  return _from(TABLE.CUSTOMERS).select('*').eq('email', email).single();
+}
+
 export async function getCustomerById(id) {
   return _from(TABLE.CUSTOMERS)
     .select('id, name, phone, email, points_balance, created_at, updated_at')
@@ -1099,6 +1105,49 @@ export async function updateCustomerPassword(id, passwordHash) {
  */
 export async function deleteCustomer(id) {
   return _from(TABLE.CUSTOMERS).delete().eq('id', id);
+}
+
+// ── Password reset codes (customer forgot-password flow) ────────────────────
+// Codes are stored bcrypt-hashed; the plaintext lives only in the email.
+
+export async function createPasswordResetCode(data) {
+  return _from(TABLE.PASSWORD_RESET_CODES).insert(data).select('id').single();
+}
+
+/** Newest code for a customer (consumed or not) — the only one that counts. */
+export async function getLatestPasswordResetCode(customerId) {
+  return _from(TABLE.PASSWORD_RESET_CODES)
+    .select('*')
+    .eq('customer_id', customerId)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+}
+
+/** Invalidate every unconsumed code (used when a fresh code is requested). */
+export async function invalidatePasswordResetCodes(customerId) {
+  return _from(TABLE.PASSWORD_RESET_CODES)
+    .update({ consumed_at: new Date().toISOString() })
+    .eq('customer_id', customerId)
+    .is('consumed_at', null);
+}
+
+export async function consumePasswordResetCode(id) {
+  return _from(TABLE.PASSWORD_RESET_CODES)
+    .update({ consumed_at: new Date().toISOString() })
+    .eq('id', id)
+    .select('id')
+    .single();
+}
+
+export async function setPasswordResetCodeAttempts(id, attempts) {
+  return _from(TABLE.PASSWORD_RESET_CODES).update({ attempts }).eq('id', id);
+}
+
+/** Opportunistic cleanup of old consumed/expired rows (> 24h). */
+export async function pruneOldPasswordResetCodes() {
+  const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+  return _from(TABLE.PASSWORD_RESET_CODES).delete().lt('expires_at', cutoff);
 }
 
 /**

@@ -166,6 +166,15 @@ export function updateMyProfile(data) {
 export function changeMyPassword(data) {
   return apiClient('/customers/me/password', { method: 'PUT', body: JSON.stringify(data) });
 }
+export function requestPasswordReset(identifier) {
+  return apiClient('/customers/forgot-password', { method: 'POST', body: JSON.stringify({ identifier }) });
+}
+export function verifyPasswordResetCode(identifier, code) {
+  return apiClient('/customers/verify-reset-code', { method: 'POST', body: JSON.stringify({ identifier, code }) });
+}
+export function resetPassword(data) {
+  return apiClient('/customers/reset-password', { method: 'POST', body: JSON.stringify(data) });
+}
 
 // ─── Support (complaints + returns) ──────────────────────────────────────────
 export function submitComplaint(data) {

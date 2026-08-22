@@ -461,3 +461,78 @@ export async function sendPointsChangeEmail({ email, customerName, type, points,
     console.error('Failed to send points-change email:', err.message);
   }
 }
+
+/**
+ * Password reset code (customer forgot-password flow) — a compact branded
+ * card carrying the 6-digit code. The code itself is only ever stored hashed
+ * server-side; this email is its one plaintext copy.
+ */
+export async function sendPasswordResetEmail({ email, customerName, code }) {
+  if (!transporter || !email || !code) return;
+
+  const html = `<!doctype html>
+<html>
+<body style="margin:0;padding:0;background-color:${SURFACE};font-family:${SANS};">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:${SURFACE};padding:32px 16px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background-color:${SURFACE_RAISED};border:1px solid ${BORDER};border-radius:16px;overflow:hidden;">
+          <tr>
+            <td style="padding:26px 24px;border-bottom:1px solid ${BORDER};">
+              <div style="font-size:12px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:${ACCENT};">${esc(BRAND.shortName)} Account</div>
+              <div style="font-size:20px;font-weight:800;color:${TEXT_PRIMARY};margin-top:6px;">
+                Reset your password
+              </div>
+              <div style="font-size:13px;color:${TEXT_MUTED};margin-top:4px;">
+                Hi ${esc(customerName || 'there')}, use the code below to set a new password.
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td align="center" style="padding:30px 24px;">
+              <div style="font-size:38px;font-weight:800;font-family:${MONO};letter-spacing:0.28em;color:${TEXT_PRIMARY};direction:ltr;">${esc(code)}</div>
+              <div style="font-size:12px;color:${TEXT_MUTED};margin-top:14px;">
+                This code expires in 10 minutes and can be used once.
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:0 24px 24px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:${SURFACE_SUNKEN};border-radius:12px;padding:14px 16px;">
+                <tr>
+                  <td style="font-size:12px;color:${TEXT_MUTED};line-height:1.6;">
+                    Didn't request a password reset? You can safely ignore this email — your current password keeps working.
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          <tr>
+            <td style="background-color:${INK};padding:22px 24px;text-align:center;">
+              <div style="color:#FFFFFF;font-size:14px;font-weight:800;">${esc(BRAND.name)}</div>
+              <div style="color:${INK_MUTED};font-size:12px;margin-top:4px;">${esc(BRAND.subtitle)}</div>
+              <div style="color:#8A8680;font-size:11px;margin-top:10px;line-height:1.6;">
+                This is an automated security message. Please do not reply to this email.<br />
+                Developed by <a href="${esc(BRAND.linkedin)}" style="color:#FFD7EC;text-decoration:none;" target="_blank" rel="noopener noreferrer">${esc(BRAND.developedBy)}</a> · <a href="${esc(BRAND.linkedin)}" style="color:#8A8680;text-decoration:none;" target="_blank" rel="noopener noreferrer">LinkedIn</a>
+              </div>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+
+  try {
+    const info = await transporter.sendMail({
+      from: `"${BRAND.name}" <${SENDER_EMAIL}>`,
+      to: email,
+      subject: `Your BG password reset code: ${code}`,
+      html,
+    });
+    console.log(`Password-reset email sent to ${email} (messageId: ${info.messageId})`);
+  } catch (err) {
+    console.error('Failed to send password-reset email:', err.message);
+  }
+}

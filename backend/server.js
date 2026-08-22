@@ -75,6 +75,7 @@ import {
   deleteReturnRequest,
   // ── points / customer-accounts (docs/13-points-system.md, Stage A) ──
   getCustomerByPhone,
+  getCustomerByEmail,
   getCustomerById,
   getCustomerAuthById,
   createCustomer,
@@ -91,9 +92,15 @@ import {
   creditOrderEarnedPoints,
   refundOrderRedeemedPoints,
   reverseOrderEarnedPoints,
+  createPasswordResetCode,
+  getLatestPasswordResetCode,
+  invalidatePasswordResetCodes,
+  consumePasswordResetCode,
+  setPasswordResetCodeAttempts,
+  pruneOldPasswordResetCodes,
 } from './db.js';
 import { signToken, verifyToken, requireAdmin, requireSuperAdmin } from './auth.js';
-import { sendOrderEmail, sendPointsChangeEmail } from './email.js';
+import { sendOrderEmail, sendPointsChangeEmail, sendPasswordResetEmail } from './email.js';
 import {
   requireCustomer,
   optionalCustomer,
@@ -410,6 +417,53 @@ const customerProfileUpdateSchema = z.object({
 const customerPasswordSchema = z.object({
   current_password: z.string().min(1, 'Current password is required'),
   new_password: z.string().min(6, 'Password must be at least 6 characters'),
+});
+
+// ── Forgot password (email code flow) ────────────────────────────────────────
+
+// Accepts EITHER an Egyptian phone (any dial form, normalized to local) or an
+// email address. Phone normalization only applies when the input is clearly
+// phone-shaped — never to emails (a `-` is legal in an address).
+const identifierField = z
+  .string()
+  .trim()
+  .min(1, 'Phone number or email is required')
+  .transform((v) => {
+    const cleaned = v.replace(/\s+/g, '');
+    if (cleaned.startsWith('+20')) return normalizePhone(cleaned);
+    return cleaned;
+  })
+  .refine(
+    (v) => phoneRegex.test(v) || z.string().email().safeParse(v).success,
+    'Enter a valid phone number or email',
+  );
+
+function isPhoneIdentifier(v) {
+  return phoneRegex.test(v);
+}
+
+/** Resolve the forgot-password identifier (phone OR email) to a customer row. */
+async function getCustomerByIdentifier(identifier) {
+  if (isPhoneIdentifier(identifier)) {
+    return getCustomerByPhone(identifier);
+  }
+  // Emails are stored as entered at registration — try exact, then lowercase.
+  const exact = await getCustomerByEmail(identifier);
+  if (exact.data) return exact;
+  return getCustomerByEmail(identifier.toLowerCase());
+}
+
+const forgotPasswordSchema = z.object({ identifier: identifierField });
+
+const resetPasswordSchema = z.object({
+  identifier: identifierField,
+  code: z.string().regex(/^\d{6}$/, 'Invalid reset code'),
+  new_password: z.string().min(6, 'Password must be at least 6 characters'),
+});
+
+const verifyResetCodeSchema = z.object({
+  identifier: identifierField,
+  code: z.string().regex(/^\d{6}$/, 'Invalid reset code'),
 });
 
 // ── Admin customer/points management (docs/13-points-system.md §5.3 / §6) ─────
@@ -2106,9 +2160,177 @@ async function customerChangePassword(req, res, next) {
   }
 }
 
+// ── Forgot password (email code flow) ────────────────────────────────────────
+// Step 1: POST /api/customers/forgot-password { identifier } → 6-digit code
+//         emailed to the address on file. `identifier` is a phone OR email.
+// Step 2a: POST /api/customers/verify-reset-code { identifier, code }.
+// Step 2b: POST /api/customers/reset-password { identifier, code, new_password }.
+//
+// The step-1 response is IDENTICAL whether or not the account exists (and
+// whether or not it has an email) so the endpoint can't be used to
+// enumerate accounts.
+
+const RESET_CODE_TTL_MS = 10 * 60 * 1000;
+const RESET_CODE_MAX_ATTEMPTS = 5;
+const RESET_CODE_BCRYPT_ROUNDS = 10;
+
+// "youssef.gamal@gmail.com" → "yo•••@gmail.com" — enough for the customer to
+// recognise WHICH inbox got the code without exposing the full address.
+function maskEmail(email) {
+  const at = email.indexOf('@');
+  if (at <= 0) return null;
+  const local = email.slice(0, at);
+  const domain = email.slice(at);
+  return `${local.slice(0, Math.min(2, local.length))}•••${domain}`;
+}
+
+// Shared step-2 validation: resolves the newest code for the identifier and
+// checks expiry/consumption/attempts/hash. On any failure it has ALREADY sent
+// the error response (400 INVALID_CODE / 429 CODE_LOCKED) and returns null;
+// on success it returns { customer, resetCode } and bumps nothing.
+async function resolveValidResetCode(req, res, next, identifier) {
+  const respondInvalid = () =>
+    res.status(400).json({
+      error: { message: 'Invalid or expired reset code', code: 'INVALID_CODE' },
+    });
+
+  const { data: customer, error } = await getCustomerByIdentifier(identifier);
+  if (error && error.code !== 'PGRST116') {
+    next(error);
+    return null;
+  }
+  if (!customer || !customer.password_hash) {
+    respondInvalid();
+    return null;
+  }
+
+  // Only the NEWEST code ever counts (older ones are invalidated at request
+  // time anyway — this guards a race between resend and verify).
+  const { data: resetCode } = await getLatestPasswordResetCode(customer.id);
+  if (!resetCode || resetCode.consumed_at || new Date(resetCode.expires_at) < new Date()) {
+    respondInvalid();
+    return null;
+  }
+
+  if (resetCode.attempts >= RESET_CODE_MAX_ATTEMPTS) {
+    res.status(429).json({
+      error: { message: 'Too many incorrect attempts — request a new code', code: 'CODE_LOCKED' },
+    });
+    return null;
+  }
+
+  return { customer, resetCode };
+}
+
+async function customerForgotPassword(req, res, next) {
+  try {
+    if (!requireDb(req, res)) return;
+
+    const genericMessage =
+      'If an account exists for this phone number or email, a reset code has been sent to its email address';
+
+    const { data: customer } = await getCustomerByIdentifier(
+      req.validatedBody.identifier,
+    );
+
+    // No account / never claimed online → nothing to reset, same response.
+    if (!customer || !customer.password_hash || !customer.email) {
+      return res.json({ message: genericMessage, maskedEmail: null });
+    }
+
+    // Housekeeping: burn previous unconsumed codes + prune old rows.
+    await invalidatePasswordResetCodes(customer.id);
+    pruneOldPasswordResetCodes().catch(() => {});
+
+    const code = String(randomInt(0, 1_000_000)).padStart(6, '0');
+    const codeHash = await bcrypt.hash(code, RESET_CODE_BCRYPT_ROUNDS);
+
+    const { error: insertErr } = await createPasswordResetCode({
+      customer_id: customer.id,
+      code_hash: codeHash,
+      expires_at: new Date(Date.now() + RESET_CODE_TTL_MS).toISOString(),
+    });
+
+    if (insertErr) return next(insertErr);
+
+    // Fire-and-forget with internal error handling — email trouble must not
+    // change the (deliberately uniform) HTTP response or slow it down.
+    sendPasswordResetEmail({
+      email: customer.email,
+      customerName: customer.name,
+      code,
+    });
+
+    res.json({ message: genericMessage, maskedEmail: maskEmail(customer.email) });
+  } catch (err) {
+    next(err);
+  }
+}
+
+// Step 2a: POST /api/customers/verify-reset-code { identifier, code } → checks
+//          the code so the UI can move to the new-password screen. Does NOT
+//          burn an attempt on success and does NOT consume the code — only
+//          reset-password does that (a wrong code bumps the attempt counter).
+async function customerVerifyResetCode(req, res, next) {
+  try {
+    if (!requireDb(req, res)) return;
+
+    const { identifier, code } = req.validatedBody;
+    const resolved = await resolveValidResetCode(req, res, next, identifier);
+    if (!resolved) return;
+
+    const { resetCode } = resolved;
+    const valid = await bcrypt.compare(code, resetCode.code_hash);
+    if (!valid) {
+      await setPasswordResetCodeAttempts(resetCode.id, resetCode.attempts + 1);
+      return res.status(400).json({
+        error: { message: 'Invalid or expired reset code', code: 'INVALID_CODE' },
+      });
+    }
+
+    res.json({ valid: true });
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function customerResetPassword(req, res, next) {
+  try {
+    if (!requireDb(req, res)) return;
+
+    const { identifier, code, new_password } = req.validatedBody;
+
+    const resolved = await resolveValidResetCode(req, res, next, identifier);
+    if (!resolved) return;
+
+    const { customer, resetCode } = resolved;
+
+    const valid = await bcrypt.compare(code, resetCode.code_hash);
+    if (!valid) {
+      await setPasswordResetCodeAttempts(resetCode.id, resetCode.attempts + 1);
+      return res.status(400).json({
+        error: { message: 'Invalid or expired reset code', code: 'INVALID_CODE' },
+      });
+    }
+
+    const passwordHash = await bcrypt.hash(new_password, BCRYPT_ROUNDS);
+    const { error: updateErr } = await updateCustomerPassword(customer.id, passwordHash);
+    if (updateErr) return next(updateErr);
+
+    await consumePasswordResetCode(resetCode.id);
+
+    res.json({ message: 'Password updated' });
+  } catch (err) {
+    next(err);
+  }
+}
+
 app.post('/api/customers/register', customerAuthLimiter, validate(customerRegisterSchema), customerRegister);
 app.post('/api/customers/login', customerAuthLimiter, validate(customerLoginSchema), customerLogin);
 app.post('/api/customers/logout', customerLogout);
+app.post('/api/customers/forgot-password', customerAuthLimiter, validate(forgotPasswordSchema), customerForgotPassword);
+app.post('/api/customers/verify-reset-code', customerAuthLimiter, validate(verifyResetCodeSchema), customerVerifyResetCode);
+app.post('/api/customers/reset-password', customerAuthLimiter, validate(resetPasswordSchema), customerResetPassword);
 app.delete('/api/customers/me', requireCustomer, customerDeleteAccount);
 app.delete('/api/customers/me', requireCustomer, customerDeleteAccount);
 app.get('/api/customers/me', optionalCustomer, customerMe);

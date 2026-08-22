@@ -95,12 +95,12 @@ export default function CheckoutSuccess() {
           </p>
           <ul className="space-y-2">
             {items.map((item, idx) => {
-              const name = isAr ? (item.productNameAr || item.product_name_snapshot) : (item.productNameEn || item.product_name_snapshot);
+              const name = item.productNameSnapshot || item.product_name_snapshot || '';
               const variantLabel = isAr ? (item.variantLabelAr || item.variant_label_ar) : (item.variantLabelEn || item.variant_label_en);
               return (
                 <li key={item.productId || item.product_id || idx} className="flex justify-between text-xs text-bg-text-secondary">
                   <span className="flex-1 min-w-0">
-                    <span className="text-bg-text-primary font-medium">{name || t('checkout:success.noVariant')}</span>
+                    <span className="text-bg-text-primary font-medium">{name || '—'}</span>
                     {variantLabel && (
                       <span className="ms-1 text-bg-text-secondary">
                         {isAr ? `— ${variantLabel}` : `— ${variantLabel}`}

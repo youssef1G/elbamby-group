@@ -17,6 +17,7 @@ const ProductDetail = lazy(() => import('@/pages/ProductDetail.jsx'));
 const MyOrders = lazy(() => import('@/pages/MyOrders.jsx'));
 const Login = lazy(() => import('@/pages/Login.jsx'));
 const Register = lazy(() => import('@/pages/Register.jsx'));
+const ForgotPassword = lazy(() => import('@/pages/ForgotPassword.jsx'));
 const Account = lazy(() => import('@/pages/Account.jsx'));
 const NotFound = lazy(() => import('@/pages/NotFound.jsx'));
 import ContactButton from '@/components/common/ContactButton.jsx';
@@ -92,6 +93,7 @@ export default function App() {
               <Route path="/checkout/success" element={<CheckoutSuccess />} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/account" element={<Account />} />
               <Route path="/product/:slug" element={<ProductDetail />} />
               <Route path="*" element={<NotFound />} />
